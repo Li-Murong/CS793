@@ -1,0 +1,1183 @@
+An Asymptotically Optimal Batched Algorithm
+for the Dueling Bandit Problem
+Arpit Agarwal
+Columbia University
+arpit.agarwal@columbia.edu
+
+Rohan Ghuge
+University of Michigan
+rghuge@umich.edu
+
+Viswanath Nagarajan
+University of Michigan
+viswa@umich.edu
+
+Abstract
+We study the K-armed dueling bandit problem, a variation of the traditional multiarmed bandit problem in which feedback is obtained in the form of pairwise
+comparisons. Previous learning algorithms have focused on the fully adaptive setting, where the algorithm can make updates after every comparison. The “batched”
+dueling bandit problem is motivated by large-scale applications like web search
+ranking and recommendation systems, where performing sequential updates may
+be infeasible. In this work, we ask: is there a solution using only a few adaptive
+rounds that matches the asymptotic regret bounds of the best sequential algorithms
+for K-armed dueling bandits? We answer this in the affirmative under the Condorcet condition, a standard setting of the K-armed dueling bandit problem. We
+obtain asymptotic regret of O(K 2 log2 (K)) + O(K log(T )) in O(log(T )) rounds,
+where T is the time horizon. Our regret bounds nearly match the best regret bounds
+known in the fully sequential setting under the Condorcet condition. Finally, in
+computational experiments over a variety of real-world datasets, we observe that
+our algorithm using O(log(T )) rounds achieves almost the same performance as
+fully sequential algorithms (that use T rounds).
+
+1
+
+Introduction
+
+The K-armed dueling bandit problem is a variation of the traditional multi-armed bandit problem
+in which feedback is obtained in the form of pairwise preferences. This problem has applications
+in a wide-variety of domains like search ranking, recommendation systems and sports ranking
+where eliciting qualitative feedback is easy while real-valued feedback is not easily interpretable;
+thus, it has been a popular topic of research in the machine learning community (see, for example,
+[51, 49, 47, 5, 54, 52, 53, 21, 32, 35, 36, 42, 18]).
+Previous learning algorithms have focused on a fully adaptive setting; that is, the learning algorithm
+can make updates in a sequential fashion. Such updates might be impractical in large systems;
+for example, consider web-search ranking where the goal is to provide a list (usually ranked) of
+candidate documents to the user of the system in response to a query [41, 33, 50, 31]. Modern day
+search engines use hundred of parameters to compute a ranked list in response to a query, and online
+learning frameworks (based on user feedback) have been invaluable in automatically tuning these
+parameters [38]. However, given the scale of the system, it may be infeasible to adapt after each
+interaction: users may make multiple queries in a short time or multiple users may simultaneously
+query the system. Hence, we prefer solutions with limited rounds of adaptivity. Concretely, we ask:
+is there a solution using only a few adaptive rounds that matches the asymptotic regret bounds of the
+best sequential algorithms for K-armed dueling bandits?
+This “batched” dueling bandit problem was introduced recently in [2]. Here, the learning algorithm’s
+actions are partitioned into a limited number of rounds. In each round/batch, the algorithm commits
+to a fixed set of pairwise comparisons, and the feedback for all these comparisons is received
+36th Conference on Neural Information Processing Systems (NeurIPS 2022).
+
+simultaneously. Then, the algorithm uses the feedback from the current batch of comparisons to
+choose comparisons for the next batch. [2] studied this problem under two different conditions:
+(i) the strong stochastic transitivity and stochastic triangle inequality (SST+STI) condition, which
+enforces a certain linear ordering over the arms; (ii) the Condorcet condition, which requires one
+arm to be superior to all others. Under SST+STI, their work provided almost tight upper and lower
+bounds on the trade-off between number of rounds and regret; in particular, they showed that one can
+achieve worst-case regret of O(K log2 T ) using ⇥(log T ) rounds (T is the time-horizon).1 Under
+the Condorcet condition, which is more general than SST+STI, they achieved a regret upper bound of
+O(K 2 log T ) in O(log T ) rounds. Previous work [54, 35] on fully sequential algorithms has shown
+that it is possible to achieve an asymptotic upper bound of O(K 2 + K log T ) under the Condorcet
+condition. Very recently, [43] improved the sequential regret bound even further by obtaining regret
+O(K log T ), which is the best possible even in the special case of SST+STI [49]. In the batched
+setting, the upper bound of [2] does not achieve this asymptotic optimality, irrespective of the number
+of batches, due to the presence of a K 2 multiplicative factor in the regret bound. Their work left
+open the possibility of obtaining a batched algorithm achieving asymptotic optimality under the
+Condorcet condition. In this paper, we nearly resolve this question, by providing an algorithm with
+O(K 2 log2 K + K log T ) regret in ⇥(log T ) rounds, under the Condorcet condition.
+1.1
+
+Contributions
+• We design an algorithm, denoted C2B, for the batched dueling bandit problem, and analyze
+its regret under the Condorcet condition. This algorithm achieves a smooth trade-off between
+the expected regret and the number of batches, B.
+• Crucially, when B = log(T ), our regret bounds nearly match the best regret bounds [35, 54]
+known in the fully sequential setting. Hence, our results show that O(log T ) rounds are
+sufficient to achieve asymptotically optimal regret as a function of T .
+• Our results rely on new ideas for showing that the Condorcet winner arm can be ‘trapped’
+using few adaptive rounds with high (constant) probability while incurring a reasonable
+amount of regret. We can then integrate over this space of probabilities to obtain a bound on
+the expected regret (in the same vein as [54]). Once the Condorcet arm is ‘trapped’, we can
+quickly eliminate all other ‘sub-optimal’ arms and minimize regret in the process.
+• Finally, we run computational experiments to validate our theoretical results. We show that
+C2B, using O(log T ) batches, achieves almost the same performance as fully sequential
+algorithms (which effectively use T batches) over a variety of real datasets.
+
+1.2 Preliminaries
+The K-armed dueling bandit problem [49] is an online optimization problem, where the goal is to
+find the best among K bandits B = {1, . . . , K} using noisy pairwise comparisons with low regret.
+In each time-step, a noisy comparison between two arms (possibly the same), say (i, j), is performed.
+The outcome of the comparison is an independent random variable, and the probability of picking i
+over j is denoted pi,j = 12 + i,j where i,j 2 ( 12 , 12 ). Here, i,j can be thought of as a measure
+of distinguishability between the two arms, and we use i j when i,j > 0. We also refer to i,j
+as the gap between i and j.
+This problem has been studied under various conditions on the pairwise probabilities pi,j ’s. One such
+condition is the strong stochastic transitivity and stochastic triangle inequality (SST+STI) condition
+where there exists an ordering over arms, denoted by ⌫, such that for every triple i ⌫ j ⌫ k, we
+have i,k max{ i,j , j,k }, and i,k  i,j + j,k [49, 51]. In this paper, we work under the
+well-studied Condorcet winner condition, which is much more general than the SST+STI condition
+[47, 54, 35]. We say that arm i is a Condorcet winner if, and only if, pi,j > 12 for all j 2 B \ {i}.
+The Condorcet condition means that there exists a Condorcet winner.
+Throughout the paper, we let a⇤ refer to the Condorcet arm. To further simplify notation, we define
+⇤
+j =
+a⇤ ,j ; that is, the gap between a and j. We define the regret per time-step as follows: suppose
++
+arms it and jt are chosen in time-step t, then the regret r(t) = it 2 jt . The cumulative regret up
+PT
+to time T is R(T ) = t=1 r(t), where T is the time horizon, and it’s assumed that K  T . The
+1
+
+They also gave a more complicated algorithm with regret O(K log2 K log T ) in O(log T +
+log K log log K) rounds, under the SST+STI condition.
+
+2
+
+e hides polylog(K) factors.
+Table 1: An overview of our results. Note that O
+Setting
+
+Regret
+
+Fully Adaptive
+
+O
+
+T rounds
+Batched
+
+B rounds
+log(T ) rounds
+
+K
+
+⇣
+e T B1 ·
+O
+
+K2
+
+⌘
+2
+
+⇣
+⌘
+log T
+O
+[54, 35]
+j: j >0
+j
+⇣
+⌘
+P
+log(T )
+[43]
+j: j >0 O
+j
+
+2
+min
+
+P
+
+B rounds
+Our Algorithm
+
+⇣
+
++
+
+P
+
+⇣
+⌘
+1/B log(T )
+O
+KT
+·
+[2]
+j: j >0
+j
+
+2
+min
+
+⌘
+
+⇣ 2
+⌘ P
+⇣ 1
+⌘
+)
++ O T B · K 2 + j O T B · log(T
+j
+⇣ 2 ⌘ P
+⇣
+⌘
+)
+e K2
+O
++ j O log(T
+j
+min
+
+PK
+cumulative regret can be equivalently stated as R(T ) = 12 j=1 Tj j , where Tj denotes the number
+comparisons involving arm j. The goal of an algorithm is to minimize the cumulative R(T ). We
+define min = minj: j >0 j to be the smallest non-zero gap of any arm with a⇤ .
+1.3 Batch Policies
+In traditional bandit settings, actions are performed sequentially, utilizing the results of all prior
+actions in determining the next action. In the batched setting, the algorithm must commit to a round
+(or batch) of actions to be performed in parallel, and can only observe the results after all actions
+in the batch have been performed. More formally, given a number B of batches, the algorithm
+proceeds as follows. In each batch r = 1, 2, . . . B, the algorithm first decides on the comparisons
+to be performed; then, all outcomes of the batch-r comparisons are received simultaneously. The
+algorithm can then, adaptively, select the next batch of comparisons. Note that even the size of the
+next batch can be adaptively decided based on the observations in previous batches. Finally, the total
+number of comparisons (across all batches) must sum to T . We assume that the values of T and B
+are known. Observe that when T = B, we recover the fully sequential setting.
+1.4 Results and Techniques
+We provide a overview of our results and prior results in Table 1. Given any integer B 1, we obtain
+a B-round algorithm for the dueling bandit problem. We provide both high-probability and expected
+regret bounds, stated in the following theorems.
+Theorem 1.1. For any integer B 1, there is an algorithm for the K-armed dueling bandit problem
+that uses at most B rounds with the following guarantee. For any > 0, with probability at least
+1
+1
+T , its regret under the Condorcet condition is at most
+r !
+✓
+✓
+◆◆
+2
+log K
+1
+1/B K log(K)
+2/B
+2
+R(T )  O T
+·
+· log
++O T
+·K ·
+2
+min
+
+min
+
++
+
+X
+
+O
+
+j6=a⇤
+
+✓
+
+T 1/B · log(KT )
+j
+
+◆
+
+.
+
+Theorem 1.2. For any integer B 1, there is an algorithm for the K-armed dueling bandit problem
+that uses at most B rounds, with expected regret under the Condorcet condition at most
+✓
+✓
+◆◆
+⇣
+⌘
+2
+log K
+1/B K log(K)
+2/B
+2
+E[R(T )] = O T
+·
+·
+log
++
+O
+T
+·
+K
+2
+min
+
+min
+
++
+
+X
+
+j6=a⇤
+
+3
+
+O
+
+✓
+
+T 1/B · log(KT )
+j
+
+◆
+
+.
+
+When the number of rounds B = log(T ), we obtain a batched algorithm that achieves the asymptotic
+optimality (in terms of T ), even for sequential algorithms. We formalize this observation in the
+following corollary.
+Corollary 1.3. There is an algorithm for the K-armed dueling bandit problem that uses at most
+log(T ) rounds, with expected regret under the Condorcet condition at most
+✓ 2
+✓
+◆◆
+X ✓ log(KT ) ◆
+K log(K)
+log K
+E[R(T )] = O
+· log
++
+O
+.
+2
+min
+
+min
+
+j6=a⇤
+
+j
+
+By a lower-bound result from [2], it follows that no algorithm can achieve O( K
+· poly(log T ))
+min
+regret using o( logloglogT T ) rounds, even under the SST+STI condition. So, the O(log T ) rounds required
+to achieve asymptotic optimality in Corollary 1.3 is nearly the best possible.
+Technical Challenges. The only prior approach for batched dueling bandits (under the Condorcet
+condition) is the algorithm PCOMP from [2], which performs all-pairs comparisons among arms in an
+active set. Such an approach cannot achieve regret better than O(K 2 log T ) because the active set may
+remain large throughout. In order to achieve better regret bounds, [2] focus on the stronger SST+STI
+condition. In this setting, their main idea is to first sample a seed set, and use this seed set to eliminate
+sub-optimal arms. Their algorithm proceeds by performing all pairwise comparisons between the
+seed set and the set of active arms. However, the analysis of these ‘seeded comparison’ algorithms
+crucially rely on the total-ordering imposed by the SST and STI assumptions. Unfortunately, there is
+no such structure to exploit in the Condorcet setting: if the seed set does not contain the Condorcet
+winner, we immediately incur high regret.
+The existing fully sequential algorithms such as RUCB [54] and RMED [35] are highly adaptive in
+nature. For instance, RUCB plays each candidate arm against an optimistic competitor arm using
+upper confidence bounds (UCB) on pairwise probabilities. This allows RUCB to quickly filter out
+candidates and uncover the Condorcet arm. Similarly, RMED plays each arm against a carefully
+selected competitor arm that is likely to beat this arm. However, such competitors can change
+frequently over trials in both RUCB and RMED. Since the batched setting requires comparisons to be
+predetermined, we do not have the flexibility to adapt to such changes in competitors. Hence, these
+existing fully sequential algorithms cannot be easily implemented in our setting.
+Furthermore, we might also be tempted to consider an explore-then-exploit strategy where we first
+explore to find the Condorcet arm and exploit by playing this arm for remaining trials. However, this
+strategy is likely to fail because identifying the Condorcet arm with high probability might involve
+performing many comparisons, directly leading to high (⌦(K 2 log T )) regret; on the other hand, if
+the Condorcet winner is not identified with high probability, the exploit phase becomes expensive.
+This motivated us to consider algorithms that allow some form of recourse; that is, unless an arm
+is found to be sub-optimal, it must be given the opportunity to participate in the comparisons (as it
+could be the Condorcet winner).
+The idea behind our algorithm is to identify the Condorcet winner a⇤ in a small expected number of
+rounds, after which it uses this arm as an “anchor” to eliminate sub-optimal arms while incurring low
+regret. To identify the best arm, in each round we define a candidate arm and compare it against arms
+that it “defeats”. Arms that are not defeated by the candidate arm are compared to all active arms:
+this step ensures that the Condorcet winner is eventually discovered. We show that a⇤ becomes the
+candidate, and defeats all other arms within a small number of rounds (though the algorithm may not
+know if this has occurred). Additionally, once this condition is established, it remains invariant in
+future rounds. This allows us to eliminate sub-optimal arms and achieve low regret.
+Comparison to RUCB. Initially, RUCB puts all arms in a pool of potential champions, and “optimistically” (using a upper confidence bound) performs all pairwise comparisons. Using these, it constructs
+a set of candidates C. If |C|= 1, then that arm is the hypothesised Condorcet winner and placed in
+a set B. Then, a randomized strategy is employed to choose a champion arm ac (from sets C and
+B) which is compared to arm ad which is most likely to beat it. The pair (ac , ad ) is compared, the
+probabilities are updated and the algorithm continues. Although our algorithm also seeks to identify
+the best arm, we do not employ the UCB approach nor do we use any randomness. In their analysis,
+[54] show that the best arm eventually enters the set B, and remains in B: we also show a similar
+property for our algorithm in the analysis. Finally, similar to the analysis of [54], we first give a
+4
+
+high-probability regret bound for our algorithm which we then convert to a bound on the expected
+regret.
+
+2
+
+Related Work
+
+The K-armed dueling bandit problem has been widely studied in recent years (we refer the reader
+to [46] for a comprehensive survey). Here, we survey the works that are most closely related to
+our setting. This problem was first studied in [49] under the SST and STI setting. The authors
+e
+obtained a worst-case regret upper bound of O(K
+log T / min ) and provided a matching lower
+bound. [51] considered a slightly more general
+version
+of the SST and STI setting and achieved an
+P
+instance-wise optimal regret upper bound of j: j >0 O (log(T )/ j ). Since, the SST+STI condition
+imposes a total order over the arms and might not hold for real-world datasets, [47] initiated the
+study of dueling bandits under the Condorcet winner condition. [47] proved a O(K 2 log T / min )
+regret
+upper bound under the Condorcet condition, which was improved by [54] to O(K 2 / 2min ) +
+P
+2
+j: j >0 O(log T / j ). [35] achieved a similar but tighter KL divergence-based bound, which is
+shown to be asymptotically instance-wise optimal (even in terms constant factors). There are also
+other works that improve the dependence on K in the upper bound, but suffer a worse dependence
+on j ’s [53]. This problem has also been studied under other noise models such as utility based
+models [5] and other notions of regret [18]. Alternate notions of winners such as Borda winner [32],
+Copeland winner [52, 36, 48], and von Neumann winner [21] have also been considered. There are
+also several works on extensions of dueling bandits that allow multiple arms to be compared at once
+[45, 3, 44].
+All of the aforementioned works on the dueling bandits problem are limited to the sequential setting.
+Recently, [2] initiated the study of the batched version of the K-armed dueling bandits. Their main
+results are under the SST and STI setting. They give two algorithms, called SCOMP and SCOMP2,
+for the batched K-armed dueling bandit problem.
+For any
+p integer B, SCOMP uses at most B + 1
+P
+batches and has expected regret bounded by j: j >0 O( KT 1/B log(T )/ j ). When B = log(T ),
+p
+this
+P nearly matches (up to a factor of K) the best known instance-dependent regret bound of
+j: j >0 O(log(T )/ j ) obtained by [49]. SCOMP2 aims to achieve better worst-case regret: it
+uses at most 2B + 1 batches, and has regret O KBT 1/B log(T )/ min . Thus, when B = log(T ),
+the expected worst-case regret is O K log2 (T )/ min , matching the best known result in the
+sequential setting up to an additional logarithmic factor. Under the Condorcet condition, [2] give a
+straightforward pairwise comparison algorithm (PCOMP), that achieves expected regret bounded
+by O(K 2 log(T )/ min ) in log(T ) batches. They also provide a nearly matching lower bound of
+1/B
+⌦( BKT
+) for any B-batched algorithm. This implies that our bound (for B-round algorithms) in
+2
+min
+Theorem 1.2 cannot be significantly improved.
+P
+Recently, [43] designed a fully adaptive algorithm achieving an optimal regret of j: j >0 O(logj T )
+for dueling bandits under the Condorcet setting. This algorithm is based on the idea of dueling two
+classical bandit (MAB) algorithms against each other in a repeated zero-sum game with carefully
+designed rewards. The reward for one algorithm depends on the actions of the other; hence, these
+algorithms need to achieve best-of-both-worlds guarantee for both stochastic and adversarial settings.
+However, the approach of [43] is not directly applicable to the batched setting that we consider. This
+is because, as shown by [23], any B-round algorithm for batched MAB in the adversarial setting has
+regret ⌦(T /B).
+There has also been substantial work on best-arm or top-k identification using pairwise comparisons
+with limited adaptivity. [15, 14, 19] considered this problem under the noisy pairwise comparison
+setting, which is a special case of SST+STI. They showed that constant number of rounds of adaptivity
+are sufficient to solve these problem with the optimal sample complexity. [4] showed that one can
+also solve this problem under SST in constant number of rounds with the optimal sample complexity.
+However, these existing results focus on the SST setting, whereas we focus on the more general
+Condorcet winner setting. Moreover, these existing works focus on sample complexity for best-arm
+identification whereas our goal is regret minimization.
+
+3
+
+The Batched Algorithm
+
+In this section, we describe a B-round algorithm for the K-armed dueling bandit problem under
+the Condorcet condition. Recall that given a set of K arms, B = {1, . . . , K}, and a positive integer
+5
+
+B  log(T ), we wish to find a sequence of B batches of noisy comparisons with low regret.
+Given arms i and j, recall that pi,j = 12 + i,j denotes the probability of i winning over j where
+⇤
+⇤
+i,j 2 ( 1/2, 1/2). We use a to denote the Condorcet winner; recall that a is a Condorcet winner
+if pa⇤ ,j
+1/2 for all j 2 B. To simplify notation, we use j = a⇤ ,j . Before describing our
+algorithm, we first define some notation. We use A to denote the current set of active arms; i.e.,
+the arms that have not been eliminated. We will use index r for rounds or batches. If pair (i, j) is
+compared in round r, it is compared qr = bq r c times where q = T 1/B . We define the following
+quantities at the end of each round r:
+• Ni,j (r) is the total number of times the pair (i, j) has been compared.
+• pbi,j (r) is the frequentist estimate of pi,j , i.e.,
+pbi,j (r) =
+
+# i wins against j until end of round r
+.
+Ni,j (r)
+
+• Two confidence-interval radii for each (i, j) pair:
+s
+2 log(2K 2 qr )
+ci,j (r) =
+and
+Ni,j (r)
+
+i,j (r) =
+
+s
+
+log(K 2 BT )
+2Ni,j (r)
+
+(1)
+
+(2)
+
+We now describe our B-round algorithm, called CATCHING THE CONDORCET WINNER IN BATCHES
+(or, C2B). At a high-level, the algorithm identifies the best arm a⇤ in a small expected number of
+rounds, after which it uses this arm as an “anchor” to eliminate sub-optimal arms while incurring low
+regret. In every round r, we do the following:
+1. We define a defeated set Dr (i) for every active arm i; this set comprises arms that are
+defeated with confidence by i. Specifically, j 2 Dr (i) if pbi,j (r 1) > 1/2 + ci,j (r 1).
+
+2. Then, we define a candidate ir as the arm that defeats the most number of arms; that is,
+ir = arg maxi2A |Dr (i)|.
+3. For every arm i 6= ir :
+
+• If i 2 Dr (ir ), then we compare i to ir for qr times. The idea here is to use ir as an
+anchor against i. We will show that a⇤ becomes the candidate ir in a small number
+of rounds. Then, this step ensures that we eliminate arms efficiently using a⇤ as an
+anchor.
+• If i 2
+/ Dr (ir ), then i is compared to all arms in A for qr times. This step crucially
+protects the algorithm against cases where a sub-optimal arm becomes the candidate
+(and continues to become the candidate). For example, suppose K = [5] and the arms
+are linearly ordered as 1 2 · · · 5. Furthermore suppose that in some round r,
+we have that (a) 2 defeats 3, 4, 5 and (b) 1 (best arm) defeats 2 but not the others. So, 2
+is the candidate in round r; if 1 is not compared to 3, 4, 5, then 2 would continue to be
+the candidate (leading to high regret).
+
+4. If, for any arm j, there is arm i such that pbi,j (r) > 12 +
+
+i,j (r), then j is eliminated from A.
+
+This continues until T total comparisons are performed. See Algorithm 1 for a formal description.
+The main result of this section is to show that C2B achieves the guarantees stated in Theorems 1.1
+and 1.2.
+Overview of the Analysis. We provide a brief outline of the proofs of our main results. Towards
+proving Theorem 1.1, we first define two events:
+• The first event, denoted G, ensures that a⇤ is not eliminated during the execution of C2B.
+We show that P(G) 1 1/T .
+• The second event, denoted E( ), says that there exists a round C( ) (defined later) such
+that for all r > C( ), the estimate pbi,j (r 1) satisfies the confidence interval of ci,j (r 1).
+Moreover, P(E( )) 1
+.
+
+By union bound, P(G \ E( ))
+
+1
+
+1/T . Together, we use G and E( ) to argue that:
+6
+
+Algorithm 1 C2B (C ATCHING THE C ONDORCET WINNER IN BATCHES)
+1: Input: Arms B, time-horizon T , integer B
+1
+2: active arms A
+B, r
+1, emprical probabilities pbi,j (0) = 12 for all i, j 2 B 2
+3: while number of comparisons  T do
+4:
+if A = {i} for some i then play (i, i) for remaining trials
+5:
+Dr (i)
+{j 2 A : pbi,j (r 1) > 12 + ci,j (r 1)}
+6:
+ir
+arg maxi2A |Dr (i)|
+7:
+for i 2 A \ {ir } do
+8:
+if i 2 Dr (ir ) then
+9:
+compare (ir , i) for qr times
+10:
+else
+11:
+for each j 2 A, compare (i, j) for qr times
+12:
+compute pbi,j (r) values
+13:
+if 9i, j : pbi,j (r) > 12 + i,j (r) then
+14:
+A
+A \ {j}
+15:
+r
+r+1
+
+• the best arm, a⇤ , is not defeated by any arm i in any round r > C( ) (formalized in
+Lemma 3.5),
+• and that there exists a round r( )
+C( ) such that for every round after r( ), arm a⇤
+defeats every other arm (formalized in Lemma 3.7).
+Intuitively, these observations imply that our algorithm identifies the best arm after r( ) rounds. Thus,
+beyond round r( ), we only perform pairwise comparisons of the form (a⇤ , i) for i 6= a⇤ : thus, a⇤ is
+used as an anchor to eliminate sub-optimal arms. We then
+Panalyze the regret in two parts: (i) regret
+incurred up to round r( ), which is upper bounded by K 2 rr( ) q r and (ii) regret after r( ), which
+is the regret incurred in eliminating sub-optimal arms using a⇤ as an anchor. Finally, we can use
+the high-probability bound to also obtain a bound on the expected regret, proving Theorem 1.2. We
+provide some details of the proof of Theorem 1.1. We defer the proof of Theorem 1.2 to Appendix D.
+3.1 The Analysis
+In this section, we give high-probability and expected regret bounds for C2B. Recall that q = T 1/B ,
+and that q
+2. The following lemma is used to prove that a⇤ is never eliminated. We defer the
+proofs of the Lemmas 3.1, 3.2 to Appendix B.
+Lemma 3.1. For any batch r 2 [B], and for any pair (i, j), we have
+P (|b
+pi,j (r)
+
+pi,j |>
+
+i,j (r))  2⌘,
+
+where ⌘ = 1/K 2 BT .
+We first define the good event G as follows.
+Definition 3.1 (Event G). An estimate pbi,j (r) at the end of batch r is strongly-correct if |b
+pi,j (r)
+pi,j | i,j (r). We say that event G occurs if every estimate in every batch r 2 [B] is strongly-correct.
+
+The following two lemmas show that G occurs with high probability and that a⇤ is not eliminated
+under G.
+
+Lemma 3.2. The probability that every estimate in every batch of C2B is strongly-correct is at least
+1 1/T .
+Lemma 3.3. Conditioned on G, a⇤ is never eliminated from A in the elimination step of C2B.
+Proof. In C2B, an arm j is deleted in batch r iff there is an arm i 2 A with pbi,j (r) > 12 + i,j (r). If a⇤
+1
+is eliminated due to some arm j, then by definition of event G, we get pj,a⇤ pbi,j (r)
+i,j (r) > 2 ,
+a contradiction.
+7
+
+3.1.1
+
+High-probability Regret Bound
+
+In this section, we give details required to prove Theorem 1.1. Fix any
+good event as follows.
+
+> 0. We first define another
+
+Definition 3.2 (Event E( )). An estimate pbi,j (r) in batch r is weakly-correct if |b
+pi,j (r) pi,j |
+1
+ci,j (r). Let C( ) := d 2 logq (1/ )e. We say that event E( ) occurs if for each batch r C( ), every
+estimate is weakly-correct.
+The next lemma shows that E( ) occurs with probability at least 1
+Lemma 3.4. For all
+
+.
+
+> 0, we have
+C( ), i, j : |b
+pi,j (r)
+
+P(¬E( )) = P (9r
+
+pi,j |> ci,j (r)) 
+
+.
+
+We will analyze our algorithm under both events G and E( ). Note that event G is required to
+ensure that a⇤ is not eliminated in rounds before C( ) (where the Lemma 3.4 does not apply).
+Lemma 3.5. Conditioned on G and E( ), for any round r > C( ), arm a⇤ is not defeated by any
+other arm, i.e., a⇤ 2
+/ [i6=a⇤ Dr (i).
+To proceed, we need the following definitions.
+Definition 3.3. The candidate ir of round r is called the champion if |Dr (ir )|= |A| 1; that is, if ir
+defeats every other active arm.
+Definition 3.4. Let r( )
+
+C( ) + 1 be the smallest integer such that
+
+q r( )
+
+where A :=
+
+2A log A,
+
+32
+
+· log(2K
+2
+min
+
+2
+
+).
+
+We use the following inequality based on this choice of r( ).
+Lemma 3.6. The above choice of r( ) satisfies
+qr >
+
+8
+
+· log
+2
+min
+
+2K 2 qr ,
+
+8r
+
+r( ).
+
+Proof of Lemma 3.6. Using the fact that qr  q r , it suffices to show q r
+Moreover,
+
+8
+
+2
+min
+
+· log(2K 2 ) + log q r .
+
+log(2K 2 ) + log q r  1 + log(2K 2 ) · (1 + log q r )  4 · log(2K 2 ) · log q r ,
+where the last inequality uses K
+q r > A · log(q r ),
+
+2, r
+
+r( )
+
+8r
+
+r( ),
+
+1 and q
+
+2. So, it suffices to show:
+
+where A =
+
+32
+
+· log(2K
+2
+min
+
+2
+
+)
+
+(3)
+
+Below, let x = q r , R := 2A log A and function f (x) := x A log x. We will show that f (x) > 0
+for all x R, which would imply (3) because q r( ) R. As R A, and f is increasing for x A,
+it suffices to show that f (R) 0. Indeed,
+f (R)
+= 2 log A
+A
+where the inequality uses A
+
+log(2A log A) = log A
+
+log(2 log A) > 0,
+
+8.
+
+Then, we have the following.
+Lemma 3.7. Conditioned on G and E( ), the best arm a⇤ is the champion in every round r > r( ).
+We now have all components required to prove Theorem 1.1; its proof, and the proofs of the
+aforementioned lemmas can be found in Appendix C.
+8
+
+(d) Irish-Dublin
+
+5
+U
+U
+
+50(
+6 203
+58
+0
+
+5
+
+5
+
+(e) MSLR30
+
+5
+
+(c) Irish-Meath
+
+50(
+6 203
+58
+0
+
+U
+
+50(
+6 203
+58
+0
+
+50(
+6 203
+58
+0
+
+5
+
+5
+U
+
+(b) Sushi
+
+5
+
+U
+
+5
+
+(a) Six rankers
+
+5
+
+50(
+6 203
+58
+0
+
+5
+
+5
+
+U
+
+5
+
+50(
+6 203
+58
+0
+
+(f) Yahoo30
+
+Figure 1: Regret v/s t plots of algorithms when B = blog(T )c
+
+4
+
+Computational Results
+
+In this section, we provide details of our computational experiments. The goal of our experiments
+is to answer the following questions: (i) How does the regret of C2B using B = blog(T )c batches
+compare to that of existing fully sequential as well as batched algorithms? and (ii) Can the regret
+of C2B match the regret of the best known sequential algorithms; if yes, then how many rounds
+suffice to achieve this? Towards answering (i), we compare C2B to a representative set of sequential
+algorithms for dueling bandits using the library due to [35]. We compare C2B to the sequential
+algorithms RUCB [54], RMED [35], and B EAT- THE -M EAN (BTM) [51]. We allow these algorithms
+to work as prescribed; that is, they work in B = T batches. The reason that we chose these sequential
+algorithms is that our batched algorithm (C2B) is based on a similar paradigm, and such a comparison
+demonstrates the power of adaptivity in this context. We also compare C2B to the batched algorithm
+SCOMP2 [2]. We plot the cumulative regret R(t) incurred by the algorithms against time t. We
+set B = blog(T )c for C2B and SCOMP2 in this experiment. For (ii), we increased B by a small
+amount; we found that the performance of C2B improves noticeably when given a constant number
+of additional rounds (we use B = blog(T )c + 6 in this experiment). We perform these experiments
+using the following real-world datasets.
+Six rankers. This dataset is based on the 6 retrieval functions used in the engine of ArXiv.org.
+Sushi. The Sushi dataset is based on the Sushi preference dataset [34] that contains the preference
+data regarding 100 types of Sushi. A preference dataset using the top-16 most popular types of sushi
+is obtained.
+Irish election data. The Irish election data for Dublin and Meath is available at preflib.org. It
+contains partial preference orders over candidates. As in [3], these are transformed into preference
+matrices by selecting a subset of candiates to ensure that a Condorcet winner exists. There are 12
+candidates in the Irish-Meath dataset, and 8 in the Irish-Dublin dataset.
+MSLR and Yahoo! data. We also run experiments on two web search ranking datasets: the Microsoft
+Learning to Rank (MSLR) dataset [40] and the Yahoo! Learning to Rank Challenge Set 1 [16]. These
+datasets have been used in prior work on online ranker evaluation [53, 37]. We use preference
+matrices generated using the “navigational” configuration (see [37] for details). The MSLR dataset
+has 136 rankers and the Yahoo! dataset has 700 rankers. We sample 30 rankers from each dataset
+while ensuring the existence of a Condorcet winner. In this way, we obtain two datasets, denoted
+MSLR30 and Yahoo30.
+9
+
+5
+U
+5
+
+(c) Irish-Meath
+
+50(
+6 203
+58
+0
+
+5
+
+U
+
+5
+
+50(
+6 203
+58
+0
+
+5
+
+5
+U
+
+(d) Irish-Dublin
+
+50(
+6 203
+58
+0
+
+U
+
+50(
+6 203
+58
+0
+
+(b) Sushi
+
+5
+
+U
+
+5
+
+(a) Six rankers
+
+5
+
+50(
+6 203
+58
+0
+
+5
+
+5
+
+U
+
+5
+
+50(
+6 203
+58
+0
+
+(e) MSLR30
+
+(f) Yahoo30
+
+Figure 2: Regret v/s t plots of algorithms when B = blog(T )c + 6
+Note that there exists a Condorcet winner in all datasets. We repeat each experiment 20 times and
+report the average regret. In our algorithm, we use the KL-divergence based confidence bound due
+to [35] for elimination as it performs much better empirically, and our theoretical bounds continue
+to hold (see §E). This KL-divergence based elimination
+P criterion eliminates an arm i in 1round
+r if Ii (r) I ⇤ (r) > log(T ) + f (K) where Ii (r) = j:bpi,j (r)< 1 Ni,j (r) · DKL (b
+pi,j (r), 2 ) and
+2
+⇤
+I (r) = minj2[K] Ii (r).
+
+Computational Results. As mentioned earlier, we compare our algorithms against a representative
+set of sequential dueling bandits algorithms (RUCB, RMED, and BTM). We set ↵ = 0.51 for RUCB,
+and f (K) = 0.3K 1.01 for RMED and C2B, and = 1.3 for BTM: these parameters are known to
+perform well both theoretically and empirically [35]. We set T = 106 for MSLR30 and Yahoo30
+datasets (as they have larger number of arms), and T = 105 for the remaining four. For the first set
+of experiments, we set B = blog(T )c. We observe that C2B always outperforms BTM and beats
+SCOMP2 on most of the datasets. We observe that even when SCOMP2 beats C2B it has a slightly
+linear curve (implying that its regret would keep increasing as T increases) while the regret curve of
+C2B is mostly flat. Furthermore, C2B performs comparably to RUCB in all datasets except Yahoo30.
+We plot the results in Figure 1. In the second set of experiments, we set B = blog(T )c + 6. We
+observe that C2B always outperforms RUCB and, in fact, performs comparably to RMED on all
+datasets except Yahoo30. We plot the results in Figure 2. Finally, we note that SCOMP2 exhibits
+varying performance across runs (even on the same dataset) and we think that this is due to the
+randomness involved in selecting the “seed set”.
+
+5
+
+Conclusion
+
+In this paper, we proposed a batched algorithm, named C2B, for the K-armed dueling bandit problem.
+Assuming the existence of a Condorcet winner, we show both high-probability and expected regret
+bounds for C2B that trade-off smoothly with the number of batches. Furthermore, we obtain asymptotic regret of O(K 2 log2 (K)) + O(K log(T )) in O(log(T )) batches, nearly matching the best regret
+bounds known in the fully sequential setting under the Condorcet condition. Our computational
+results show that C2B, using O(log(T )) batches, achieves almost the same performance as fully
+sequential algorithms over a variety of real-world datasets. A direction for future research is to design
+batched algorithms for the K-armed dueling bandit problem when a Condorcet winner does not exist;
+for example, designing an algorithm for a more general concept of winner, such as Copeland winner
+[48] or von Neumann winner [22].
+10
+
+References
+[1] A. Agarwal, S. Assadi, and S. Khanna. Stochastic submodular cover with limited adaptivity. In Proceedings
+of the 30th Annual ACM-SIAM Symposium on Discrete Algorithms, page 323–342, 2019.
+[2] A. Agarwal, R. Ghuge, and V. Nagarajan. Batched dueling bandits. In Proceedings of the 39th International
+Conference on Machine Learning, pages 89–110, 2022.
+[3] A. Agarwal, N. Johnson, and S. Agarwal. Choice bandits. In NeurIPS, 2020.
+[4] A. Agarwal, S. Khanna, and P. Patil. PAC top-k identification under SST in limited rounds. In G. CampsValls, F. J. R. Ruiz, and I. Valera, editors, International Conference on Artificial Intelligence and Statistics,
+AISTATS 2022, 28-30 March 2022, Virtual Event, volume 151 of Proceedings of Machine Learning
+Research, pages 6814–6839. PMLR, 2022.
+[5] N. Ailon, Z. Karnin, and T. Joachims. Reducing Dueling Bandits to Cardinal Bandits. In Proceedings of
+the 31st International Conference on Machine Learning, 2014.
+[6] E. Balkanski, A. Breuer, and Y. Singer. Non-monotone submodular maximization in exponentially fewer
+iterations. In Advances in Neural Information Processing Systems, pages 2359–2370, 2018.
+[7] E. Balkanski, A. Rubinstein, and Y. Singer. An exponential speedup in parallel running time for submodular
+maximization without loss in approximation. In Proceedings of the 30th Annual ACM-SIAM Symposium
+on Discrete Algorithms, pages 283–302, 2019.
+[8] E. Balkanski and Y. Singer. The adaptive complexity of maximizing a submodular function. In Proceedings
+of the 50th Annual ACM SIGACT Symposium on Theory of Computing, pages 1138–1151, 2018.
+[9] E. Balkanski and Y. Singer. Approximation guarantees for adaptive sampling. In Proceedings of the 35th
+International Conference on Machine Learning, pages 393–402, 2018.
+[10] N. Bansal, A. Gupta, J. Li, J. Mestre, V. Nagarajan, and A. Rudra. When LP is the cure for your matching
+woes: Improved bounds for stochastic matchings. Algorithmica, 63(4):733–762, 2012.
+[11] N. Bansal and V. Nagarajan. On the adaptivity gap of stochastic orienteering. Math. Program., 154(12):145–172, 2015.
+[12] S. Behnezhad, M. Derakhshan, and M. Hajiaghayi. Stochastic matching with few queries: (1-✏) approximation. In Proccedings of the 52nd Annual ACM SIGACT Symposium on Theory of Computing, pages
+1111–1124, 2020.
+[13] A. Bhalgat, A. Goel, and S. Khanna. Improved approximation results for stochastic knapsack problems. In
+Proceedings of the 22nd Annual ACM-SIAM Symposium on Discrete Algorithms, pages 1647–1665, 2011.
+[14] M. Braverman, J. Mao, and Y. Peres. Sorted top-k in rounds. In A. Beygelzimer and D. Hsu, editors, Conference on Learning Theory, COLT 2019, 25-28 June 2019, Phoenix, AZ, USA, volume 99 of Proceedings
+of Machine Learning Research, pages 342–382. PMLR, 2019.
+[15] M. Braverman, J. Mao, and S. M. Weinberg. Parallel Algorithms for Select and Partition with Noisy
+Comparisons. In Proceedings of the 48th Annual Symposium on the Theory of Computing, 2016.
+[16] O. Chapelle and Y. Chang. Yahoo! learning to rank challenge overview. In Proceedings of the 2010
+International Conference on Yahoo! Learning to Rank Challenge - Volume 14, page 1–24. JMLR.org,
+2010.
+[17] C. Chekuri and K. Quanrud. Parallelizing greedy for submodular set function maximization in matroids
+and beyond. In Proceedings of the 51st Annual ACM SIGACT Symposium on Theory of Computing, pages
+78–89, 2019.
+[18] B. Chen and P. I. Frazier. Dueling Bandits with Weak Regret. In Proceedings of the 34th International
+Conference on Machine Learning, 2017.
+[19] V. Cohen-Addad, F. Mallmann-Trenn, and C. Mathieu. Instance-optimality in the noisy value-and
+comparison-model. In S. Chawla, editor, Proceedings of the 2020 ACM-SIAM Symposium on Discrete
+Algorithms, SODA 2020, Salt Lake City, UT, USA, January 5-8, 2020, pages 2124–2143. SIAM, 2020.
+[20] B. C. Dean, M. X. Goemans, and J. Vondrák. Approximating the stochastic knapsack problem: The benefit
+of adaptivity. Math. Oper. Res., 33(4):945–964, 2008.
+
+11
+
+[21] M. Dudik, K. Hofmann, R. E. Schapire, A. Slivkins, and M. Zoghi. Contextual Dueling Bandits. In
+Proceedings of the 28th Conference on Learning Theory, 2015.
+[22] M. Dudík, K. Hofmann, R. E. Schapire, A. Slivkins, and M. Zoghi. Contextual dueling bandits. In
+P. Grünwald, E. Hazan, and S. Kale, editors, Proceedings of The 28th Conference on Learning Theory,
+COLT 2015, Paris, France, July 3-6, 2015, volume 40 of JMLR Workshop and Conference Proceedings,
+pages 563–587. JMLR.org, 2015.
+[23] H. Esfandiari, A. Karbasi, A. Mehrabian, and V. Mirrokni. Regret bounds for batched bandits. Proceedings
+of the AAAI Conference on Artificial Intelligence, 35(8):7340–7348, May 2021.
+[24] H. Esfandiari, A. Karbasi, and V. Mirrokni. Adaptivity in adaptive submodularity. In Proceedings of 34th
+Conference on Learning Theory, volume 134, pages 1823–1846. PMLR, 2021.
+[25] Z. Gao, Y. Han, Z. Ren, and Z. Zhou. Batched multi-armed bandits problem. In H. M. Wallach,
+H. Larochelle, A. Beygelzimer, F. d’Alché-Buc, E. B. Fox, and R. Garnett, editors, Advances in Neural
+Information Processing Systems 32: Annual Conference on Neural Information Processing Systems 2019,
+NeurIPS 2019, December 8-14, 2019, Vancouver, BC, Canada, pages 501–511, 2019.
+[26] R. Ghuge, A. Gupta, and V. Nagarajan. The power of adaptivity for stochastic submodular cover. In
+M. Meila and T. Zhang, editors, Proceedings of the 38th International Conference on Machine Learning,
+volume 139 of Proceedings of Machine Learning Research, pages 3702–3712. PMLR, 18–24 Jul 2021.
+[27] D. Golovin and A. Krause. Adaptive submodularity: A new approach to active learning and stochastic
+optimization. CoRR, abs/1003.3967, 2017.
+[28] S. Guha and K. Munagala. Multi-armed bandits with metric switching costs. In Automata, Languages and
+Programming, 36th Internatilonal Colloquium (ICALP), pages 496–507, 2009.
+[29] A. Gupta, R. Krishnaswamy, V. Nagarajan, and R. Ravi. Running errands in time: Approximation
+algorithms for stochastic orienteering. Math. Oper. Res., 40(1):56–79, 2015.
+[30] A. Gupta and V. Nagarajan. A stochastic probing problem with applications. In Integer Programming and
+Combinatorial Optimization - 16th International Conference, pages 205–216, 2013.
+[31] K. Hofmann, S. Whiteson, and M. Rijke. Balancing exploration and exploitation in listwise and pairwise
+online learning to rank for information retrieval. Inf. Retr., 16(1):63–90, feb 2013.
+[32] K. Jamieson, S. Katariya, A. Deshpande, and R. Nowak. Sparse Dueling Bandits. In Proceedings of the
+18th International Conference on Artificial Intelligence and Statistics, 2015.
+[33] T. Joachims. Optimizing search engines using clickthrough data. In Proceedings of the Eighth ACM
+SIGKDD International Conference on Knowledge Discovery and Data Mining, KDD ’02, page 133–142,
+New York, NY, USA, 2002. Association for Computing Machinery.
+[34] T. Kamishima. Nantonac collaborative filtering: recommendation based on order responses. In Proceedings of the Ninth ACM SIGKDD International Conference on Knowledge Discovery and Data Mining,
+Washington, DC, USA, August 24 - 27, 2003, pages 583–588, 2003.
+[35] J. Komiyama, J. Honda, H. Kashima, and H. Nakagawa. Regret Lower Bound and Optimal Algorithm in
+Dueling Bandit Problem. In Proceedings of the 28th Conference on Learning Theory, 2015.
+[36] J. Komiyama, J. Honda, and H. Nakagawa. Copeland Dueling Bandit Problem: Regret Lower Bound,
+Optimal Algorithm, and Computationally Efficient Algorithm. In Proceedings of the 33rd International
+Conference on Machine Learning, 2016.
+[37] C. Li, I. Markov, M. de Rijke, and M. Zoghi. Mergedts: A method for effective large-scale online ranker
+evaluation. ACM Trans. Inf. Syst., 38(4):40:1–40:28, 2020.
+[38] T.-Y. Liu. Learning to rank for information retrieval. Found. Trends Inf. Retr., 3(3):225–331, mar 2009.
+[39] V. Perchet, P. Rigollet, S. Chassang, and E. Snowberg. Batched bandit problems. The Annals of Statistics,
+44(2):660–681, 2016.
+[40] T. Qin and T.-Y. Liu. Introducing letor 4.0 datasets. ArXiv, abs/1306.2597, 2013.
+[41] F. Radlinski, M. Kurup, and T. Joachims. How does clickthrough data reflect retrieval quality? In
+Proceedings of the 17th ACM Conference on Information and Knowledge Management, CIKM ’08, page
+43–52, New York, NY, USA, 2008. Association for Computing Machinery.
+
+12
+
+[42] S. Ramamohan, A. Rajkumar, and S. Agarwal. Dueling Bandits : Beyond Condorcet Winners to General
+Tournament Solutions. In Advances in Neural Information Processing Systems 29, 2016.
+[43] A. Saha and P. Gaillard. Versatile dueling bandits: Best-of-both world analyses for learning from relative
+preferences. In International Conference on Machine Learning, pages 19011–19026. PMLR, 2022.
+[44] A. Saha and A. Gopalan. Combinatorial bandits with relative feedback. In H. M. Wallach, H. Larochelle,
+A. Beygelzimer, F. d’Alché-Buc, E. B. Fox, and R. Garnett, editors, Advances in Neural Information
+Processing Systems 32: Annual Conference on Neural Information Processing Systems 2019, NeurIPS
+2019, December 8-14, 2019, Vancouver, BC, Canada, pages 983–993, 2019.
+[45] Y. Sui, V. Zhuang, J. W. Burdick, and Y. Yue. Multi-dueling Bandits with Dependent Arms. In Proceedings
+of the 33rd Conference on Uncertainty in Artificial Intelligence, 2017.
+[46] Y. Sui, M. Zoghi, K. Hofmann, and Y. Yue. Advancements in dueling bandits. In J. Lang, editor,
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence, IJCAI 2018,
+July 13-19, 2018, Stockholm, Sweden, pages 5502–5510. ijcai.org, 2018.
+[47] T. Urvoy, F. Clerot, R. Feraud, and S. Naamane. Generic Exploration and K-armed Voting Bandits. In
+Proceedings of the 30th International Conference on Machine Learning, 2013.
+[48] H. Wu and X. Liu. Double thompson sampling for dueling bandits. In Advances in Neural Information
+Processing Systems 29: Annual Conference on Neural Information Processing Systems 2016, December
+5-10, 2016, Barcelona, Spain, pages 649–657, 2016.
+[49] Y. Yue, J. Broder, R. Kleinberg, and T. Joachims. The k-armed dueling bandits problem. Journal of
+Computer and System Sciences, 78(5):1538–1556, 2012. JCSS Special Issue: Cloud Computing 2011.
+[50] Y. Yue and T. Joachims. Interactively optimizing information retrieval systems as a dueling bandits
+problem. In Proceedings of the 26th Annual International Conference on Machine Learning, ICML ’09,
+page 1201–1208, New York, NY, USA, 2009. Association for Computing Machinery.
+[51] Y. Yue and T. Joachims. Beat the mean bandit. In Proceedings of the 28th International Conference on
+Machine Learning, 2011.
+[52] M. Zoghi, Z. Karnin, S. Whiteson, and M. de Rijke. Copeland Dueling Bandits. In Advances in Neural
+Information Processing Systems 28, 2015.
+[53] M. Zoghi, S. Whiteson, and M. de Rijke. MergeRUCB: A method for large-scale online ranker evaluation.
+In Proceedings of the 8th ACM International Conference on Web Search and Data Mining, 2015.
+[54] M. Zoghi, S. Whiteson, R. Munos, and M. de Rijke. Relative Upper Confidence Bound for the K-Armed
+Dueling Bandit Problem. In Proceedings of the 31st International Conference on Machine Learning, 2014.
+
+Checklist
+The checklist follows the references. Please read the checklist guidelines carefully for information on
+how to answer these questions. For each question, change the default [TODO] to [Yes] , [No] , or
+[N/A] . You are strongly encouraged to include a justification to your answer, either by referencing
+the appropriate section of your paper or providing a brief inline description. For example:
+• Did you include the license to the code and datasets? [Yes] See Section ??.
+• Did you include the license to the code and datasets? [No] The code and the data are
+proprietary.
+• Did you include the license to the code and datasets? [N/A]
+Please do not modify the questions and only use the provided macros for your answers. Note that the
+Checklist section does not count towards the page limit. In your paper, please delete this instructions
+block and only keep the Checklist section heading above along with the questions/answers below.
+1. For all authors...
+(a) Do the main claims made in the abstract and introduction accurately reflect the paper’s
+contributions and scope? [Yes]
+13
+
+(b) Did you describe the limitations of your work? [Yes] We design a batched algorithm
+for the K-armed dueling bandit when the SST+STI condition does not hold; we work
+under the Condorcet condition. In §5, we pose designing algorithms for even more
+general settings as an open problem.
+(c) Did you discuss any potential negative societal impacts of your work? [No] We don’t
+forsee any negative societal impacts of our work.
+(d) Have you read the ethics review guidelines and ensured that your paper conforms to
+them? [Yes]
+2. If you are including theoretical results...
+(a) Did you state the full set of assumptions of all theoretical results? [Yes]
+(b) Did you include complete proofs of all theoretical results? [Yes]
+3. If you ran experiments...
+(a) Did you include the code, data, and instructions needed to reproduce the main experimental results (either in the supplemental material or as a URL)? [Yes] We include the
+code in the supplemental material.
+(b) Did you specify all the training details (e.g., data splits, hyperparameters, how they
+were chosen)? [Yes] We include the details in §4.
+(c) Did you report error bars (e.g., with respect to the random seed after running experiments multiple times)? [Yes] We include the details in §4.
+(d) Did you include the total amount of compute and the type of resources used (e.g.,
+type of GPUs, internal cluster, or cloud provider)? [Yes] We include the details in the
+appendix.
+4. If you are using existing assets (e.g., code, data, models) or curating/releasing new assets...
+(a) If your work uses existing assets, did you cite the creators? [Yes]
+(b) Did you mention the license of the assets? [N/A]
+(c) Did you include any new assets either in the supplemental material or as a URL? [Yes]
+(d) Did you discuss whether and how consent was obtained from people whose data you’re
+using/curating? [N/A] The library we used is publicly available.
+(e) Did you discuss whether the data you are using/curating contains personally identifiable
+information or offensive content? [N/A]
+5. If you used crowdsourcing or conducted research with human subjects...
+(a) Did you include the full text of instructions given to participants and screenshots, if
+applicable? [N/A]
+(b) Did you describe any potential participant risks, with links to Institutional Review
+Board (IRB) approvals, if applicable? [N/A]
+(c) Did you include the estimated hourly wage paid to participants and the total amount
+spent on participant compensation? [N/A]
+
+14
+
+

@@ -1,0 +1,1576 @@
+Bayesian Learning via Q-Exponential Process
+
+Shuyi Li
+
+Michael O’Connor
+
+Shiwei Lan ∗
+
+School of Mathematical & Statistical Sciences
+Arizona State University, Tempe, AZ 85287
+
+Abstract
+Regularization is one of the most fundamental topics in optimization, statistics
+and machine learning. To get sparsity in estimating a parameter u ∈ Rd , an
+ℓq penalty term, ∥u∥q , is usually added to the objective function. What is the
+probabilistic distribution corresponding to such ℓq penalty? What is the correct
+stochastic process corresponding to ∥u∥q when we model functions u ∈ Lq ? This
+is important for statistically modeling high-dimensional objects such as images,
+with penalty to preserve certain properties, e.g. edges in the image. In this
+work, we generalize the q-exponential distribution (with density proportional to)
+exp (− 21 |u|q ) to a stochastic process named q-exponential (Q-EP) process that
+corresponds to the Lq regularization of functions. The key step is to specify
+consistent multivariate q-exponential distributions by choosing from a large family
+of elliptic contour distributions. The work is closely related to Besov process which
+is usually defined in terms of series. Q-EP can be regarded as a definition of Besov
+process with explicit probabilistic formulation, direct control on the correlation
+strength, and tractable prediction formula. From the Bayesian perspective, QEP provides a flexible prior on functions with sharper penalty (q < 2) than the
+commonly used Gaussian process (GP, q = 2). We compare GP, Besov and Q-EP
+in modeling functional data, reconstructing images and solving inverse problems
+and demonstrate the advantage of our proposed methodology.
+
+1
+
+INTRODUCTION
+
+Regularization on function spaces is one of the fundamental questions in statistics and machine
+learning. High-dimensional objects such as images can be viewed as discretized functions defined
+on 2d or 3d domains. Statistical models for these objects on function spaces demand regularization
+to induce sparsity, prevent over-fitting, produce meaningful reconstruction, etc. Gaussian process
+[GP 38, 24] has been widely used as an L2 penalty (negative log-density as a quadratic form) or a
+prior on the function space. Despite the flexibility, sometimes random candidate functions drawn
+from GP are over-smooth for modeling certain objects such as images with sharp edges. To address
+this issue, researchers have proposed a class of L1 penalty based priors including Laplace random
+field [37, 34, 28] and Besov process [31, 15, 25, 16]. They have been extensively applied in spatial
+modeling [37], signal processing [28], imaging analysis [44, 34] and inverse problems [31, 15].
+Figure 1 demonstrates an application of nonparametric regression models on functions endowed with
+GP, Besov and our proposed q-exponential process (Q-EP) priors respectively to reconstruct a blurry
+image of a satellite. Q-EP model generates the best reconstruction, indicating its advantage over GP
+in modeling objects with abrupt changes or sharp contrast such as “edges" in image.
+⋆
+
+For these high-dimensional (refer to its discretization) inhomogeneous objects on d ⋆ domains D ⊂ Rd ,
+particularly 2d images with sharp edges (d ⋆ = 2), one can model them as a random function u from a
+∗ slan@asu.edu
+
+37th Conference on Neural Information Processing Systems (NeurIPS 2023).
+
+Figure 1: Image of satellite: true image, blurred observation, and reconstructions by GP, Besov and
+Q-EP models with relative errors 75.19%, 21.94% and 20.35% respectively.
+2
+Besov process represented by the following series for a given orthonormal basis {φℓ }∞
+ℓ=1 in L (D)
+[31, 15]:
+∞
+1
+iid
+(1)
+u : D −→ R, u(x) = ∑ γℓ uℓ φℓ (x), uℓ ∼ πq (·) ∝ exp (− | · |q )
+2
+ℓ=1
+1
+
+s
+
+1
+
+1
+
+where q ≥ 1 and γℓ = κ − q ℓ−( d ⋆ + 2 − q ) with (inverse) variance κ > 0 and smoothness s > 0. When
+q = 2 and {φℓ } is chosen to be Fourier basis, this reduces to GP [16] but Besov is often used with q = 1
+and wavelet basis [31] to provide “edge-preserving" function candidates suitable for image analysis.
+Historically, [32] discovered that the total variation prior degenerates to GP prior as the discretization
+mesh becomes denser and thus loses the edge-preserving properties in high dimensional applications.
+Therefore, [31] proposed the Besov prior defined as in (1) and proved its discretization-invariant
+property. Though straightforward, such series definition lacks a direct way to specify the correlation
+structure as GP does through the covariance function. What is more, once the basis {φℓ } is chosen,
+there is no natural way to make prediction with Besov process.
+We propose a novel stochastic process named q-exponential process (Q-EP) to address these issues.
+We start with the q-exponential distribution πq (·) and generalize it to a multivariate distribution (from
+a family of elliptic contour distributions) that is consistent to marginalization. Such consistency
+requires the joint distribution and the marginalized one (by any subset of components) to have
+the same format of density (See Section 3). We then generalize such multivariate q-exponential
+distribution to the process Q-EP and establish its connection and contrast to the Besov process. Note,
+if we view the negative log-density of the proposed distribution and process, Q-EP would impose an
+Lq regularization on the function space, similarly as L2 regularization given by GP whose negative
+log-density is a quadratic form of the input variable x (See Remark 2).
+Connection to existing works The proposed Q-EP process is related to the student-t process (TP)
+[41] as alternatives to GP. TP generalizes multivariate t-distribution (MVT) and is derived as a scale
+mixture of GP. Both TP and Q-EP can be viewed as a special case of the elliptical process [5] which
+gives the condition on general elliptic distributions that can be generalized to a valid stochastic process.
+Both papers focus on extending GP to robust models for heavier tail data, while our proposed work
+innovates a new Bayesian learning method on function spaces through the regularization parameter q
+(See Figure 3 for its effect on regularization when it varies), as is usually done in the optimization.
+Both our proposed Q-EP and [5] are inspired by Kano’s consistency result [27], however the later
+focuses on a completely different process named squeezebox process. Our work on Q-EP makes
+multi-fold contributions to the learning of functional data in statistics and machine learning:
+1. We propose a novel stochastic process Q-EP corresponding to the Lq regularization on
+function spaces.
+2. For the first time we define/derive Besov process probabilistically as Q-EP with direct ways
+to configure correlation and to make prediction.
+3. We provide flexible Bayesian inference methods based on the Markov Chain Monte Carlo
+(MCMC) algorithms using a white-noise representation for Q-EP prior models.
+The rest of the paper is organized as follows. Section 2 introduces the q-exponential distribution
+and its multivariate generalizations. We propose the Q-EP with details in Section 3 and introduce it
+as a nonparametric prior for modeling functional data. In Section 4 we demonstrate the advantage
+of Q-EP over GP and Besov in time series modeling, image reconstruction, and Bayesian inverse
+problems (Appendix C.4). Finally we discuss some future directions in Section 5.
+2
+
+2
+
+THE Q-EXPONENTIAL DISTRIBUTION AND ITS MULTIVARIATE
+GENERALIZATIONS
+
+Let us start with the q-exponential distribution for a scalar random variable u ∈ R. It is named in [15]
+and defined with the following density not in an exact form (as a probability density normalized to 1):
+1
+πq (u) ∝ exp (− |u|q ).
+2
+
+(2)
+
+This q-exponential distribution (2) is actually a special case of the following exponential power (EP)
+distribution EP(µ, σ , q) with µ = 0, σ = 1:
+
+
+1 u−µ q
+q
+exp −
+(3)
+p(u|µ, σ , q) = 1+1/q
+2 σ
+2
+σ Γ(1/q)
+where Γ denotes the gamma function. Note the parameter q > 0 in (3) controls the tail behavior of
+the distribution: the smaller q the heavier tail and vice versa. This distribution also includes many
+commonly used ones such as the normal distribution N (µ, σ 2 ) for q = 2 and the Laplace distribution
+L(µ, b) with σ = 2−1/q b when q = 1.
+How can we generalize it to a multivariate distribution and further to a stochastic process? Gomez
+µ , C, q), with the
+[23] provided one possibility of a multivariate EP distribution, denoted as EPd (µ
+following density:
+
+iq 
+qΓ( d2 ) − d − d − 1
+1h
+2
+T −1
+q π 2 |C| 2 exp −
+µ , C, q) =
+p(u|µ
+2
+(u
+−
+µ
+)
+C
+(u
+−
+µ
+)
+(4)
+2
+2Γ( dq )
+µ , C).
+When q = 2, it reduces to the familiar multivariate normal (MVN) distribution Nd (µ
+µ , C, q)
+Unfortunately, unlike MVN being the foundation of GP, the Gomez’s EP distribution EPd (µ
+fails to generalize to a valid stochastic process because it does not satisfy the marginalization
+consistency as MVN does (See Section 3 for more details). It turns out we need to seek candidates in
+µ , C, g):
+an even larger family of elliptic (contour) distributions ECd (µ
+µ , C, g) has the followDefinition 2.1 (Elliptic distribution). A multivariate elliptic distribution ECd (µ
+ing density [26]
+1
+p(u) = kd |C|− 2 g(r), r(u) = (u − µ )T C−1 (u − µ )
+(5)
+where kd > 0 is the normalizing constant and g(·), a one-dimensional real-valued function independent of d and kd , is named density generating function [19].
+µ , C, g) has a stochastic representation
+Every elliptic (contour) distributed random vector u ∼ ECd (µ
+mainly due to Schoenberg [40, 12, 26], as stated in the following theorem.
+µ , C, g) if and only if
+Theorem 2.1. u ∼ ECd (µ
+d
+
+u = µ + RLS
+
+(6)
+
+where S ∼ Unif(S d+1 ) uniformly distributed on the unit-sphere S d+1 , L is the Cholesky factor of C
+d
+
+d
+
+d
+
+such that C = LLT , R ⊥ S and R2 = r(u) ∼ f (r) = π d2 kd r 2 −1 g(r).
+Γ( 2 )
+
+µ , C, q) is a special elliptic distribution ECd (µ
+µ , C, g) with g(r) =
+The Gomez’s EP distribution EPd (µ
+q
+exp{− 12 r 2 } and Rq ∼ Γ(α = dq , β = 12 ) [23]. Not all elliptical distributions can be used to create a
+µ , C, g)
+valid process [5]. In the following, we will carefully choose the density generator g in ECd (µ
+to define a consistent multivariate q-exponential distribution generalizable to a process appropriately.
+
+3
+
+THE Q-EXPONENTIAL PROCESS
+
+µ , C, g) to a valid stochastic process, we need to choose proper g such that the
+To generalize ECd (µ
+resulting distribution satisfies two conditions of Kolmogorov extension theorem [35]:
+3
+
+µ , C, q) (left) vs. consistent Q-exponential
+Figure 2: Inconsistent (Gomez’s) EP distribution EPd (µ
+µ , C) (right). Both can be sampled using (6) with Rq ∼ Γ(α = dq , β = 12 ) and
+distribution q−EDd (µ
+
+Rq ∼ Γ α = d2 , β = 12 respectively. Note there is significant discrepancy between the marginalizaµ , C, q) and EP2 (µ
+µ , C, q). However, the marginalization of q−ED3 (µ
+µ , C) coincides with
+tion of EP3 (µ
+µ , C). Empirical densities are estimated based on 10000 samples (shown as dots) for q = 1.
+q−ED2 (µ
+Theorem 3.1 (Kolmogorov’s Extension). For all t1 , · · · ,tk ∈ T , k ∈ N let νt1 ,··· ,tk be probability
+measures on Rdk satisfying
+(K1) :νtσ (1) ,··· ,tσ (k) (F1 × · · · × Fk ) = νt1 ,··· ,tk (Fσ −1 (1) × · · · × Fσ −1 (k) ) f or all permutations σ ∈ S(k)
+(K2) :νt1 ,··· ,tk (F1 × · · · × Fk ) = νt1 ,··· ,tk ,tk+1 ,··· ,tk+m (F1 × · · · × Fk × Rd × · · · × Rd ) f or all m ∈ N
+(7)
+Then there exists a probability space (Ω, F , P) and a stochastic process {Xt } on Ω, Xt : Ω → Rn
+such that
+νt1 ,··· ,tk (F1 × · · · × Fk ) = P[Xt1 ∈ F1 , · · · , Xtk ∈ Fk ]
+(8)
+for all ti ∈ T , k ∈ N and all Borel sets Fi ∈ F . (K1) and (K2) are referred to as exchangeability and
+consistency conditions respectively.
+µ , C, g) in the format of Gomez’s EP disAs pointed out by Kano [27], the elliptic distribution ECd (µ
+1 2q
+tribution (4) with g(r) = exp{− 2 r } does not satisfy the consistency condition [also c.f. Proposition
+5.1 of 23]. Figure 2 (left panel) also illustrates such inconsistency numerically. However, Kano’s
+consistency theorem [27] suggests a different viable choice of g to make a valid generalization of
+µ , C, g) to a stochastic process [5]:
+ECd (µ
+Theorem 3.2 (Kano’s Consistency). An elliptic distribution is consistent if and only if its density
+generator function, g(·), has the following form
+g(r) =
+
+Z ∞
+0
+
+n rs o
+s  d2
+exp −
+p(s)ds
+2π
+2
+
+(9)
+
+where p(s) is a strictly positive mixing distribution independent of d and p(s = 0) = 0.
+3.1
+
+Consistent Multivariate Q-exponential Distribution
+
+ q
+q
+d
+−1
+(
+)
+2
+2
+In the above theorem 3.2, if we choose p(s) = δ q −1 (s), then we have g(r) = r
+exp − r22 ,
+r2
+
+µ , C).
+which leads to the following consistent multivariate q-exponential distribution q−EDd (µ
+µ , C), has the following
+Definition 3.1. A multivariate q-exponential distribution, denoted as q−EDd (µ
+density
+( q)
+q
+d
+1
+d
+q
+r2
+µ , C, q) = (2π)− 2 |C|− 2 r( 2 −1) 2 exp −
+p(u|µ
+, r(u) = (u − µ )T C−1 (u − µ )
+(10)
+2
+2
+4
+
+µ , C) reduces to MVN Nd (µ
+µ , C). When d = 1, if we let C = 1, then
+Remark 1. When q = 2, q−EDd (µ
+
+q
+we have the density for u as p(u) ∝ |u| 2 −1 exp − 21 |u|q , differing from the original un-normalized
+q
+density πq in (2) by a term |u| 2 −1 . This is needed for the consistency of process generalization.
+Numerically, it has the similar “edge-preserving" property as the Besov prior.
+Remark 2. If taken negative logarithm, the density of q−EDd in (10) yields a quantity dominated by
+q
+some weighted Lq norm of u − µ , i.e. 12 r 2 = 12 ∥u − µ ∥qC . From the optimization perspective, q−EDd ,
+when used as a prior, imposes Lq regularization in obtaining the maximum a posterior (MAP).
+Regardless of the normalizing constant, our proposed multivariate q-exponential distribution q−
+q
+d
+µ , C) differs from the Gomez’s EP distribution EPd (µ
+µ , C, q) by a boxed term r( 2 −1) 2 . As stated
+EDd (µ
+in the following theorem, q−EDd satisfies the two conditions of Kolmogorov extension theorem thus
+is ready to generalize to a stochastic process (See the right panel of Figure 2 for the consistency).
+Theorem 3.3. The multivariate q-exponential distribution is both exchangeable and consistent.
+Proof. See Appendix A.1.
+Like student-t distribution [41] and other elliptic distributions [5], we can show (See Appendix A.5)
+that q−EDd is represented as a scale mixture of Gaussian distributions for 0 < q < 2 [27, 3, 47].
+ q
+q
+−1) d2
+(
+2
+Numerically, thanks to our choice of density generator g(r) = r
+exp − r22 , one can show
+that Rq ∼ χd2 (as in Appendix A.4) thus R in Theorem 2.1 can be sampled as q-root of a χd2 random
+variable, which completes the recipe for generating random vector u ∼ q−EDd (0, C) based on the
+stochastic representation (6). This is important for the Bayesian inference as detailed in Section 3.3.1.
+Note the matrix C in the definition (10) characterizes the covariance between the components, as
+shown in the following proposition.
+µ , C), then we have
+Proposition 3.1. If u ∼ q−EDd (µ
+2
+
+E[u] = µ , Cov(u) =
+
+2 q Γ( d2 + 2q )
+dΓ( d2 )
+
+·
+
+2
+
+C ∼ d q −1 C, as d → ∞
+
+(11)
+
+Proof. See Appendix A.4.
+3.2
+
+Q-exponential Process as Probabilistic Definition of Besov Process
+1
+
+1
+
+To generalize u ∼ q−EDd (0, C) to a stochastic process, we need to scale it to u∗ = d 2 − q u so that
+its covariance is asymptotically finite. If u ∼ q−EDd (0, C), then we denote u∗ ∼ q−ED∗d (0, C)
+following a scaled q-exponential distribution. Let C : Lq → Lq be a kernel operator in the trace
+class, i.e. having eigen-pairs {λℓ , φℓ (x)}∞
+ℓ=1 such that C φℓ (x) = φℓ (x)λℓ , ∥φℓ ∥2 = 1 for all ℓ ∈ N and
+tr(C ) = ∑∞
+ℓ=1 λℓ < ∞. Now we are ready to define the q-exponential process (Q-EP) with the scaled
+q-exponential distribution.
+Definition 3.2 (Q-EP). A (centered) q-exponential process u(x) with kernel C in the trace class,
+q−E P(0, C ), is a collection of random variables such that any finite set, u = (u(x1 ), · · · u(xd )),
+follows a scaled multivariate q-exponential distribution, i.e. u ∼ q−ED∗d (0, C).
+⋆
+
+Note, the process is defined on the d ⋆ -dimensional space depending on the applications (x ∈ Rd );
+while d refers to the dimension of discretized process (u ∈ Rd ). While Q-EP reduces to GP when
+q = 2, q = 1 is often adopted for imaging analysis as an “edge-preserving" prior. Illustrated in
+Figure 3 for selected q ∈ (0, 2], smaller q leads to sharper image reconstruction with varying q
+interpolating between different regularization effects. Both Besov and Q-EP are valid stochastic
+processes stemming from the q-exponential distribution πq . They are both designed to generalize GP
+to have sharper regularization (through q) but Q-EP has advantages in 1) the capability of specifying
+correlation structure directly and 2) the tractable prediction formula.
+⋆
+
+It follows from (1) immediately that the covariance of the Besov process u(·) at two points x, x′ ∈ Rd :
+∞
+
+Cov(u(x), u(x′ )) = ∑ γℓ2 φℓ (x) ⊗ φℓ (x′ )
+ℓ=1
+
+5
+
+(12)
+
+Figure 3: Image of satellite: MAP estimates by Q-EP with varying q parameters.
+Although the smoothness and correlation strength of Besov process can be configured by proper
+orthonormal basis {φℓ } as in (12), it is less straightforward than the kernel function working for GP.
+On the other hand, Q-EP has more freedom on the correlation structure through (11) with flexible
+choices from a large class of kernels including powered exponential, Matérn and periodic where we
+can directly specify the correlation length.
+While Q-EP can be viewed as a probabilistic definition of Besov, the following theorem further
+establishes their connection in sharing equivalent series representations.
+Theorem 3.4 (Karhunen-Loéve). If u(x) ∼ q−E P(0, C ) with a trace class operator C having
+∞
+eigen-pairs {λℓ , φℓ (x)}∞
+ℓ=1 such that C φℓ (x) = φℓ (x)λℓ , ∥φℓ ∥2 = 1 for all ℓ ∈ N and ∑ℓ=1 λℓ < ∞,
+then we have the following series representation for u(x):
+∞
+
+Z
+
+u(x) = ∑ uℓ φℓ (x),
+ℓ=1
+
+uℓ :=
+
+ind
+
+D
+
+u(x)φℓ (x) ∼ q−ED∗ (0, λℓ )
+
+(13)
+
+where E[uℓ ] = 0 and Cov(uℓ , uℓ′ ) = λℓ δℓℓ′ with Dirac function δℓℓ′ = 1 if ℓ = ℓ′ and 0 otherwise.
+Proof. See Appendix A.5.
+p
+Remark 3. If we factor λℓ out of uℓ , we have the following expansion for Q-EP more comparable
+to (1) for Besov:
+∞ p
+iid
+(14)
+u(x) = ∑ λℓ uℓ φℓ (x), uℓ ∼ q−ED(0, 1) ∝ πq (·)
+ℓ=1
+
+3.3
+
+Bayesian Modeling with Q-exponential Process
+
+Now let us consider the generic Bayesian regression model:
+y = u(x) + ε, ε ∼ L(·; 0, Σ )
+(15)
+u ∼ µ0 (du)
+where L(·; 0, Σ ) denotes some likelihood model with zero mean and covariance Σ , and the mean
+function u can be given a prior either Besov or Q-EP. Because of the definition (1) in terms of
+expanded series, there is no explicit formula for the posterior prediction using Besov prior. By
+contrast, a tractable formula exists for the posterior predictive distribution for (15) with Q-EP prior
+µ0 = q−E P(0, C ) when the likelihood happens to be L(·; 0,C) = q−ED(0, C), as stated in the
+following theorem.
+Theorem 3.5 (Posterior Prediction). Given covariates x = {xi }Ni=1 and observations y = {yi }Ni=1
+following q−ED in the model (15) with q−E P prior for the same q > 0, we have the following
+posterior predictive distribution for u(x∗ ) at (a) new point(s) x∗ :
+−1
+−1
+(16)
+µ ∗ , C∗ ), µ ∗ = CT
+u(x∗ )|y, x, x∗ ∼ q−ED(µ
+C∗ = C∗∗ − CT
+∗ (C + Σ ) y,
+∗ (C + Σ ) C∗
+where C = C (x, x), C∗ = C (x, x∗ ), and C∗∗ = C (x∗ , x∗ ).
+Proof. See Appendix A.6.
+Remark 4. From Theorem 3.5, we know that Q-EP has same predictive mean as GP. But their
+ 2 Γ( d + 2 )
+predictive covariances differ by a constant d2 q 2 d q (asymptotically 1) based on Proposition 3.1.
+Γ( 2 )
+
+When the likelihood L is not Q-EP, e.g. multinomial, such conjugacy is absent. Then we refer to the
+following sampling method for the posterior inference.
+6
+
+3.3.1
+
+Inference by White-Noise MCMC
+
+We follow [13] to consider the pushforward (T ) of Gaussian white noise ν0 for non-Gaussian measures
+µ0 = T # ν0 . More specifically, we construct a measurable transformation T : z → u that maps standard
+Gaussian random variables to q-exponential random variables. The transformation based on the
+stochastic representation (6) is more straightforward than that for Besov based on series expansions
+proposed by [13].
+Recall the stochastic representation (6) of u ∼ q−EDd (0, C): u = RLS with Rq ∼ χd2 and S ∼
+d
+
+z
+Unif(S d+1 ). We can rewrite S = ∥z∥
+,
+2
+
+d
+
+Rq = ∥z∥22 ,
+
+for z ∼ Nd (0, Id ). Therefore, we have the
+
+pushforward mapping (T ) and its inverse (T −1 ) as
+2
+
+u = T (z) = Lz∥z∥ q −1 ,
+
+q
+
+z = T −1 (u) = L−1 u∥L−1 u∥ 2 −1
+
+(17)
+
+Figure B.1 illustrates that sampling with the white-noise representation (17) is indistinguishable from
+sampling by the stochastic representation (6). Then we can apply such white-noise representation to
+dimension-independent MCMC algorithms including preconditioned Crank-Nicolson (pCN) [14],
+infinite-dimensional Metropolis adjusted Langevin algorithm (∞-MALA) [10], infinite-dimensional
+Hamiltonian Monte Carlo (∞-HMC) [7], and infinite-dimensional manifold MALA (∞-mMALA) [8]
+and HMC (∞-mHMC) [9]. See Algorithm 1 for an implementation on pCN, hence named white-noise
+pCN (wn-pCN).
+3.3.2
+
+Hyper-parameter Tuning
+
+As in GP, there are hyper-parameters in the covariance function of Q-EP, e.g. variance magnitude
+(σ 2 ) and correlation length (ρ), that require careful adjustment and fine tuning. If the data process
+y(x) and its mean u(x) are both Q-EP with the same q, then we can have the marginal likelihood [38]
+as another Q-EP (c.f. Theorem 3.5). In general, when there is no such tractability, hyper-parameter
+tuning by optimizing the marginal likelihood is unavailable. However, we could impose conjugate
+hyper-priors on some parameters or even marginalize them to facilitate the inference of them (See
+Appendix A.7 for a proposition on such conditional conjugacy for the variance magnitude σ 2 ).
+To tune the correlation length (ρ), we could impose a hyper-prior for ρ and sample from p(ρ|u). We
+then alternate updating u and hyper-parameters in a Gibbs scheme. In general, one could also use
+Bayesian optimization methods [33, 18, 4] for the hyper-parameter tuning.
+
+4
+
+NUMERICAL EXPERIMENTS
+
+In this section, we compare GP, Besov and Q-EP by modeling time series (temporal), reconstructing images (spatial) from computed tomography and solving a (spatiotemporal) inverse problem
+(Appendix C.4). These numerical experiments demonstrate that our proposed Q-EP enables faster
+convergence in obtaining a better maximum a posterior (MAP) estimate. What is more, whitenoise MCMC based inference provides appropriate uncertainty quantification (UQ) (by the posterior standard deviation). More numerical results can be found in the supplementary materials
+which also contain some demonstration codes. All the computer codes are publicly available at
+https://github.com/lanzithinking/Q-EXP.
+4.1
+
+Time Series Modeling
+
+We first consider two simulated time series, one with step jumps and the other with sharp turnings,
+whose true trajectories are as follows:
+uJ (t) = 1,
+t ∈ [0, 1];
+uT (t) = 1.5t, t ∈ [0, 1];
+
+0.5,
+t ∈ (1, 1.5];
+3.5 − 2t, t ∈ (1, 1.5];
+
+2,
+t ∈ (1.5, 2];
+3t − 4, t ∈ (1.5, 2];
+
+0, otherwise
+0, otherwise
+
+We generate the time series {yi } by adding Gaussian noises to the true trajectories evaluated at N = 200
+ind
+
+evenly spaced points {ti } in [0, 2], that is, y∗i = u∗ (ti ) + εi , εi ∼ N(0, σ∗2 (ti )), i = 1, · · · , N, ∗ = J, T.
+Let σJ /∥uJ ∥ = 0.015 f or ti ∈ [0, 2] and σT /∥uT ∥ = 0.01 i f ti ∈ [0, 1]; 0.07 i f ti ∈ (1, 2]. In addition,
+we also consider two real data sets of Tesla and Google stock prices in 2022. See Figures 4 (and
+Figures C.2) for the true trajectories (blue lines) and realizations (orange dots) respectively.
+7
+
+(a) Time series with sharp turnings (model fitting).
+
+(b) Time series with turnings (prediction).
+
+(c) Tesla stock prices in 2022 (model fitting).
+
+(d) Tesla stock prices in 2022 (prediction).
+
+Figure 4: (a)(c) MAP estimates by GP (left), Besov (middle) and Q-EP (right) models. (b)(d)
+Predictions by GP (left) and Q-EP (right) models. Orange dots are actual realizations (data points).
+Blue solid lines are true trajectories. Black ticks indicate the training data points. Red dashed lines
+are MAP estimates. Red dot-dashed lines are predictions with shaded region being credible bands.
+
+We use the above likelihood
+√ and test three priors: GP, Besov and Q-EP. For Besov, we choose
+the Fourier basis φ0 (t) = 2, φℓ (t) = cos(πℓt), ℓ ∈ N (results with other wavelet bases including
+Haar, Shannon, Meyer and Mexican Hat are worse hence omitted). For both GP and Q-EP, we
+1−ν
+adopt the Matérn kernel with ν = 12 , σ 2 = 1, ρ = 0.5 and s = 1: C(t,t ′ ) = σ 2 2Γ(ν) wν Kν (w), w =
+√
+2ν(∥t − t ′ ∥/ρ)s . In both Besov and Q-EP, we set q = 1. Figures 4a and 4c (and Figures C.2a
+and C.2c) compare the MAP estimates (red dashed lines). We can see that Q-EP yields the best
+estimates closest to the true trajectories in the simulation and the best fit to the Tesla/Google stock
+prices. We also investigate the negative posterior densities and relative errors, ∥û∗ − u∗ ∥/∥u∗ ∥, as
+functions of iterations in Figure C.1. Though incomparable in the absolute values, the negative
+posterior densities indicate faster convergence in both GP and Q-EP models than in Besov model. The
+error reducing plots on the right panels of subplots in Figure C.1 indicate that Q-EP prior model can
+achieve the smallest errors. Table 1 compares them in terms of root mean of squared error (RMSE)
+and log-likelihood (LL).
+
+Table 1: Time series modeling: root mean of squared errors (RMSE) and log-likelihood (LL) values
+at MAP estimates by GP, Besov and Q-EP prior models.
+root mean squared errors (RMSE)
+log-likelihood (LL)
+Data Sets
+
+GP
+
+Besov
+
+Q-EP
+
+GP
+
+Besov
+
+Q-EP
+
+simulation (jumps)
+simulation (turnings)
+
+1.2702
+1.4270
+
+2.1603
+2.4556
+
+1.1083
+0.9987
+
+-31.4582
+-39.8234
+
+-89.8549
+-56.7874
+
+-74.0590
+-87.3124
+
+Tesla stocks
+Google stocks
+
+180.3769
+44.4236
+
+136.8769
+39.4809
+
+51.2236
+36.8686
+
+-488.6458
+-386.1546
+
+-281.3796
+-305.0058
+
+-39.4070
+-265.9790
+
+Then we consider the prediction problem. In the simulations, the last 1/8 portion and every other of
+the last but 3/8 part of the data points are selected for testing. The models with GP and Q-EP priors
+are trained on the rest of the data, as indicated by short “ticks" in Figures 4b and 4d (and Figures
+C.2b and C.2d). For the Tesla/google stocks, we select every other day in the first half year, every 4
+days in the 3rd quarter and every 8 days in the last quarter for training and test on the rest. They pose
+challenges on both interpolation (among observations) and extrapolation (at no-observation region)
+tasks. As we can see in those figures, uncertainty grows as the data become scarce. Nevertheless, the
+Q-EP yields smaller errors than GP. Note, such prediction is not immediately available for models
+with Besov prior.
+8
+
+Figure 5: Shepp-Logan phantom: true image, observation (sinogram), and MAP estimates by GP,
+Besov and Q-EP models with relative errors 68.10%, 70.27% and 40.87% respectively.
+4.2
+
+Computed Tomography Imaging
+
+Computed tomography (CT) is a medical imaging technique used to obtain detailed internal images
+of human body. CT scanners use a rotating X-ray tube and a row of detectors to measure X-ray
+attenuations by different tissues inside the body from different angles. Denote the true imaging as a
+function u(x) on the square unit D = [0, 1]2 taking values as the pixels. The observed data, y, (a.k.a.
+sinogram) are results of Radon transformation (A) of the discretized n × n field u with nθ angles and
+ns sensors, contaminated by noise ε [6]:
+y = Au + ε ,
+
+ε ∼ N (0, σε2 I),
+
+y ∈ Rn θ n s ,
+
+2
+
+A ∈ Rnθ ns ×n ,
+
+u ∈ Rn
+
+2
+
+In general nθ ns ≪ d = n2 so the linear inverse problem is under-determined. Baysian approach could
+fill useful prior information (e.g. edges) in the sparse data.
+We first consider the Shepp–Logan phantom, a standard test image created by Shepp and Logan
+in [42] to model a human head and to test image reconstruction algorithms. In this simulation, we
+create the true image u† for a resolution of n2 = 128 × 128 and project it at nθ = 90 angles with
+ns = 100 equally spaced sensors. The generated sinogram is then added by noise with signal noise
+ratio SNR = ∥Au† ∥/∥εε ∥ = 100. The first two panels of Figure 5 show the truth and the observation.
+Table 2: Posterior estimates of Shepp–Logan phantom by GP, Besov and Q-EP prior models: relative
+error, RLE := ∥û−u† ∥/∥u† ∥, of MAP (û = u∗ ) and posterior mean (û = u) respectively, log-likelihood
+(LL), PSNR, SSIM and HarrPSI. Numbers in the bracket are standard deviations obtained repeating
+the experiments for 10 times with different random seeds.
+MAP
+RLE
+LL
+PSNR
+SSIM
+HaarPSI
+
+Posterior Mean
+
+GP
+
+Besov
+
+Q-EP
+
+GP
+
+Besov
+
+Q-EP
+
+0.6810
+-1.55e+6
+15.5531
+0.4028
+0.0961
+
+0.7027
+-1.54e+6
+15.2806
+0.3703
+0.0870
+
+0.4087
+-1.57e+5
+19.9887
+0.5967
+0.3105
+
+0.4917(6.16e-7)
+-5.21e+5(8.47)
+18.3826(1.09e-5)
+0.5561(3.92e-7)
+0.3126(1.52e-8)
+
+0.4894(3.53e-5)
+-4.80e+5(196.34)
+18.4226(6.27e-4)
+0.5535(2.38e-4)
+0.3126(3.36e-4)
+
+0.4890(4.79e-5)
+-4.56e+5(307.97)
+18.4303(8.51e-4)
+0.5403(5.26e-4)
+0.3122(3.06e-4)
+
+Note, the computation involving a full sized (d × d) kernel matrix C for GP and Q-EP is prohibitive.
+Therefore, we consider its Mercer’s expansion (12) with Fourier basis for a truncation at the first
+L = 2000 items. Figure 5 shows that while GP and Besov models reconstruct very blurry phantom
+images, the Q-EP prior model produces MAP estimate of the highest quality. For each of the three
+models, we also apply wn-pCN to generate 10000 posterior samples (after discarding 5000) and
+use them to reconstruct u (posterior mean or median) and quantify uncertainty (posterior standard
+deviation).
+Table 2 summarizes the errors relative to MAP (u∗ ) and posterior mean (u) respectively, ∥û−u† ∥/∥u† ∥
+(with û being u∗ or u), log-likelihood (LL), and several quality metrics in imaging analysis including
+the peak signal-to-noise ratio (PSNR) [20], the structured similarity index (SSIM) [46], and the Haar
+wavelet-based perceptual similarity index (HaarPSI) [39]. Q-EP attains the lowest error and highest
+quality scores in most cases. In Figure C.3, we compare the uncertainty by these models. It seems
+that GP has uncertainty filed with more recognizable shape than the other two. However, the posterior
+standard deviation by GP is much smaller (about 1% of that with Q-EP) compared with the other two.
+Therefore, this raises a red flag that GP could be over-confident about a less accurate estimate.
+9
+
+Figure 6: CT of human head (upper) and torso (lower): true image, observation (sinogram), and
+MAP estimates by GP, Besov and Q-EP models with relative errors 29.99%, 22.41% and 22.24%
+(for head) and 26.11%, 21.77% and 21.53% (for torso) respectively.
+Finally, we apply these methods to CT scans of a human cadaver and torso from the Visible Human
+Project [1]. These images contain n2 = 512×512 pixels and the sinograms are obtained with nθ = 200
+angles and ns = 512 sensors. The first two panels of each row in Figure 6 show a highly calibrated
+CT reconstruction (treated as “truth") and the observed sinogram. The rest three panels illustrate
+that both Besov and Q-EP models outperform GP in reconstructions, as verified in the quantitative
+summaries in Table C.2. Figure C.4 indicates that GP tends to underestimate the uncertainty.
+In these CT reconstruction examples, we observe larger discrepancy of performance between Besov
+and Q-EP in the low-dimensional data-sparse application (Shepp–Logan phantom at resolution
+n2 = 128 × 128 with nθ = 90 angles and ns = 100 sensors) compared with the high-dimensional
+data-intensive applications (two human body CTs at resolution n2 = 512 × 512 with nθ = 200 angles
+and ns = 512 sensors). This may be due to the truncation in Mercer’s kernel representation (12) and
+different rates of posterior contraction [21, 22, 2]. We will explore them in another journal paper.
+
+5
+
+CONCLUSION
+
+In this paper, we propose the q-exponential process (Q-EP) as a prior on Lq functions with a flexible
+parameter q > 0 to control the degree of regularization. Usually, q = 1 is adopted to capture abrupt
+changes or sharp contrast in data such as edges in the image as the Besov prior has recently gained
+popularity for. Compared with GP, Q-EP can impose sharper regularization through q. Compared
+with Besov, Q-EP enjoys the explicit formula with more control on the correlation structure as GP.
+The numerical experiments in time series modeling, image reconstruction and Bayesian inverse
+problems demonstrate our proposed Q-EP is superior in Bayesian functional data modeling.
+In the numerical experiments of current work, we manually grid-search for the optimal hyperparameters. The reported results are not sensitive to some of these hyper-parameters such as the
+variance magnitude (σ 2 ) and the correlation length (ρ) but may change drastically to others like the
+regularity parameter (ν) and the smoothness parameter (s). In future, we will incorporate hyper-priors
+for some of those parameters and adopt a hierarchical scheme to overcome such shortcoming. We
+plan to study the properties such as regularity of function draws of Q-EP and the posterior contraction,
+and compare the contraction rates among GP, Besov and Q-EP priors [21, 22, 2]. Future work will
+also consider operator based kernels such as graph Laplacian [16, 17, 29].
+
+Acknowledgments and Disclosure of Funding
+SL is supported by NSF grant DMS-2134256.
+
+10
+
+References
+[1] The visible human project.
+[2] Sergios Agapiou, Masoumeh Dashti, and Tapio Helin. Rates of contraction of posterior distributions based
+on p-exponential priors. Bernoulli, 27(3):1616 – 1642, 2021.
+[3] D. F. Andrews and C. L. Mallows. Scale mixtures of normal distributions. Journal of the Royal Statistical
+Society. Series B (Methodological), 36(1):99–102, 1974.
+[4] Noor Awad, Neeratyoy Mallik, and Frank Hutter. DEHB: Evolutionary hyberband for scalable, robust and
+efficient hyperparameter optimization. In Proceedings of the Thirtieth International Joint Conference on
+Artificial Intelligence. International Joint Conferences on Artificial Intelligence Organization, aug 2021.
+[5] Maria Bånkestad, Jens Sjölund, Jalil Taghia, and Thomas Schön. The elliptical processes: a family of
+fat-tailed stochastic processes. 03 2020.
+[6] Johnathan M. Bardsley. Applications of a nonnegatively constrained iterative method with statistically
+based stopping rules to ct, pet, and spect imaging. Electron. Trans. Numer. Anal., 38:34–43, 2011.
+[7] A. Beskos, F. J. Pinski, J. M. Sanz-Serna, and A. M. Stuart. Hybrid Monte-Carlo on Hilbert spaces.
+Stochastic Processes and their Applications, 121:2201–2230, 2011.
+[8] Alexandros Beskos. A stable manifold MCMC method for high dimensions. Statistics & Probability
+Letters, 90:46–52, 2014.
+[9] Alexandros Beskos, Mark Girolami, Shiwei Lan, Patrick E. Farrell, and Andrew M. Stuart. Geometric
+MCMC for infinite-dimensional inverse problems. Journal of Computational Physics, 335, 2017.
+[10] Alexandros Beskos, Gareth Roberts, Andrew Stuart, and Jochen Voss. MCMC methods for diffusion
+bridges. Stochastics and Dynamics, 8(03):319–350, 2008.
+[11] Alessandro Buccini, Mirjeta Pasha, and Lothar Reichel. Linearized krylov subspace bregman iteration
+with nonnegativity constraint. Numerical Algorithms, 87(3):1177–1200, sep 2020.
+[12] Stamatis Cambanis, Steel Huang, and Gordon Simons. On the theory of elliptically contoured distributions.
+Journal of Multivariate Analysis, 11(3):368–385, 1981.
+[13] Victor Chen, Matthew M. Dunlop, Omiros Papaspiliopoulos, and Andrew M. Stuart. Dimension-robust
+mcmc in bayesian inverse problems. 03 2018.
+[14] Simon L Cotter, Gareth O Roberts, AM Stuart, and David White. MCMC methods for functions: modifying
+old algorithms to make them faster. Statistical Science, 28(3):424–446, 2013.
+[15] Masoumeh Dashti, Stephen Harris, and Andrew Stuart. Besov priors for bayesian inverse problems. Inverse
+Problems and Imaging, 6(2):183–200, may 2012.
+[16] Masoumeh Dashti and Andrew M. Stuart. The Bayesian Approach to Inverse Problems, pages 311–428.
+Springer International Publishing, Cham, 2017.
+[17] Matthew M. Dunlop, Dejan Slepčev, Andrew M. Stuart, and Matthew Thorpe. Large data and zero noise
+limits of graph-based semi-supervised learning algorithms. Applied and Computational Harmonic Analysis,
+49(2):655–697, 2020.
+[18] Stefan Falkner, Aaron Klein, and Frank Hutter. BOHB: Robust and efficient hyperparameter optimization
+at scale. In Jennifer Dy and Andreas Krause, editors, Proceedings of the 35th International Conference on
+Machine Learning, volume 80 of Proceedings of Machine Learning Research, pages 1437–1446. PMLR,
+10–15 Jul 2018.
+[19] K. Fang and Y.T. Zhang. Generalized Multivariate Analysis. Science Press, 1990.
+[20] Osama S. Faragallah, Heba El-Hoseny, Walid El-Shafai, Wael Abd El-Rahman, Hala S. El-Sayed, ElSayed M. El-Rabaie, Fathi E. Abd El-Samie, and Gamal G. N. Geweid. A comprehensive survey analysis
+for present solutions of medical image fusion and future directions. IEEE Access, 9:11358–11371, 2021.
+[21] Subhashis Ghosal, Jayanta K. Ghosh, and Aad W. van der Vaart. Convergence rates of posterior distributions.
+The Annals of Statistics, 28(2), apr 2000.
+[22] Subhashis Ghosal and Aad van der Vaart. Fundamentals of nonparametric bayesian inference. 2017.
+
+11
+
+[23] E. Gómez, M.A. Gomez-Viilegas, and J.M. Marín. A multivariate generalization of the power exponential
+family of distributions. Communications in Statistics - Theory and Methods, 27(3):589–600, jan 1998.
+[24] A. P. Dawid J. M. Bernardo, J. O. Berger and A. F. M. Smith. Regression and classification using gaussian
+process priors. Bayesian Statistics, 6:475–501, 1998.
+[25] Junxiong Jia, Jigen Peng, and Jinghuai Gao. Bayesian approach to inverse problems for functions with a
+variable-index besov prior. Inverse Problems, 32(8):085006, 2016.
+[26] Mark E. Johnson. Multivariate Statistical Simulation, chapter 6 Elliptically Contoured Distributions, pages
+106–124. Probability and Statistics. John Wiley & Sons, Ltd, 1987.
+[27] Y. Kano. Consistency property of elliptic probability density functions. Journal of Multivariate Analysis,
+51(1):139–147, 1994.
+[28] Tomasz J. Kozubowski, Krzysztof Podgórski, and Igor Rychlik. Multivariate generalized laplace distribution and related random fields. Journal of Multivariate Analysis, 113:59–72, 2013. Special Issue on
+Multivariate Distribution Theory in Memory of Samuel Kotz.
+[29] Shiwei Lan. Learning temporal evolution of spatial dependence with generalized spatiotemporal gaussian
+process models. Journal of Machine Learning Research, 23(259):1–53, 2022.
+[30] Shiwei Lan, Shuyi Li, and Babak Shahbaba. Scaling up bayesian uncertainty quantification for inverse
+problems using deep neural networks. SIAM Journal of Uncertainty Quantification, 2022. to appear.
+[31] Matti Lassas, Eero Saksman, and Samuli Siltanen. Discretization-invariant bayesian inversion and besov
+space priors. Inverse Problems and Imaging, 3(1):87–122, 2009.
+[32] Matti Lassas and Samuli Siltanen. Can one use total variation prior for edge-preserving Bayesian inversion?
+Inverse Problems, 20(5):1537, 2004.
+[33] Lisha Li, Kevin Jamieson, Giulia DeSalvo, Afshin Rostamizadeh, and Ameet Talwalkar. Hyperband: A
+novel bandit-based approach to hyperparameter optimization. J. Mach. Learn. Res., 18(1):6765–6816, jan
+2017.
+[34] Felix Lucka. Fast markov chain monte carlo sampling for sparse bayesian inference in high-dimensional
+inverse problems using l1-type priors. Inverse Problems, 28(12):125012, nov 2012.
+[35] Bernt Øksendal. Stochastic Differential Equations. Springer Berlin Heidelberg, 2003.
+[36] N. Petra and G. Stadler. Model variational inverse problems governed by partial differential equations.
+Technical report, The Institute for Computational Engineering and Sciences, The University of Texas at
+Austin., 2011.
+[37] Krzysztof Podgórski and Jörg Wegener. Estimation for stochastic models driven by laplace motion.
+Communications in Statistics - Theory and Methods, 40(18):3281–3302, sep 2011.
+[38] Carl Edward Rasmussen and Christopher K. I. Williams. Gaussian Processes for Machine Learning. The
+MIT Press, 2005.
+[39] Rafael Reisenhofer, Sebastian Bosse, Gitta Kutyniok, and Thomas Wiegand. A haar wavelet-based
+perceptual similarity index for image quality assessment. Signal Processing: Image Communication,
+61:33–43, 2018.
+[40] I. J. Schoenberg. Metric spaces and completely monotone functions. Annals of Mathematics, 39:811–841,
+1938.
+[41] Amar Shah, Andrew Wilson, and Zoubin Ghahramani. Student-t Processes as Alternatives to Gaussian
+Processes. In Samuel Kaski and Jukka Corander, editors, Proceedings of the Seventeenth International
+Conference on Artificial Intelligence and Statistics, volume 33 of Proceedings of Machine Learning
+Research, pages 877–885, Reykjavik, Iceland, 22–25 Apr 2014. PMLR.
+[42] L. A. Shepp and B. F. Logan. The fourier reconstruction of a head section. IEEE Transactions on Nuclear
+Science, 21(3):21–43, 1974.
+[43] Andrew M Stuart. Inverse problems: a Bayesian perspective. Acta Numerica, 19:451–559, 2010.
+[44] Simopekka Vänskä, Matti Lassas, Samuli Siltanen, and Rolf Insitute. Statistical x-ray tomography using
+empirical besov priors. International Journal of Tomography and Statistics, 11, 06 2009.
+
+12
+
+[45] Umberto Villa, Noemi Petra, and Omar Ghattas. hIPPYlib: An extensible software framework for
+large-scale inverse problems governed by PDEs; part i: Deterministic Inversion and Linearized Bayesian
+Inference. ACM Transactions on Mathematical Software, 47(2):1–34, jun 2021.
+[46] Zhou Wang, Alan C Bovik, Hamid R Sheikh, and Eero P Simoncelli. Image quality assessment: from error
+visibility to structural similarity. IEEE transactions on image processing, 13(4):600–612, 2004.
+[47] MIKE WEST. On scale mixtures of normal distributions. Biometrika, 74(3):646–648, 09 1987.
+
+13
+
+Supplement Document for “Bayesian Learning via Q-Exponential
+Process"
+A
+
+PROOFS
+
+A.1
+
+Proof of Theorem 3.3
+
+µ , C) with general (non-identity) covariance
+Proof. First we prove the exchangeability of q−EDd (µ
+matrix C = [C (ti ,t j )]d×d for some kernel function C . It actually holds for all elliptic distributions
+including MVN. Their densities contain the essential quadratic form r(u) = uT C−1 u which is
+invariant under any permutation of coordinates.
+Denote u = [ut1 , · · · , uti , · · · , ut j , · · · , utd ]T . Without loss of generality, we only need to show r(u)
+is invariant by switching two coordinates, say, ti ↔ t j . Denote u′ = [ut1 , · · · , ut j , · · · , uti , · · · , utd ]T .
+Switching ti and t j leads to a different covariance matrix C′ obtained by switching both i-th and j-th
+rows and columns simultaneously in C. If we denote the elementary matrix Ei j as derived from
+switching i-th and j-th rows of the identity matrix I. Then we have
+u′ = Ei j u,
+
+C′ = Ei j CEi j
+
+Note Ei j is idempotent, i.e. Ei j = Ei−1
+j . Therefore
+T
+
+(u′ ) (C′ )−1 u′ = uT Ei j Ei j C−1 Ei j Ei j u = uT C−1 u
+Next, the consistency directly follows from Kano’s consistency Theorem 3.2 with our choice of g(r).
+The proof is hence completed.
+A.2
+
+Theorem of Q-EP as a mixture of Gaussians
+
+Theorem A.1. Suppose u ∼ q−EDd (0, C) for 0 < q < 2, then there exist an random variable V > 0
+d
+
+and a standard normal random vector Z ∼ Nd (0, I) independent of each other such that u = Z/V .
+d k
+Proof. Based on [3], it suffices to show (− dr
+) g(r) ≥ 0 for all k ∈ N. Observe that
+h
+i
+q
+q
+q
+q
+q ( 2 −1)( d2 +1)
+d ( 2 −1) d2 −1
+r2
+d k
+′
+g (r) = ( 2 − 1) 2 r
+− 4r
+exp{− 2 } ≤ 0 when q ≤ 2. Denote (− dr
+) g(r) :=
+q
+
+q
+
+pk (r( 2 −1)/2 , r−1 ) exp{− r22 } where the coefficients of polynomial pk are all non-negative. Then we
+have
+
+
+
+
+q
+d k+1
+d
+q ( q −1)
+r2
+( q2 −1)/2 −1
+( q2 −1)/2 −1
+2
+,r )+ r
+pk (r
+, r ) exp{− }
+−
+g(r) = − pk (r
+dr
+dr
+4
+2
+q
+
+where pk+1 (r( 2 −1)/2 , r−1 ) being the term in the square bracket has all positive coefficients because
+q
+d
+pk (r( 2 −1)/2 , r−1 ) and are both negative. The
+the powers ( q2 − 1)/2 and −1 appear as coefficients in dr
+proof is completed by induction.
+A.3
+
+Proposition of distribution of r(u)
+
+p
+The following proposition determines the distribution of R = r(u) as q-root of a gamma (also
+chi-squared) distribution thus gives a complete recipe for generating random vector u ∼ q−EDd (0, C)
+based on the stochastic representation (6).
+Proposition A.1. If u ∼ q−EDd (0, C), then we have
+
+
+d
+k
+k
+k Γ( 2 + q ) ·
+q
+d
+1
+Rq = r 2 ∼ Γ α = , β =
+= χd2 , and E[Rk ] = 2 q
+∼ d q , as d → ∞, ∀k ∈ N (18)
+d
+2
+2
+Γ( 2 )
+Proof. With out chosen g(r), the density of r becomes
+( q)
+( q)
+2
+q
+q d
+d
+d −1
+r
+r2
+f (r) ∝ r 2 r( 2 −1) 2 exp −
+= r 2 · 2 −1 exp −
+2
+2
+14
+
+q
+
+q
+
+A change of variable r → r 2 yields the density of Rq = r 2 that can be recognized as the density of
+χd2 .
+
+On the other hand, since v := Rq ∼ Γ α = d2 , β = 12 , we have:
+ d Z ∞
+
+
+Z ∞
+k
+k d
+1
+1 2
+1
+E[Rk ] =
+v q f (v)dv = d
+v q + 2 −1 exp − v dv
+2
+0
+0
+Γ( 2 ) 2
+k
+
+
+d
+k
+k Γ( 2 + q ) ·
+k
+k
+d q
+q
+= 2q
+∼
+2
+=dq
+d
+2
+Γ( 2 )
+·
+
+where we use Γ(x + α) ∼ Γ(x)xα as x → ∞ with x = d2 and α = qk when d → ∞.
+A.4
+
+Proof of Proposition 3.1
+
+µ , C) = ECd (µ
+µ , C, g) with our chosen g, we know
+Proof. By Theorem 2.6.4 in [19] for q−EDd (µ
+E[u] = µ and Cov(u) = (E[R2 ]/rank(C))C. It follows by letting k = 2 in Proposition A.1 and using
+the similar asymptotic analysis.
+A.5
+
+Proof of Theorem 3.4
+
+Proof. Note we can approximate φℓ (x) ∈ L2 (D) with simple functions φ̃ℓ (x) = ∑di=1 ki χDi (x) where
+Di ’s are measurable subsets of D and χDi (x) = 1 if x ∈ Di and 0 otherwise.
+By the linear combination
+R
+property of elliptic distributions [c.f. Theorem 2.6.3 in 19], ũℓ = D u(x)φ̃ℓ (x)dx ∼ q−ED(0, c) with
+2
+
+2 q Γ( d2 + 2q ) 1− 2
+d q comes from Proposition 3.1 and the
+Note αd =
+dΓ( d2 )
+2
+1 1
+Γ( d + 2 )
+scaling u∗ = d 2 − q u in Definition 3.2. We have αd = 2 d q d2 q → 1 as d → ∞. Taking the limit
+Γ( )
+
+c = αd−1 E[ũ2ℓ ] to be determined.
+
+2
+
+R
+
+d → ∞, we have uℓ = D u(x)φℓ (x)dx ∼ q−ED(0, c). In general, by the similar argument we have
+Z Z
+
+Cov(uℓ , uℓ′ ) = E[uℓ uℓ′ ] =
+Z Z
+
+=
+D D
+
+D D
+
+E[u(x)u(x′ )]φℓ (x)φℓ′ (x′ )dxdx′
+
+C (x, x′ )φℓ (x)φℓ′ (x′ )dxdx′ =
+
+Z
+D
+
+λℓ φℓ (x′ )φℓ′ (x′ )dx′ = λℓ δℓℓ′
+
+Thus it completes the proof.
+A.6
+
+Proof of Theorem 3.5
+
+Before proving Theorem 3.5, we first prove the following lemma based on the conditional of elliptic
+distribution [12, 19].
+ 
+
+
+µ
+C
+C12
+µ , C) with µ = 1 and C = 11
+Lemma A.1. If u = (u1 , u2 ) ∼ q−EDd (µ
+, u ∈ Rd , ui ∈ Rdi
+µ2
+C21 C22
+for i = 1, 2 and d1 + d2 = d, then we have the following conditional distribution
+µ 1·2 , C11·2 ),
+u1 |u2 ∼ q−EDd1 (µ
+µ 1·2 = µ 1 + C12 C−1
+22 (u2 − µ 2 ),
+
+C11·2 = C11 − C12 C−1
+22 C21
+
+Proof. This directly follows from [Corollary 5 of Theorem 5 in 12] or [Corollary 3 of Theorem 2.6.6
+µ , C) = ECd (µ
+µ , C, g) with our chosen g.
+in 19] for q−EDd (µ
+Now we prove the Theorem 3.5.
+Proof. By the linear combination property of the elliptic distributions [26, 19], we have y ∼ q−
+ED(0, C + Σ ). Then based on the consistency, we have the joint distribution
+
+
+
+ 
+C + Σ C∗
+y
+∼ q−ED 0,
+u(x∗ )
+CT
+C∗∗
+∗
+Therefore, the conclusion follows from Lemma A.1.
+15
+
+A.7
+
+Proposition of Conditional Conjugacy for Variance Magnitude (σ 2 )
+
+Proposition A.2. If we assume a proper inverse-gamma prior for the variance magnitude such that
+µ , C = σ 2 C0 ), and σ q ∼ Γ−1 (α, β ), then we have
+u|σ 2 ∼ q−EDd (µ
+σ q |u ∼ Γ−1 (α ′ , β ′ ),
+
+d
+α′ = α + ,
+2
+
+β′ = β +
+
+(u − µ )T C−1
+0 (u − µ )
+2
+
+(19)
+
+2
+Proof. Denote r0 = (u − µ )T C−1
+0 (u − µ ). We can compute the joint density of u and σ
+
+p(u, σ 2 ) =p(u|σ 2 )p(σ q )
+
+
+q
+
+2 
+q
+d
+qd
+r
+d
+1
+q
+βα
+( −1)
+= (2π)− 2 |C0 |− 2 r0 2 2 σ − 2 exp −σ −q 0
+(σ q )−(α+1) exp(−β σ −q )
+
+2
+2  Γ(α)
+
+
+
+r0q
+q −(α+ d2 +1)
+−q
+∝(σ )
+exp −σ
+β+
+2
+By identifying the parameters for σ q we recognize that σ q |u is another inverse-gamma with parameters α ′ and β ′ as given.
+
+B
+
+ALGORITHM
+
+Algorithm 1 White-noise Preconditioed Crank-Nicolson (wn-pCN) for Q-EP Prior Models
+1: Fix β ∈ (0, 1]. Choose initial state z(0) ∈ Rd .
+2: for k = 0, · · · , K − 1 do
+3:
+4:
+
+1
+
+Propose ẑ(k) = (1 − β 2 ) 2 z(k) + β z′ , z′ ∼ N (0, I).
+Set z(k+1) = ẑ(k) with acceptance probability
+(
+)
+L(T (ẑ(k) ))|dT (ẑ(k) )|
+min 1,
+L(T (z(k) ))|dT (z(k) )|
+
+5:
+or else set z(k+1) = z(k) .
+6: end for
+
+C
+
+ADDITIONAL EXPERIMENTAL RESULTS
+
+In this section, we present some additional numerical experimental results that cannot be included in
+the main text due to the page limit.
+First, we numerically verify the equivalence between the stochastic representation (6) and the whitenoise representation (17) of q−EDd random variable in Figure B.1. More specifically, we generate
+10000 samples using each of these two representations and illustrate in Figure B.1 that the two
+samples yield empirical marginal distributions (1d and 2d) close enough to each other.
+C.1
+
+Time Series Modeling
+
+For modeling the simulated time series and stock prices, we include the optimization trace of negative
+(log)-posterior densities and relative errors for the two simulations and two stocks prices in Figure
+C.1. As commented in the main text, these plots show that Q-EP model can converge faster to lower
+errors compared with GP and Besov models.
+Next, we compare MAP estimates by GP, Besov and Q-EP models in Figure C.2a for simulated time
+series with step jumps and in Figure C.2c for the Google stock prices in 2022. We also investigate
+the prediction results by GP and Q-EP in these two examples in Figures C.2b and C.2d. Table C.1
+summarizes the RMSE of estimated stock prices by the three models and its standard deviation for
+repeating the experiments 10 times independently.
+16
+
+Figure B.1: Comparison in sampling q−EDd using the stochastic representation (6) (organge) and
+the white-noise representation (17) (blue). Numerical results show their sampling distributions are
+indistinguishable. Empirical densities are estimated based on 10000 samples (shown as dots).
+
+(a) Time series with step jumps.
+
+(b) Time series with sharp turnings.
+
+(c) Tesla stock prices in 2022.
+
+(d) Google stock prices in 2022.
+
+Figure C.1: Negative posterior densities (left) and errors (right) as functions of iterations in the BFGS
+algorithm used to obtain MAP estimates. Early termination is implemented if the error falls below
+some threshold or the maximal iteration (1000) is reached. Relative errors are compared against truth
+in the simulation and the actual data in the Tesla stock.
+
+C.2
+
+Computed Tomography Imaging
+
+In the problem of reconstructing human head and torso CT images, Table C.2 compares GP, Besov
+and Q-EP models in terms of relative error (RLE), log-likelihood (LL), and imaging quality metrics
+including PSNR, SSIM and HarrPSI. In most cases, Q-EP outperforms, or achieves comparable
+scores with the other two methods.
+Lastly, Figures C.3 and C.4 show that the posterior standard deviations estimated by wn-pCN using
+GP model could be misleading because the seemingly more recognizable shape deludes the fact that
+they are about two orders of magnitude smaller in value compared with the other two models. This
+implies that GP might underestimate the uncertainty present in the observed sinograms in the CT
+imaging analysis.
+17
+
+(a) Time series with step jumps (model fitting).
+
+(b) Time series with jumps (prediction).
+
+(c) Google stock prices in 2022 (model fitting).
+
+(d) Google stock prices in 2022 (prediction).
+
+Figure C.2: (a)(c) MAP estimates by GP (left), Besov (middle) and Q-EP (right) models. (b)(d)
+Predictions by GP (left) and Q-EP (right) models. Orange dots are actual realizations (data points).
+Blue solid lines are true trajectories. Black ticks indicate the training data points. Red dashed lines
+are MAP estimates. Red dot-dashed lines are predictions with shaded region being credible bands.
+
+Figure C.3: Shepp–Logan phantom: uncertainty field (posterior standard deviation) given by GP,
+Besov and Q-EP models. GP tends to underestimate the uncertainty values (about 1% of that with
+Q-EP).
+
+Figure C.4: CT of human head (upper) and torso (lower): uncertainty field (posterior standard
+deviation) given by GP, Besov and Q-EP models. Note GP tends to underestimate the uncertainty
+values (about 1% of that with Q-EP).
+
+18
+
+Table C.1: Posterior estimates of Tesla and Google stock prices by GP, Besov and Q-EP prior models:
+RMSE := ∥u − u∥2 . Results are repeated 10 times with different random seeds.
+Tesla
+Google
+RMSE
+std(RMSE)
+
+GP
+
+Besov
+
+Q-EP
+
+GP
+
+Besov
+
+Q-EP
+
+171.8515
+1.8018
+
+90.3086
+1.1478
+
+83.8130
+2.6949
+
+20.4095
+0.7115
+
+25.2012
+0.1698
+
+18.3597
+0.9617
+
+Table C.2: MAP estimates for CT of human head and torso by GP, Besov and Q-EP prior models:
+relative error, RLE := ∥û − u† ∥/∥u† ∥ of MAP (û = u∗ ), log-likelihood (LL), PSNR, SSIM and
+HarrPSI.
+Head
+RLE
+LL
+PSNR
+SSIM
+HaarPSI
+
+C.3
+
+Torso
+
+GP
+
+Besov
+
+Q-EP
+
+GP
+
+Besov
+
+Q-EP
+
+0.2999
+-4.05e+5
+24.2321
+0.7010
+0.0525
+
+0.2241
+-1.12e+4
+26.7633
+0.7914
+0.0593
+
+0.2224
+-1.17e+4
+26.8281
+0.8096
+0.0587
+
+0.2611
+-3.30e+5
+23.6450
+0.5852
+0.0666
+
+0.2177
+-3.86e+3
+25.2231
+0.6983
+0.0732
+
+0.2153
+-4.37e+3
+25.3190
+0.6982
+0.07190
+
+Noisy/Blurry Image Reconstruction
+
+Next we consider reconstructing a (128 × 128 pixels) image of satellite shown on the leftmost of
+Figure 1 from a blurred observation next to it. The image itself can be viewed as a function u(x)
+on the square unit D = [0, 1]2 taking values as the pixels. When evaluating u(x) on the discretized
+domain, u(x) becomes a matrix of size 128 × 128, which can further be vectorized to u ∈ Rd with
+d = 1282 . The true image, denoted as u† , is blurred by applying a motion blur point spread function
+[PSF 11] and adding 5% Gaussian noise. The actual observation, y(x), can be written as in the
+following linear model:
+y(x) = Au(x) + ε, ε ∼ N (0, σε2 Id )
+where A ∈ RJ×d is the blur motion PSF with J = d and σε /∥Au∥ = 5%. Note, the blurring effect in
+the observed image (the second from left of Figure 1) is mainly due to the PSF operator A, not the
+small Gaussian noise.
+
+Figure C.5: Image of satellite: negative posterior densities (left) and errors (right) as functions of
+iterations in the BFGS algorithm used to obtain MAP estimates. Early termination is implemented if
+the error falls below some threshold or the maximal iteration (1000) is reached.
+We compare the reconstructions by MAP estimate in Figure 1. The output by GP is blurry and close
+to the observed image, which means that GP does not “de-noise" much. The result by Besov is much
+better than GP due to the L1 regularization but it is still not sharp enough. We can see that the Q-EP
+prior model produces the reconstruction of the highest quality. Figure 3 demonstrates the effect of
+q > 0: the smaller q, the more regularization and hence sharper reconstruction. We also compare
+their negative posterior densities and relative errors, ∥û − u† ∥/∥u† ∥, in Figure C.5. The Q-EP prior
+model yields the smallest error among all the three models.
+19
+
+(a) True initial condition (top left), and the solutions (b) Spatiotemporal observations at 80 selected locations
+u(x,t) at different time points t.
+(color dots) across different time points.
+
+Figure C.7: Advection-diffusion inverse problem: true initial condition u†0 and posterior mean
+estimates by GP, Besov and Q-EP models.
+
+C.4
+
+Advection-Diffusion Inverse Problem
+
+Finally, we consider a Bayesian inverse problem governed by a time-dependent advection-diffusion
+equation [36, 30] that can be applied to heat transfer, pollution tracing, etc. The inverse problem
+involves inferring an unknown initial condition u0 ∈ L2 (Ω) from spatiotemporal point measurements
+{y(xi ,t j )} as
+y(x,t) = G (u0 ) + η(x,t), η(x,t) ∼ N (0, Σ )
+The forward mapping G : u0 → Ou maps the initial condition u0 to pointwise spatiotemporal observations of the concentration field u(x,t) through the solution of the following advection-diffusion
+equation [36, 45]:
+ut − κ∆u + v · ∇u = 0
+u(·, 0) = u0
+κ∇u ·⃗n = 0,
+
+in Ω × (0, T )
+
+−
+
+in Ω
+on ∂ Ω × (0, T )
+
+1
+∆v + ∇p + v · ∇v = 0 in Ω
+Re
+∇ · v = 0 in Ω
+v = g, on ∂ Ω
+
+where Ω ⊂ [0, 1]2 is a bounded domain shown in Figure C.6a, κ = 10−3 is the diffusion coefficient,
+and T > 0 is the final time. The velocity field v is computed by solving the following steady-state
+Navier-Stokes equation with the side walls driving the flow [36]. Here, p is the pressure, and Re is
+the Reynolds number, which is set to 100 in this example. The Dirichlet boundary data g ∈ R2 is
+given by g = e2 = (0, 1) on the left wall, g = −e2 on the right wall, and g = 0 everywhere else.
+To generate data, we set the true value of parameter u0 in (C.4) as u†0 = 0.5 ∧ exp{−100[(x − 0.35)2 +
+(y − 0.7)2 ]}, illustrated in the top left panel of Figure C.6a, which also shows a few snapshots of
+the solutions u(x,t) at other time points on a regular grid mesh of size 61 × 61. Spatiotemporal
+I
+observations {y(xi ,t j )}I,J
+i=1, j=1 are collected at I = 80 selected locations {xi }i=1 around the boundary
+of two inner boxes (See Figure C.6a and also Figure C.6b ) across J = 16 time points {t j }Jj=1 evenly
+20
+
+Figure C.8: Advection-diffusion inverse problem: comparing forward predictions, G (x,t∗ ), based
+on the GP (blue dashed lines) and Q-EP (orange dot-dashed lines) prior models at three selective
+locations x = (0.325, 0.401), x = (0.249, 0.225) and x = (0.249, 0.350). Blues dots are observations.
+distributed between 1 and 4 seconds (thus denoted as Ou) with noise variance Σ = ση2 I1280 where
+ση = 0.5 max Ou, i.e. y(xi ,t j ) = G (u†0 ) + ηi j = u(xi ,t j ) + ηi j .
+To solve the inverse problem of finding the initial condition u0 in the Bayesian framework [43, 16], we
+impose u0 with GP, Besov and Q-EP priors respectively and seek the posterior p(u0 |y). For GP and QEP, we adopt a covariance kernel, C = (δ I − γ∆)−2 , defined through the Laplace operator ∆, where
+δ governs the variance of the prior and γ/δ controls the correlation length [16, 30]. We set γ = 1 and
+δ = 8 in this example. For Besov, we adopt 2d Fourier basis of the format φi j = cos(πix1 ) cos(π jx2 )
+and truncate the series (1) for the first L = 1000 terms.
+We apply wn-pCN to this challenging nonlinear inverse problem with high dimensionality (3413)
+of spatially discretized u at each time t. Figure C.7 compares the posterior mean estimates of u0
+given by these three models. Because the truth (leftmost) has clear edge at its cutoff by 0.5, Q-EP
+is more appropriate than GP and it indeed generates better estimate closer to the truth. Figure C.8
+plots the prediction of forward mapping at a few selective locations on the left side of lower inner
+box by G (x,t∗ ) = S1 ∑Ss=1 G (u(s) )(x,t∗ ) with u(s) ∼ p(u0 |y). Compared with GP, Q-EP predicts the
+solution path closer to the truth G (u†0 )(x,t∗ ) where the observations see more dynamical changes.
+More importantly, Q-EP provides proper UQ with credible bands wide enough to include the true
+trajectories. On the other hand, the posterior estimates by GP come with much narrower error bands
+that miss the truth. Again, we observe GP prior model being overconfident about less accurate
+estimates.
+
+21
+
+

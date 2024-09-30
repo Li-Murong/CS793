@@ -1,0 +1,804 @@
+Fair Rank Aggregation
+
+Diptarka Chakraborty
+School of Computing
+National University of Singapore
+diptarka@comp.nus.edu.sg
+
+Syamantak Das
+Department of Computer Science and Engineering
+Indraprastha Institute of Information Technology, Delhi
+syamantak@iiit.ac.in
+
+Arindam Khan
+Department of Computer Science and Automation
+Indian Institute of Science, Bengaluru
+arindamkhan@iisc.ac.in
+Aditya Subramanian
+Department of Computer Science and Automation
+Indian Institute of Science, Bengaluru
+adityasubram@iisc.ac.in
+
+Abstract
+Ranking algorithms find extensive usage in diverse areas such as web search,
+employment, college admission, voting, etc. The related rank aggregation problem
+deals with combining multiple rankings into a single aggregate ranking. However,
+algorithms for both these problems might be biased against some individuals or
+groups due to implicit prejudice or marginalization in the historical data. We study
+ranking and rank aggregation problems from a fairness or diversity perspective,
+where the candidates (to be ranked) may belong to different groups and each group
+should have a fair representation in the final ranking. We allow the designer to set
+the parameters that define fair representation. These parameters specify the allowed
+range of the number of candidates from a particular group in the top-k positions of
+the ranking. Given any ranking, we provide a fast and exact algorithm for finding
+the closest fair ranking for the Kendall tau metric under strong fairness, i.e., when
+the final ranking is fair for all values of k. We also provide an exact algorithm for
+finding the closest fair ranking for the Ulam metric under strong fairness when
+there are only O(1) number of groups. Our algorithms are simple, fast, and might
+be extendable to other relevant metrics. We also give a novel meta-algorithm for
+the general rank aggregation problem under the fairness framework. Surprisingly,
+this meta-algorithm works for any generalized mean objective (including center
+and median problems) and any fairness criteria. As a byproduct, we obtain 3approximation algorithms for both center and median problems, under both Kendall
+tau and Ulam metrics. Furthermore, using sophisticated techniques we obtain a
+(3 − ε)-approximation algorithm, for a constant ε > 0, for the Ulam metric under
+strong fairness.
+
+1
+
+Introduction
+
+Ranking a set of candidates or items is a ubiquitous problem arising in diverse areas ranging from
+social choice theory [BCE+ 16] to information retrieval [Har92]. Given a set of d candidates and a
+set of n different, potentially conflicting, rankings of these candidates, one fundamental task is to
+36th Conference on Neural Information Processing Systems (NeurIPS 2022).
+
+determine a single ranking that best summarizes the preference orders in the individual rankings. This
+summarizing task, popularly termed rank aggregation, has been widely studied from a computational
+viewpoint over the last two decades [DKNS01, FKS03, GL11, ASCPX13]. Most well-studied rank
+aggregation paradigms are median rank aggregation (or simply rank aggregation) [Kem59, You88,
+YL78, DKNS01] and maximum rank aggregation [BBGH15, BBD09, Pop07], which are based on
+finding the median and center of the given set of rankings, respectively.
+Recently, fairness and diversity have become a natural prerequisite for ranking algorithms where
+individuals are rated for access to goods and services or ranked for seeking facilities in education (e.g.,
+obtaining scholarship or admission), employment (e.g., hiring or promotion in a job), medical (e.g.,
+triage during a pandemic), or economic opportunities (e.g., loan lending). Some concrete examples
+include university admissions through affirmative action in the USA [Des05] or the reservation system
+in jobs in India [Bor10], where we want rankings to be fair to mitigate the prevalent disparities due to
+historical marginalization. Rankings not being fair may risk promoting extreme ideology [CHRG16]
+or certain stereotypes about dominating/marginalized communities based on sensitive attributes like
+gender or race [KMM15, BCZ+ 16]. There has been a series of works on fair ranking algorithms,
+see [ZBC+ 17, AJSD19, Cas19, GSB21, GDL21, PPM+ 22, ZYS21] and the references therein.
+A substantial literature on algorithmic fairness focuses on group fairness to facilitate demographic
+parity [DHP+ 12] or equal opportunity [HPS16]: typically this is done by imposing fairness constraints which require that top-k positions in the ranking contain enough candidates from protected
+groups that are typically underrepresented due to prevalent discrimination (e.g., due to gender,
+caste, age, race, sex, etc.). In many countries, group fairness constraints are being enforced by
+legal norms [Eur, USD]. For example, in Spain 40% of candidates for elections in large voting
+districts must be women [Ver10], in India 10% of the total recruitment for civil posts and services in
+government are reserved for people from Economically Weaker Society (EWS) [Sin19], etc.
+In this paper, we study group fairness, more specifically proportional fairness (sometimes also
+referred to as p-fairness [BCPV96]). Inspired by the Disparate Impact doctrine, this notion of
+fairness mandates that the output of an algorithm must contain a fair representation of each of the
+‘protected classes’ in the population. In the context of ranking, the set of candidates is considered to
+be partitioned into g groups G1 , G2 , . . . , Gg . For each group Gi , i ∈ [g], we have two parameters
+αi ∈ [0, 1], βi ∈ [0, 1]. A ranking π of the set of items is called proportionally fair if for every
+position k ∈ {1, 2, . . . , n} and for every group Gi , the following two properties are satisfied:
+(a) Minority Protection: The number of items from group Gi , which are in the top-k positions
+π(1), π(2), . . . , π(k), is at least ⌊αi · k⌋, and (b) Restricted Dominance: The number of items from
+group Gi , which are in the top-k positions π(1), π(2), . . . , π(k), is at most ⌈βi · k⌉.
+To compare different rankings several distance functions have been considered defined on the
+set of permutations/rankings, such as Kendall tau distance [Ken38, DG77, Kem59, You88, YL78,
+DKNS01, ACN08, KMS07, KV10] (also called Kemeny distance in case of rank aggregation), Ulam
+distance [AD99, CMS01, CK06, AK10, AN10, NSS17, BS19, CDK21, CGJ21], Spearman footrule
+distance [Spe04, Spe06, DG77, DKNS01, KV10, BBGH15], etc. Among these, Kendall tau distance is perhaps the most common measure used in ranking as it is the only known measure to
+simultaneously satisfy several required properties such as neutrality, consistency, and the extended
+Condorcet property [Kem59, You88]. The Ulam metric is another widely-used measure in practice
+as it is also a simpler variant of the general edit distance metric which finds numerous applications in computational biology, DNA storage system, speech recognition, classification, etc. (e.g.,
+see [CMS01, CDK21, CGJ21]).
+One natural computational question related to fairness in ranking is, given a ranking, how to find its
+closest fair ranking under p-fairness. Celis et al. [CSV18] considered this problem and gave exact
+and approximation algorithms under several ranking metrics such as discounted cumulative gain
+(DCG), Spearman footrule, and Bradley-Terry. However, their algorithms do not extend to Kendall
+tau and Ulam metric, two of the most commonly used ranking metrics.
+Fair rank aggregation is relatively less studied. Recently, Kulman et al. [KR20] initiated the study
+of fair rank aggregation under Kendall tau metric. However, their fairness notion is based on top-k
+statistical parity and pairwise statistical parity. These notions are quite restricted. For example,
+their results only hold for binary protected attributes (i.e., g = 2) and and does not satisfy p-fairness.
+Informally, pairwise statistical parity considers pairs of items from different groups in an aggregated
+manner and does not take into account the actual rank of the items in the final ranking. See [WISR22]
+
+2
+
+for an example on why the fairness notion in [KR20] does not satisfy p-fairness. In fact, as p-fairness
+satisfies statistical parity for all top k-positions in the ranking, it is a much stronger notion compared
+to statistical parity. Thus achieving p-fairness is a significantly more challenging problem.
+1.1
+
+Our Contributions.
+
+Our first main contribution is an exact algorithm for the closest fair ranking (CFR) problem under
+proportional fairness (see Definition 2.4) for Kendall tau and Ulam metrics. For the Kendall tau
+metric, we give the first exact algorithm for the closest fair ranking problem (Theorem 3.4). Our
+algorithm is simple and based on a greedy strategy; however, the analysis is delicate. It exploits
+the following interesting and perhaps surprising fact. Under the Kendall tau metric, given a fixed
+(possibly unfair) ranking π, there exists a closest fair ranking π ′ to π such that for every group
+Gi , i ∈ [g], the relative ordering of elements in Gi remains unaltered in π ′ compared to π (Claim 3.3).
+Then, for the Ulam metric, we give a polynomial time dynamic programming algorithm for the
+closest fair ranking problem when the number of groups g is a constant (Theorem 3.10). In practice,
+the number of protected classes is relatively few, and hence our result gives an efficient algorithm for
+such cases.
+Our second significant contribution is the study of rank aggregation problem under a generalized
+notion of proportional fairness. One of our main contributions is to develop a novel algorithmic
+framework for the fair rank aggregation that solves a wide variety of rank aggregation objectives
+satisfying such generic fairness constraints. An essential takeaway of our work is that a set of
+potentially biased rankings can be aggregated into a fair ranking with only a small loss in the ‘quality’
+of the ranking. We study q-mean Fair Rank Aggregation (FRA), where given a set of rankings
+π1 , π2 , . . . , πn , a (dis)similarity measure (or distance function) ρ between two rankings, and any
+q ≥ 1, the task is to determine a fair ranking σ that minimizes the generalized mean objective:
+Pn
+1/q
+( i=1 ρ(πi , σ)q ) . We would like to emphasize that in general, q-mean objective captures two
+classical data aggregation tasks: One is median which asks to minimize the sum of distances (i.e.,
+q = 1) and another is center which asks to minimize the maximum distance to the input points (i.e.,
+q = ∞).
+We show generic reductions of the q-mean Fair Rank Aggregation (FRA) to the problem of determining the closest fair ranking (CFR) to a given ranking. More specifically, we show that any
+c-approximation algorithm for the closest fair ranking problem can be utilized as a blackbox to
+give a (c + 2)-approximation to the FRA for any q ≥ 1 (Theorem 4.3). This result is oblivious
+to the specifics of the (dis)similarity measure and only requires the measure to be a metric. Using
+the exact algorithms for the CFR for the Kendall tau, Spearman footrule, and Ulam metrics (for
+constantly many groups), we thus obtain 3-approximation algorithms for the FRA problem under
+these three (dis)similarity measures, respectively. Further, we provide yet another simple algorithm
+that even breaks below 3-factor for the Ulam metric. For q = 1, by combining the above-stated
+3-approximation algorithm with an additional procedure, we achieve a (3 − ε)-approximation factor
+(for some ε > 0) for the FRA under the Ulam, for constantly many groups (Theorem 4.11). We also
+provide another reduction from FRA to one rank aggregation computation (without fairness) and a
+CFR computation (Theorem 4.8), and as a corollary get an O(d3 log d + n2 d)-time algorithm for
+Spearman footrule when q = 1 (Corollary 4.10). We summarize our main results in Table 1.1.
+Problem
+CFR
+
+FRA
+
+Metric
+Kendall tau
+Ulam
+Spearman footrule
+Kendall tau
+Ulam
+Ulam (q = 1)
+Spearman footrule
+
+#Groups
+Arbitrary
+Constant
+Arbitrary
+Arbitrary
+Constant
+Constant
+Arbitrary
+
+Approx Ratio
+Exact
+Exact
+Exact
+3
+3
+3−ε
+3
+
+Runtime
+O(d2 )
+O(dg+2 )
+O(d3 log d)
+O(nd2 + n2 d log d)
+O(ndg+2 + n2 d log d)
+poly(n, d)
+O(d3 log d + n2 d + nd2 )
+
+Reference
+Theorem 3.4
+Theorem 3.10
+[CSV18]
+Corollary 4.5
+Corollary 4.7
+Theorem 4.11
+Corollary 4.10
+
+Comparison with concurrent work. Independently and concurrently to our work, Wei et
+al. [WISR22] considers the fair ranking problem under a setting that is closely related to ours.
+However, the fairness criteria in their work are much more restrictive compared to ours as follows.
+3
+
+Their algorithms for CFR are only designed for a special case of our formulation where for each
+group Gi and any position k in the output ranking, αi = βi = p(i), where p(i) denotes the proportion
+of group Gi in the entire population. Further, under the Kendall tau metric, they give a polynomial
+time exact algorithm for CFR only for the special case of binary groups (g = 2). They also give
+additional algorithms for multiple groups - an exact algorithm that works in time exponential in the
+number of groups and a polynomial time 2-approximation. In contrast, we fully resolve the CFR
+problem under the Kendall tau metric by giving a simple polynomial time algorithm for the case of
+multiple groups and any arbitrary bounds on αi and βi for each group Gi . Further, we give the first
+results for CFR and FRA under the Ulam metric as well.
+1.2
+
+Other related work
+
+Recent years have witnessed a growing concern over ML algorithms or, more broadly, automated
+decision-making processes being biased [BHN17, MMS+ 21]. This bias or unfairness might stem both
+from implicit bias in the historical dataset or from prejudices of human agents who are responsible for
+generating part of the input. Thus fair algorithms have received recent attention in machine learning
+and related communities. In particular, the notion of group fairness have been studied in classification [HV19], clustering [CKLV17], correlation clustering [AEKM20], resource allocation [PKL21],
+online learning [PGNN20], matroids and matchings [CKLV19]. Specially, fair clustering problem
+is closely related to our problem. Fair rank aggregation can be considered as the fair 1-clustering
+problem where the input set is a set of rankings. See [HJV19, CFLM19, BCFN19, BIO+ 19] for
+more related work on fair clustering.
+
+2
+
+Preliminaries
+
+Notations. For any n ∈ N, let [n] denote the set {1, 2, . . . , n}. We refer to the set of all permutations/rankings over [d] by Sd . Throughout this paper we consider any permutation π ∈ Sd as a
+sequence of numbers a1 , a2 , . . . , ad such that π(i) = ai , and we say that the rank of ai is i. For
+any two x, y ∈ [d] and a permutation π ∈ Sd , we use the notation x <π y to denote that the rank
+of x is less than that of y in π. For any subset I = {i1 < i2 < · · · < ir } ⊆ [d], let π(I) be the
+sequence π(i1 ), π(i2 ), . . . , π(ir ) (which is essentially a subsequence of the sequence represented
+by π). When clear from the context, we use π(I) also to denote the set of elements in the sequence
+π(i1 ), π(i2 ), . . . , π(ir ). For any k ∈ [d] and a permutation π ∈ Sd , we refer to π([k]) as the k-length
+prefix of π. For any prefix P , let |P | denote the length of that prefix. For any two prefixes P1 , P2 of a
+given string, we use P1 ⊆ P2 to denote |P1 | ≤ |P2 |.
+Distance measures on rankings. There are different distance functions being considered to measure
+the dissimilarity between any two rankings/permutations. Among them, perhaps the most commonly
+used one is the Kendall tau distance.
+Definition 2.1 (Kendall tau distance). Given two permutations π1 , π2 ∈ Sd , the Kendall tau distance
+between them, denoted by K(π1 , π2 ), is the number of pairwise disagreements between π1 and π2 ,
+i.e.,
+K(π1 , π2 ) := |{(a, b) ∈ [d] × [d] | a <π1 b but b <π2 a}|.
+Another important distance measure is the Spearman footrule (aka Spearman’s rho) which is essentially the ℓ1 -norm between two permutations.
+Definition 2.2 (Spearman footrule distance). Given two permutations
+π1 , π2 ∈ Sd , the Spearman
+P
+footrule distance between them is defined as F(π1 , π2 ) := i∈[d] |π1 (i) − π2 (i)|.
+Another interesting distance measure is the Ulam distance which counts the minimum number of
+character move operations between two permutations [AD99]. This definition is motivated by the
+classical edit distance that is used to measure the dissimilarity between two strings. A character move
+operation in a permutation can be thought of as “picking up” a character from its position and then
+“inserting” that character into a different position1 .
+1
+
+One may also consider one deletion and one insertion operation instead of a character move, and define the
+Ulam distance accordingly as in [CMS01].
+
+4
+
+Definition 2.3 (Ulam distance). Given two permutations π1 , π2 ∈ Sd , the Ulam distance between
+them, denoted by U(π1 , π2 ), is the minimum number of character move operations that is needed to
+transform π1 into π2 .
+Alternately, the Ulam distance between π1 , π2 can be defined as d − |LCS(π1 , π2 )|, where
+|LCS(π1 , π2 )| denotes the length of a longest common subsequence between the sequences π1
+and π2 .
+Fair rankings. We are given a set C of d candidates, which are partitioned into g groups. We call a
+ranking (of these d candidates) fair if all sufficiently large prefixes of it have certain proportion of
+representatives from each group. Formally,
+Definition 2.4 ((ᾱ, β̄)-k-fair ranking). Consider a set C of d candidates partitioned into g groups
+G1 , . . . , Gg , and ᾱ = (α1 , . . . , αg ) ∈ [0, 1]g , β̄ = (β1 , . . . , βg ) ∈ [0, 1]g , k ∈ [d]. A ranking π ∈ Sd
+is said to be (ᾱ, β̄)-k-fair if for any prefix P of length at least k, of π and each group i ∈ [g], there
+are at least ⌊αi · |P |⌋ and at most ⌈βi · |P |⌉ elements from the group Gi in P , i.e.,
+∀prefix P :|P |≥k , ∀i∈[g] , ⌊αi · |P |⌋ ≤ |P ∩ Gi | ≤ ⌈βi · |P |⌉.
+We also define a weak fairness notion that preserves the proportionate representation only for a fixed
+k-length prefix.
+Definition 2.5 ((ᾱ, β̄)-weak k-fair ranking). Consider a set C of d candidates partitioned into g
+groups G1 , . . . , Gg , and ᾱ = (α1 , . . . , αg ) ∈ [0, 1]g , β̄ = (β1 , . . . , βg ) ∈ [0, 1]g , k ∈ [d]. A ranking
+π ∈ Sd is said to be (ᾱ, β̄)-weak k-fair if for the k-length prefix P of π and each group i ∈ [g], there
+are at least ⌊αi · k⌋ and at most ⌈βi · k⌉ elements from the group Gi in P , i.e.,
+∀i∈[g] , ⌊αi · k⌋ ≤ |P ∩ Gi | ≤ ⌈βi · k⌉.
+Note, an (ᾱ, β̄)-k-fair ranking is also (ᾱ, β̄)-weak k-fair, but the converse need not be true. We
+would like to emphasize that all the results presented in this paper hold for both (ᾱ, β̄)-k-fairness and
+(ᾱ, β̄)-weak k-fairness.
+
+3
+
+Closest Fair Ranking
+
+In this section, we consider the problem of computing the closest fair ranking of a given input ranking.
+Below we formally define the problem.
+Definition 3.1 (Closest fair ranking problem). Consider a metric space (Sd , ρ) for a d ∈ N. Given
+a ranking π ∈ Sd and ᾱ, β̄ ∈ [0, 1]g for some g ∈ N, k ∈ [d], the objective of the closest fair
+ranking problem (resp. closest weak fair ranking problem) is to find a (ᾱ, β̄)-k-fair ranking (resp.
+(ᾱ, β̄)-weak k-fair ranking) π ∗ ∈ Sd that minimizes the distance ρ(π, π ∗ ) .
+Unless stated explicitly, we consider the notion of (ᾱ, β̄)-k-fairness (as opposed to the weak notion)
+in all the results presented in this section. The following algorithm assumes that a fair ranking exists,
+and finds one in this case. If such a ranking does not exist, then the procedure might return an
+arbitrary ranking. However, it is possible to check in linear time whether a given ranking is fair or
+not. Hence, we can correctly output a solution if one exists, and return ‘no solution’ otherwise.
+3.1
+
+Closest fair ranking under Kendall tau metric
+
+Closest weak fair ranking. We first show that we can compute a closest weak fair ranking under
+the Kendall tau metric exactly in linear time.
+Theorem 3.2. There exists a linear time algorithm that, given a ranking π ∈ Sd , a partition of [d] into
+g groups G1 , . . . , Gg for some g ∈ N, and ᾱ = (α1 , . . . , αg ) ∈ [0, 1]g , β̄ = (β1 , . . . , βg ) ∈ [0, 1]g ,
+k ∈ [d], outputs a closest (ᾱ, β̄)-weak k-fair ranking under the Kendall tau distance.
+Let us first describe the algorithm. Our algorithm follows a simple greedy strategy. For each group
+Gi , it picks the top ⌊αi k⌋ elements according to the input ranking π, and add them in a set P . If P
+contains k elements, then we are done. Otherwise, we iterate over the remaining elements (in the
+increasing order of rank by π) and add them in P as long as for each group Gi , |P ∩ Gi | ≤ ⌈βi k⌉
+5
+
+(each group has at most ⌈βi k⌉ elements in P ) until the size of P becomes exactly k. Then we use the
+relative ordering of the elements in P as in the input ranking π and make it the k-length prefix of the
+output ranking σ. Fill the last d − k positions of σ by the remaining elements ([d] \ P ) by following
+their relative ordering as in the input π. See Algorithm 1 in the appendix for the pseudocode of the
+algorithm.
+By the construction of set P , at the end, for each group Gi , ⌊αi k⌋ ≤ |P ∩ Gi | ≤ ⌈βi k⌉. Since
+we use the elements of P in the k-length prefix of the output ranking σ, σ is an (ᾱ, β̄)-weak k-fair
+ranking. For the running time, a straightforward implementation our algorithms takes O(d) time. It
+only remains to argue that σ is a closest (ᾱ, β̄)-weak k-fair ranking to the input π. To show that, we
+use the following key observation.
+Claim 3.3. Under the Kendall tau distance, there always exists a closest (ᾱ, β̄)- k-fair ranking π ∗
+such that, for each group Gi (i ∈ [g]), for any two elements a ̸= b ∈ Gi , a <π∗ b if and only if
+a <π b.
+We say that a ranking π ∗ satisfying the above property (i.e., for each group Gi , i ∈ [g], for any two
+elements a ̸= b ∈ Gi , a <π∗ b if and only if a <π b), preserves intra-group orderings. This is
+because for elements of any group, their ordering in π ∗ is the same as their ordering in π.
+We want to highlight that the above claim holds for both the notions of fairness we consider. We defer
+the proof of the above claim and how we use it to conclude the proof of Theorem 3.2, to the appendix.
+Extension to general fairness notion. Previously, we provide an algorithm that outputs a weak fair
+ranking (see Definition 2.5 for the definition of weak fairness) closest to the input. Now, we present
+an algorithm that outputs a closest fair ranking (according to Definition 2.4).
+Theorem 3.4. There exists an O(d2 ) time algorithm that, given a ranking π ∈ Sd , a partition of
+[d] into g groups G1 , . . . , Gg for some g ∈ N, and ᾱ = (α1 , . . . , αg ) ∈ [0, 1]g , β̄ = (β1 , . . . , βg ) ∈
+[0, 1]g , k ∈ [d], outputs a closest (ᾱ, β̄)-k-fair ranking under the Kendall tau distance.
+The main challenge with this stronger fairness notion is that now we need to satisfy the fairness
+criteria for all the prefixes not just a fixed k-length prefix as in case of weak fairness. Surprisingly,
+we show that under the Kendall tau metric, by iteratively applying the algorithm for the closest weak
+fair ranking (Algorithm 1) as a black-box, over the prefixes of decreasing length, we can construct a
+closest fair ranking (not just a closest weak fair ranking). Here, it is worth noting that at any iteration
+the input to Algorithm 1 is a prefix of π which may not be a permutation. However, Algorithm 1
+only treats the input as a sequence of numbers (not really as a permutation). See Algorithm 2 in the
+appendix for a formal description of the algorithm.
+Note that, since we iteratively apply Algorithm 1 on a prefix of π (not the whole sequence represented
+by π), it is not even clear whether the algorithm finally outputs a fair ranking (assuming it exists).
+Below we first argue that if there exists a fair ranking, then the output σ must be a fair ranking. Next,
+we establish that σ is indeed a closest fair ranking to π.
+Let π ∗ be a closest fair ranking to π that preserves intra-group orderings (Claim 3.3 guarantees such a
+closest fair ranking). We show that the output σ = π ∗ . We start the argument by considering any two
+prefixes of length k1 and k2 , where k2 < k1 . We argue that k1 and k2 -length prefixes of σ and π ∗ are
+the same. Since this holds for any k1 and k2 (with k1 , k2 ≥ k), where k2 < k1 , by using induction
+we can show that σ = π ∗ . We defer the induction argument to the appendix and below provide the
+argument for the k1 and k2 -length prefixes (which is a key to prove the correctness of Theorem 3.4).
+For the sake of analysis, let us consider the following three permutations. Let π1 be the (ᾱ, β̄)-weak
+k1 -fair ranking closest to π, output by Algorithm 1. Let π2 be the ranking output by Algorithm 1
+when given the k1 -length prefix of π1 (i.e., the sequence π1 ([k1 ])) as input and is asked to output an
+(ᾱ, β̄)-weak k2 -fair ranking closest to π1 . Further, let π2′ be the (ᾱ, β̄)-weak k2 -fair ranking closest
+to π, output by Algorithm 1. In other words, π2 is the ranking produced by first applying Algorithm 1
+on π to make its k1 -length prefix fair and then apply Algorithm 1 again on that output to make its
+k2 -length prefix fair. Whereas, π2′ is the ranking produced by directly applying Algorithm 1 on π to
+make its k2 -length prefix fair.
+From the definition it is not at all clear whether such a π2 even exists. The next claim argues about
+the existence of ranking π2 .
+6
+
+Claim 3.5. If there is a ranking π ′ such that its k1 -length prefix P1 and k2 -length prefix P2 satisfies
+that for each group Gi (i ∈ [g]), ⌊αi k1 ⌋ ≤ |P1 ∩ Gi | ≤ ⌈βi k1 ⌉ and ⌊αi k2 ⌋ ≤ |P2 ∩ Gi | ≤ ⌈βi k2 ⌉,
+then π2 exists.
+It can further be shown that,
+Claim 3.6. The set of elements in π2 ([k1 ]) is the same as that in π1 ([k1 ]).
+Claim 3.7. The set of elements in π2 ([k2 ]) is the same as that in π2′ ([k2 ]).
+Claim 3.8. The set of elements in π ∗ ([k1 ]) is the same as that in π2 ([k1 ]).
+Claim 3.9. The set of elements in π ∗ ([k2 ]) is the same as that in π2 ([k2 ]).
+The proof of the above claims is in the appendix. We apply Claim 3.8 and Claim 3.9 iteratively to
+complete the correctness of Algorithm 2 which we defer to the appendix.
+It only remains to argue that the algorithm runs in time O(d2 ). This is easy to see since the algorithm
+invokes at most d calls to the O(d) subroutine Algorithm 1.
+3.2
+
+Closest fair ranking under Ulam metric
+
+Theorem 3.10. There exists a polynomial time dynamic programming based algorithm that finds a
+(ᾱ, β̄)-k-fair ranking under Ulam metric when there are constant number of groups.
+The proof of the lemma uses an intricate dynamic program exploiting the connection between the
+Ulam distance with the Longest Common Subsequence problem. We defer the proof to the appendix.
+
+4
+
+Fair Rank Aggregation
+
+We start this section by formally defining the fair rank aggregation problem. Then we will provide
+two meta-algorithms that approximate the fair aggregated ranking.
+Definition 4.1 (q-mean Rank Aggregation). Consider a metric space (Sd , ρ) for a d ∈ N. Given
+an exponent parameter q ∈ R, and a set S ⊆ Sd of n input rankings, the q-mean rank aggregation
+problem asks to find a ranking σ ∈ Sd (not necessarily from S) that minimizes the objective function
+
+P
+q 1/q
+Objq (S, σ) :=
+.
+π∈S ρ(π, σ)
+Generalized mean or q-mean objective functions are well-studied in the context of clustering [CMV],
+and division of goods [BKM22]. We study it for the first time in the context of rank aggregation.
+For q = 1, the above problem is also referred to as the median ranking problem or simply rank
+aggregation problem [Kem59, You88, YL78, DKNS01]. On the other hand, for q = ∞, the problem
+is also referred to as the center ranking problem or maximum rank aggregation problem [BBGH15,
+BBD09, Pop07]. Both these special cases are studied extensively in the literature with different
+distance measures, e.g., Kendall tau distance [DKNS01, ACN08, KMS07, Sch12, BBD09], Ulam
+distance [CDK21, BBGH15, CGJ21], Spearman footrule distance [DKNS01, BBGH15].
+In the fair rank aggregation problem, we want the output aggregated rank to satisfy certain fairness
+constraints. Throughout this section, for brevity, we use the term (weak) fair ranking instead of
+(ᾱ, β̄)-(weak) k-fair ranking.
+Definition 4.2 (q-mean Fair Rank Aggregation). Consider a metric space (Sd , ρ) for a d ∈ N. Given
+an exponent parameter q ∈ R, and a set S ⊆ Sd of n input rankings/permutations, the q-mean (weak)
+fair rank aggregation problem asks to find a (weak) fair ranking σ ∈ Sd (not necessarily from S) that
+
+P
+q 1/q
+minimizes the objective function Objq (S, σ) :=
+.
+π∈S ρ(π, σ)
+It is worth noting that in the above definition, the minimization is over the set of all the (weak) fair
+rankings in Sd . When clear from the context, we drop weak and refer to it as the q-mean fair rank
+aggregation problem. Let σ ∗ be a (weak) fair ranking that minimizes Objq (S, σ),then we call σ ∗ a
+q-mean fair aggregated rank of S. We refer to Objq (S, σ ∗ ) as OPTq (S).
+When q = 1, we refer the problem as the fair median ranking problem or simply fair rank aggregation
+problem. When q = ∞, the objective function becomes Obj∞ (S, σ) = maxπ∈S ρ(π, σ), and we
+refer the problem as the fair center ranking problem.
+7
+
+Next, we present two meta algorithms that work for any values of q and irrespective of weak or strong
+(i.e., general) fairness constraint. We will also assume q to be a constant.
+4.1
+
+First Meta Algorithm
+
+Theorem 4.3. Consider any q ≥ 1. Suppose there is a t(d)-time c-approximation algorithm A,
+for some c ≥ 1, for the closest fair ranking problem over the metric space (Sd , ρ). Then there
+exists a (c + 2)-approximation algorithm for the q-mean fair rank aggregation problem, that runs in
+O(n · t(d) + n2 · f (d)) time where f (d) is the time to compute ρ(π1 , π2 ) for any π1 , π2 ∈ Sd .
+We devote this subsection to proving the above theorem. Let us start by describing the algorithm.
+It works as follows: Given a set S ⊆ Sd of rankings, it first computes c-approximate closest fair
+ranking σ (for some c ≥ 1) for each π ∈ S. Next, among these |S| fair rankings output the ranking σ
+that minimizes Objq (S, σ). Let us denote the output ranking by σ̄. See Algorithm 4 in the appendix
+for a more formal description.
+It is straightforward to verify that the running time of the above algorithm is O(n · t(d) + n2 · f (d)),
+where f (d) is the time to compute ρ(π1 , π2 ) for any π1 , π2 ∈ Sd and t(d) denotes the running time
+of the algorithm A. So it only remains to argue about the approximation factor of Algorithm 4.
+The following simple observation plays a pivotal role in establishing the approximation factor of
+Algorithm 4.
+Lemma 4.4. Given a set S ⊆ Sd of n rankings, let σ ∗ be an optimal q-mean fair aggregated rank of S
+under a distance function ρ. Further, let π̄ be a nearest neighbor (closest ranking) of σ ∗ in S, and σ̄ be
+a c-approximate closest fair ranking to π̄, for some c ≥ 1. Then ∀π ∈ S, ρ(π, σ̄) ≤ (c + 2) · ρ(π, σ ∗ ).
+We defer the proof of the above claim to the appendix. Now, we use the above lemma to show that
+the approximation factor of Algorithm 4 is c + 2. Let σ ∗ be an (arbitrary) optimal fair aggregate
+rank of S and σ̄ be the output of Algorithm 4. The optimal value of the objective function is
+
+P
+∗ q 1/q
+OPT = Objq (S, σ ∗ ) =
+. Next, we show that Objq (S, σ̄) ≤ (c + 2) · OPT.
+π∈S ρ(π, σ )
+!1/q
+!1/q
+X
+X
+
+∗ q
+∗ q
+Objq (S, σ̄) ≤
+(c + 2) · ρ(π, σ )
+= (c + 2) ·
+ρ(π, σ )
+= (c + 2) · OPT.
+π∈S
+
+π∈S
+
+where the first inequality follows from Lemma 4.4. This concludes the proof of Theorem 4.3.
+Applications of Theorem 4.3. We have shown in Theorem 3.4 that the closest fair ranking problem
+for Kendall tau can be solved exactly in O(d2 ) time, i.e., the approximation ratio is c = 1. We also
+know from [Kni66], that the Kendall tau distance between two permutations can be computed in
+O(d log d) time. This gives us that,
+Corollary 4.5. For any q ≥ 1, there exists an O(nd2 + n2 d log d) time meta-algorithm that finds a
+3-approximate solution to the q-mean fair rank aggregation problem under the Kendall tau metric.
+It is shown in [CSV18] that the closest fair ranking problem for Spearman footrule can be solved
+exactly in O(d3 log d) time, i.e., the approximation ratio is c = 1. Since distance under Spearman
+footrule can be trivially computed in O(d) we have that,
+Corollary 4.6. For any q ≥ 1, there exists an O(nd3 log d + n2 d) time meta-algorithm that finds a
+3-approximate solution to the q-mean fair rank aggregation problem under the Spearman footrule
+metric.
+We have shown in Theorem 3.10 that for constant number of groups, the closest fair ranking problem
+for Ulam metric can be solved exactly in O(dg+2 ) time, i.e., the approximation ratio is c = 1.
+From [AD99] we know that Ulam distance between two permutations can be computed in O(d log d)
+time. This gives us that,
+Corollary 4.7. For any q ≥ 1, there exists an O(ndg+2 + n2 d log d) time meta-algorithm, that finds
+a 3-approximate solution to the q-mean fair rank aggregation problem , under the Ulam metric.
+We would like to emphasize that all the above results hold for any values of q ≥ 1. Hence, they are
+also true for the special case of the fair median problem (i.e., for q = 1) and the fair center problem
+(i.e., for q = ∞).
+8
+
+4.2
+
+Second Meta Algorithm
+
+Theorem 4.8. Consider any q ≥ 1. Suppose there is a t1 (n) time c1 -approximation algorithm A1
+for some c1 ≥ 1 for q-mean rank aggregation problem; and a t2 (d)-time c2 -approximation algorithm
+A2 , for some c2 ≥ 1, for the closest fair ranking problem over the metric space (Sd , ρ). Then there
+exists a (c1 c2 + c1 + c2 )-approximation algorithm for the q-mean fair rank aggregation problem,
+that runs in O(t1 (n) + t2 (d) + n2 · f (d)) time where f (d) is the time to compute ρ(π1 , π2 ) for any
+π1 , π2 ∈ Sd .
+The algorithm works as follows: Given a set S ⊆ Sd of rankings, it first computes c1 -approximate
+aggregate rank π ∗ . Next, output a c2 -approximate closest fair ranking σ̄, to π ∗ . See Algorithm 5 in
+the appendix for a more formal description.
+It is easy to see that the running time of the algorithm is O(t1 (n) + t2 (d) + n2 · f (d)), where f (d)
+is the time to compute ρ(π, σ) for any π, σ ∈ Sd , t1 (n) denotes the running time of the algorithm
+A1 , and t2 (d) denotes the running time of the algorithm A2 . It now remains to argue about the
+approximation ratio of the above algorithm. We again make a simple but crucial observation towards
+establishing the approximation ratio for Algorithm 5.
+Lemma 4.9. Given a set S ⊆ Sd of n rankings, let σ ∗ be an optimal q-mean fair aggregated rank of
+S under a distance function ρ. Further, let π ∗ be the c1 -approximate aggregate rank of S and σ̄ be a
+c2 -approximate closest fair ranking to π ∗ , for some c1 , c1 ≥ 1. Then
+∀π ∈ S, ρ(π, σ̄) ≤ (c1 c1 + c1 + c2 ) · ρ(π, σ ∗ ).
+We defer the proof of this lemma to the appendix. Once we have this key lemma in place, the
+remaining proof of Theorem 4.8, follows exactly as the proof of Theorem 4.3.
+The above algorithm can give similar approximation guarantees as Algorithm 4, but with potentially
+better running times depending on whether the rank aggregation problem is solved in a faster way
+for the particular problem in consideration. For instance consider the case for Spearman footrule.
+It is known that the rank aggregation problem for Spearman footrule can be solved in Õ(d2 ) time
+[vdBLN+ 20]. So, using this in conjunction with Algorithm 5 we obtain the following result.
+Corollary 4.10. For q = 1, there exists an O(d3 log d + n2 d + nd2 ) time meta-algorithm, that finds
+a 3-approximate solution to the q-mean fair rank aggregation problem (i.e., the fair median problem)
+under Spearman footrule metric.
+4.3
+
+Breaking below 3-factor for Ulam
+
+Theorem 4.11. For q = 1, there exists a constant ε > 0 and a polynomial time algorithm that finds
+a (3 − ε)-approximate solution to the q-mean fair rank aggregation problem (i.e., the fair median
+problem), under the Ulam metric for constantly many groups.
+We show the above result by designing an algorithm based on the relative ordering of the elements
+(as in the majority of the input rankings). Then the final output is the best of that output by this new
+algorithm and that produced by our first meta-algorithm. We argue that when the whole optimal
+objective value is distributed among only a few elements, then the first meta-algorithm already
+achieves (3 − ε)-approximation. Otherwise, this relative ordering-based approach will provide a
+(3 − ε)-approximation. The argument used is quite similar to that used in [CDK21] to obtain a better
+than 2-factor approximate median under the Ulam metric. We describe our algorithm along with the
+complete analysis in the appendix.
+
+5
+
+Conclusion
+
+In this paper, we lay the theoretical framework for studying the closest fair ranking and fair rank
+aggregation problems while ensuring minority protection and restricted dominance. We first give
+a simple, practical, and exact algorithm for CFR under the Kendall tau metric; and a polynomial
+time exact algorithm for CFR under the Ulam metric when there are constantly many groups. We
+then use such a black box solution to CFR to design two novel meta-algorithms for FRA for a
+general q-mean objective, which are valid under any metric. The approximation ratios of these meta
+algorithms depend on the approximation ratio of the CFR subroutine used by them. Lastly, we
+9
+
+give a (3 − ε)-approximate algorithm for FRA under the Ulam metric, which improves over our
+meta algorithm’s approximation ratio for the same case. Achieving a similar (better than 3-factor)
+approximation bound for the Kendall tau or other metrics is an interesting open problem. Another set
+of intriguing open problems arise when there is overlap between the groups, i.e., when an element
+can belong to multiple groups.
+It is still open whether exact algorithms exist for the the case when an element can belong to (at most)
+two groups.
+Acknowledgments. Diptarka Chakraborty was supported in part by an MoE AcRF Tier 2 grant
+(WBS No. A-8000416-00-00) and an NUS ODPRT grant (WBS No. A-0008078-00-00). Arindam
+Khan gratefully acknowledges the generous support due to Pratiksha Trust Young Investigator Award,
+Google India Research Award, and Google ExploreCS Award.
+
+References
+[ACN08] Nir Ailon, Moses Charikar, and Alantha Newman. Aggregating inconsistent information: Ranking and clustering. J. ACM, 55(5):23:1–23:27, 2008.
+[AD99] David Aldous and Persi Diaconis. Longest increasing subsequences: from patience
+sorting to the Baik-Deift-Johansson theorem. Bulletin of the American Mathematical
+Society, 36(4):413–432, 1999.
+[AEKM20] Sara Ahmadian, Alessandro Epasto, Ravi Kumar, and Mohammad Mahdian. Fair
+correlation clustering. In International Conference on Artificial Intelligence and
+Statistics (AISTATS), volume 108, pages 4195–4205, 2020.
+[AJSD19] Abolfazl Asudeh, HV Jagadish, Julia Stoyanovich, and Gautam Das. Designing fair
+ranking schemes. In SIGMOD International Conference on Management of Data,
+pages 1259–1276, 2019.
+[AK10] Alexandr Andoni and Robert Krauthgamer. The computational hardness of estimating
+edit distance. SIAM J. Comput., 39(6):2398–2429, 2010.
+[AN10] Alexandr Andoni and Huy L Nguyen. Near-optimal sublinear time algorithms for
+Ulam distance. In ACM-SIAM Symposium on Discrete Algorithms (SODA), pages
+76–86, 2010.
+[ASCPX13] Hossein Azari Soufiani, William Chen, David C Parkes, and Lirong Xia. Generalized
+method-of-moments for rank aggregation. Advances in Neural Information Processing
+Systems (NeurIPS), pages 2706–2714, 2013.
+[BBD09] Therese Biedl, Franz J Brandenburg, and Xiaotie Deng. On the complexity of crossings
+in permutations. Discrete Mathematics, 309(7):1813–1823, 2009.
+[BBGH15] Christian Bachmaier, Franz J Brandenburg, Andreas Gleißner, and Andreas Hofmeier.
+On the hardness of maximum rank aggregation problems. Journal of Discrete Algorithms, 31:2–13, 2015.
+[BCE+ 16] Felix Brandt, Vincent Conitzer, Ulle Endriss, Jérôme Lang, and Ariel D Procaccia.
+Handbook of computational social choice. Cambridge University Press, 2016.
+[BCFN19] Suman Kalyan Bera, Deeparnab Chakrabarty, Nicolas Flores, and Maryam Negahbani.
+Fair algorithms for clustering. In Advances in Neural Information Processing Systems
+(NeurIPS), pages 4955–4966, 2019.
+[BCPV96] Sanjoy K Baruah, Neil K Cohen, C Greg Plaxton, and Donald A Varvel. Proportionate
+progress: A notion of fairness in resource allocation. Algorithmica, 15(6):600–625,
+1996.
+[BCZ+ 16] Tolga Bolukbasi, Kai-Wei Chang, James Y Zou, Venkatesh Saligrama, and Adam T
+Kalai. Man is to computer programmer as woman is to homemaker? debiasing word
+embeddings. Advances in Neural Information Processing Systems (NeurIPS), 29,
+2016.
+10
+
+[BHN17] Solon Barocas, Moritz Hardt, and Arvind Narayanan. Fairness in machine learning.
+NeurIPS tutorial, 1:2, 2017.
+[BIO+ 19] Arturs Backurs, Piotr Indyk, Krzysztof Onak, Baruch Schieber, Ali Vakilian, and Tal
+Wagner. Scalable fair clustering. In International Conference on Machine Learning
+(ICML), volume 97, pages 405–413, 2019.
+[BKM22] Siddharth Barman, Arindam Khan, and Arnab Maiti. Universal and tight online
+algorithms for generalized-mean welfare. In AAAI, pages 4793–4800, 2022.
+[Bor10] Vani K Borooah. Social exclusion and jobs reservation in india. Economic and Political
+Weekly, pages 31–35, 2010.
+[BS19] Mahdi Boroujeni and Saeed Seddighin. Improved MPC algorithms for edit distance
+and Ulam distance. In ACM Symposium on Parallelism in Algorithms and Architectures
+(SPAA), pages 31–40, 2019.
+[Cas19] Carlos Castillo. Fairness and transparency in ranking. In ACM SIGIR Forum, volume 52, pages 64–71, 2019.
+[CDK21] Diptarka Chakraborty, Debarati Das, and Robert Krauthgamer. Approximating the
+median under the ulam metric. In ACM-SIAM Symposium on Discrete Algorithms
+(SODA), pages 761–775, 2021.
+[CFLM19] Xingyu Chen, Brandon Fain, Liang Lyu, and Kamesh Munagala. Proportionally
+fair clustering. In International Conference on Machine Learning (ICML), pages
+1032–1041, 2019.
+[CGJ21] Diptarka Chakraborty, Kshitij Gajjar, and Agastya Vibhuti Jha. Approximating the
+center ranking under ulam. In IARCS Annual Conference on Foundations of Software
+Technology and Theoretical Computer Science (FSTTCS), 2021.
+[CHRG16] Matthew Costello, James Hawdon, Thomas Ratliff, and Tyler Grantham. Who views
+online extremism? individual attributes leading to exposure. Computers in Human
+Behavior, 63:311–320, 2016.
+[CK06] Moses Charikar and Robert Krauthgamer. Embedding the Ulam metric into l1 . Theory
+of Computing, 2(11):207–224, 2006.
+[CKLV17] Flavio Chierichetti, Ravi Kumar, Silvio Lattanzi, and Sergei Vassilvitskii. Fair clustering through fairlets. In Advances in Neural Information Processing Systems (NeurIPS),
+pages 5029–5037, 2017.
+[CKLV19] Flavio Chierichetti, Ravi Kumar, Silvio Lattanzi, and Sergei Vassilvtiskii. Matroids,
+matchings, and fairness. In International Conference on Artificial Intelligence and
+Statistics (AISTATS), volume 89, pages 2212–2220, 2019.
+[CMS01] Graham Cormode, Shan Muthukrishnan, and Süleyman Cenk Sahinalp. Permutation
+editing and matching via embeddings. In International Colloquium on Automata,
+Languages, and Programming (ICALP), pages 481–492. Springer, 2001.
+[CMV] Eden Chlamtác, Yury Makarychev, and Ali Vakilian. Approximating fair clustering
+with cascaded norm objectives. In Joseph (Seffi) Naor and Niv Buchbinder, editors,
+ACM-SIAM Symposium on Discrete Algorithms, (SODA), pages 2664–2683.
+[CSV18] L Elisa Celis, Damian Straszak, and Nisheeth K Vishnoi. Ranking with fairness
+constraints. In International Colloquium on Automata, Languages, and Programming
+(ICALP), volume 107, pages 28:1–28:15, 2018.
+[Des05] Ashwini Deshpande. Affirmative action in india and the united states. 2005.
+[DG77] Persi Diaconis and R L Graham. Spearman’s footrule as a measure of disarray. Journal
+of the Royal Statistical Society. Series B (Methodological), 39(2):262–268, 1977.
+11
+
+[DHP+ 12] Cynthia Dwork, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Richard Zemel.
+Fairness through awareness. In Innovations in Theoretical Computer Science, pages
+214–226, 2012.
+[DKNS01] Cynthia Dwork, Ravi Kumar, Moni Naor, and Dandapani Sivakumar. Rank aggregation
+methods for the web. In International conference on World Wide Web, pages 613–622,
+2001.
+[Eur] Eu platform of diversity charters. https://ec.europa.eu/info/policies/
+justice-and-fundamental-rights/combatting-discrimination/
+tackling-discrimination/diversity-and-inclusion-initiatives/
+eu-platform-diversity-charters_en. Accessed: May, 2022.
+[FKS03] Ronald Fagin, Ravi Kumar, and Dandapani Sivakumar. Efficient similarity search
+and classification via rank aggregation. In SIGMOD International Conference on
+Management of Data, pages 301–312, 2003.
+[GDL21] Sruthi Gorantla, Amit Deshpande, and Anand Louis. On the problem of underranking
+in group-fair ranking. In International Conference on Machine Learning (ICML),
+pages 3777–3787, 2021.
+[GL11] David F Gleich and Lek-heng Lim. Rank aggregation via nuclear norm minimization.
+In ACM SIGKDD International Conference on Knowledge Discovery and Data Mining,
+pages 60–68, 2011.
+[GSB21] David García-Soriano and Francesco Bonchi. Maxmin-fair ranking: individual fairness under group-fairness constraints. In ACM SIGKDD Conference on Knowledge
+Discovery & Data Mining, pages 436–446, 2021.
+[Har92] Donna Harman. Ranking algorithms. In William B Frakes and Ricardo A BaezaYates, editors, Information Retrieval: Data Structures & Algorithms, pages 363–392.
+Prentice-Hall, 1992.
+[HJV19] Lingxiao Huang, Shaofeng H.-C. Jiang, and Nisheeth K. Vishnoi. Coresets for clustering with fairness constraints. In Advances in Neural Information Processing Systems
+(NeurIPS), pages 7587–7598, 2019.
+[HPS16] Moritz Hardt, Eric Price, and Nati Srebro. Equality of opportunity in supervised
+learning. In Advances in Neural Information Processing Systems (NeurIPS), pages
+3315–3323, 2016.
+[HV19] Lingxiao Huang and Nisheeth Vishnoi. Stable and fair classification. In International
+Conference on Machine Learning (ICML), pages 2879–2890, 2019.
+[Kem59] John G Kemeny. Mathematics without numbers. Daedalus, 88(4):577–591, 1959.
+[Ken38] Maurice G Kendall. A new measure of rank correlation. Biometrika, 30(1/2):81–93,
+1938.
+[KMM15] Matthew Kay, Cynthia Matuszek, and Sean A Munson. Unequal representation and
+gender stereotypes in image search results for occupations. In ACM conference on
+human factors in computing systems, pages 3819–3828, 2015.
+[KMS07] Claire Kenyon-Mathieu and Warren Schudy. How to rank with few errors. In ACM
+Symposium on Theory of Computing (STOC), pages 95–103, 2007.
+[Kni66] William R Knight. A computer method for calculating kendall’s tau with ungrouped
+data. Journal of the American Statistical Association, 61(314):436–439, 1966.
+[KR20] Caitlin Kuhlman and Elke Rundensteiner. Rank aggregation algorithms for fair consensus. Proceedings of the VLDB Endowment, 13(12), 2020.
+[KV10] Ravi Kumar and Sergei Vassilvitskii. Generalized distances between rankings. In
+International Conference on World Wide Web, pages 571–580, 2010.
+12
+
+[MMS+ 21] Ninareh Mehrabi, Fred Morstatter, Nripsuta Saxena, Kristina Lerman, and Aram
+Galstyan. A survey on bias and fairness in machine learning. ACM Computing Surveys
+(CSUR), 54(6):1–35, 2021.
+[NSS17] Timothy Naumovitz, Michael E Saks, and C Seshadhri. Accurate and nearly optimal
+sublinear approximations to Ulam distance. In ACM-SIAM Symposium on Discrete
+Algorithms (SODA), pages 2012–2031, 2017.
+[PGNN20] Vishakha Patil, Ganesh Ghalme, Vineet Nair, and Yadati Narahari. Achieving fairness
+in the stochastic multi-armed bandit problem. In AAAI, pages 5379–5386, 2020.
+[PKL21] Deval Patel, Arindam Khan, and Anand Louis. Group fairness for knapsack problems.
+In International Conference on Autonomous Agents and Multiagent Systems (AAMAS),
+pages 1001–1009, 2021.
+[Pop07] V Yu Popov. Multiple genome rearrangement by swaps and by element duplications.
+Theoretical computer science, 385(1-3):115–126, 2007.
+[PPM+ 22] Gourab K. Patro, Lorenzo Porcaro, Laura Mitchell, Qiuyue Zhang, Meike Zehlike, and
+Nikhil Garg. Fair ranking: a critical review, challenges, and future directions. In ACM
+Conference on Fairness, Accountability, and Transparency (FAccT), pages 1929–1942,
+2022.
+[Sch12] Warren Schudy. Approximation schemes for inferring rankings and clusterings from
+pairwise data. Ph.D. Thesis, 2012.
+[Sin19] Simrandeep Singh. An analysis of the constitutionality of the economically weaker
+sections (ews) reservation. Available at SSRN 3543312, 2019.
+[Spe04] C Spearman. The proof and measurement of association between two things. The
+American Journal of Psychology, 15(1):72–101, 1904.
+[Spe06] C Spearman. Footrule for measuring correlation. British Journal of Psychology,
+2(1):89, 1906.
+[USD] Us equal employment opportunity commission. https://www.eeoc.gov. Accessed:
+May, 2022.
+[vdBLN+ 20] Jan van den Brand, Yin Tat Lee, Danupon Nanongkai, Richard Peng, Thatchaphol
+Saranurak, Aaron Sidford, Zhao Song, and Di Wang. Bipartite matching in nearlylinear time on moderately dense graphs. In IEEE Annual Symposium on Foundations
+of Computer Science (FOCS), pages 919–930, 2020.
+[Ver10] Tània Verge. Gendering representation in spain: Opportunities and limits of gender
+quotas. Journal of Women, Politics & Policy, 31(2):166–190, 2010.
+[WISR22] Dong Wei, Md Mouinul Islam, Baruch Schieber, and Senjuti Basu Roy. Rank aggregation with proportionate fairness. In SIGMOD International Conference on
+Management of Data, pages 262–275, 2022.
+[YL78] H Peyton Young and Arthur Levenglick. A consistent extension of condorcet’s election
+principle. SIAM Journal on Applied Mathematics, 35(2):285–300, 1978.
+[You88] H Peyton Young. Condorcet’s theory of voting. American Political science review,
+82(4):1231–1244, 1988.
+[ZBC+ 17] Meike Zehlike, Francesco Bonchi, Carlos Castillo, Sara Hajian, Mohamed Megahed,
+and Ricardo Baeza-Yates. Fa* ir: A fair top-k ranking algorithm. In ACM Conference
+on Information and Knowledge Management (CIKM), pages 1569–1578, 2017.
+[ZYS21] Meike Zehlike, Ke Yang, and Julia Stoyanovich. Fairness in ranking: A survey. arXiv
+preprint arXiv:2103.14000, 2021.
+
+13
+
+Checklist
+1. For all authors...
+(a) Do the main claims made in the abstract and introduction accurately reflect the paper’s
+contributions and scope? [Yes]
+(b) Did you describe the limitations of your work? [No] The current work is theoretical.
+The setting and models under study are clearly described in the paper.
+(c) Did you discuss any potential negative societal impacts of your work? [No] Given
+the theoretical nature of the work, we do not envision any potential negative societal
+impact.
+(d) Have you read the ethics review guidelines and ensured that your paper conforms to
+them? [Yes]
+2. If you are including theoretical results...
+(a) Did you state the full set of assumptions of all theoretical results? [Yes]
+(b) Did you include complete proofs of all theoretical results? [Yes] complete proofs are
+given in the appendix.
+3. If you ran experiments...
+(a) Did you include the code, data, and instructions needed to reproduce the main experimental results (either in the supplemental material or as a URL)? [N/A]
+(b) Did you specify all the training details (e.g., data splits, hyperparameters, how they
+were chosen)? [N/A]
+(c) Did you report error bars (e.g., with respect to the random seed after running experiments multiple times)? [N/A]
+(d) Did you include the total amount of compute and the type of resources used (e.g., type
+of GPUs, internal cluster, or cloud provider)? [N/A]
+4. If you are using existing assets (e.g., code, data, models) or curating/releasing new assets...
+(a) If your work uses existing assets, did you cite the creators? [N/A]
+(b) Did you mention the license of the assets? [N/A]
+(c) Did you include any new assets either in the supplemental material or as a URL? [N/A]
+(d) Did you discuss whether and how consent was obtained from people whose data you’re
+using/curating? [N/A]
+(e) Did you discuss whether the data you are using/curating contains personally identifiable
+information or offensive content? [N/A]
+5. If you used crowdsourcing or conducted research with human subjects...
+(a) Did you include the full text of instructions given to participants and screenshots, if
+applicable? [N/A]
+(b) Did you describe any potential participant risks, with links to Institutional Review
+Board (IRB) approvals, if applicable? [N/A]
+(c) Did you include the estimated hourly wage paid to participants and the total amount
+spent on participant compensation? [N/A]
+
+14
+
+

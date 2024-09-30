@@ -1,0 +1,1212 @@
+What You See is What You Get:
+Principled Deep Learning via Distributional
+Generalization
+Bogdan Kulynych1? Yao-Yuan Yang2? Yaodong Yu3 Jarosław Błasiok4 Preetum Nakkiran2
+1
+EPFL 2 UC San Diego 3 UC Berkeley 4 Columbia University
+?
+
+denotes equal contribution.
+
+Abstract
+Having similar behavior at training time and test time—what we call a “What You
+See Is What You Get” (WYSIWYG) property—is desirable in machine learning.
+Models trained with standard stochastic gradient descent (SGD), however, do not
+necessarily have this property, as their complex behaviors such as robustness or
+subgroup performance can differ drastically between training and test time. In
+contrast, we show that Differentially-Private (DP) training provably ensures the
+high-level WYSIWYG property, which we quantify using a notion of distributional
+generalization. Applying this connection, we introduce new conceptual tools for
+designing deep-learning methods by reducing generalization concerns to optimization ones: to mitigate unwanted behavior at test time, it is provably sufficient to
+mitigate this behavior on the training data. By applying this novel design principle,
+which bypasses “pathologies” of SGD, we construct simple algorithms that are
+competitive with SOTA in several distributional-robustness applications, significantly improve the privacy vs. disparate impact trade-off of DP-SGD, and mitigate
+robust overfitting in adversarial training. Finally, we also improve on theoretical
+bounds relating DP, stability, and distributional generalization.
+
+1
+
+Introduction
+
+Much of machine learning (ML), both in theory and in practice, operates under two assumptions.
+First, we have independent and identically distributed (i.i.d.) samples. Second, we care only about a
+single averaged scalar metric (error, loss, risk). Under these assumptions, we have mature methods
+and theory: Modern learning methods excel when trained on i.i.d. data to directly optimize a scalar
+loss, and there are many theoretical tools for reasoning about generalization, which explain when
+does optimization of a scalar on the training data translates to similar values of this scalar at test time.
+The focus on scalar metrics such as average error, however, misses many theoretically, practically,
+and socially relevant aspects of model performance. For example, models with small average error
+often have high error on salient minority subgroups [Buolamwini and Gebru, 2018, Koenecke et al.,
+2020]. In general, ML models are applied to the heterogeneous and long-tailed data distributions of
+the real world [Van Horn and Perona, 2017]. Attempting to summarize their complex behavior with
+only a single scalar misses many rich and important aspects of learning.
+These issues are compounded for modern overparameterized networks, as their nuanced test-time
+behavior is not reflected at training time. For example, consider the setting of importance sampling:
+suppose we know that a certain subgroup of inputs is underrepresented in the training data compared
+to the test distribution (breaking the i.i.d. assumption). For underparameterized models, we can
+upsample this underrepresented group to account for the distribution shift [see, e.g., Gretton et al.,
+2009]. This approach, however, is known to empirically fail for overparameterized models [Byrd and
+Lipton, 2019]. Because “what you see” (on the training data) is not “what you get” (at test time),
+we cannot make principled train-time interventions to affect test-time behaviors. This issue extends
+36th Conference on Neural Information Processing Systems (NeurIPS 2022).
+
+Worst-group accuracy
+
+1.0
+
+SGD (CelebA)
+
+1.0
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+
+0.4
+
+0.4
+
+0.2
+
+0.2
+
+0.0
+
+Standard
+
+0.0
+Importance sampling
+
+DP-SGD (CelebA)
+
+Standard
+
+Importance sampling
+
+Figure 1: Differential privacy ensures the desired behavior of importance sampling on test data.
+The train and test accuracy of ResNets on CelebA, evaluated on the worst-performing (“male, blond”)
+subgroup. Left: Standard SGD has a large generalization gap on this subgroup, and Importance
+Sampling (IS) has little effect. Right: DP-SGD provably has small generalization gap on all subgroups,
+and IS improves subgroup performance as intended. See Section 5 for details.
+beyond importance sampling. For example, theoretically principled methods for distributionally
+robust optimization (e.g. Namkoong and Duchi [2016]) fail for overparameterized deep networks,
+and require ad-hoc modifications [Sagawa et al., 2019a].
+We develop a theoretical framework which sheds light on these existing issues, and leads to improved
+practical methods in privacy, fairness, and distributional robustness. The core object in our framework
+is what we call the “What You See Is What You Get” (WYSIWYG) property. A training procedure
+with the WYSIWYG property does not exhibit the “pathologies” of standard stochastic gradient
+descent (SGD): all test-time behaviors will be expressed on the training data as well, and there will
+be “no surprises” in generalization.
+What You See Is What You Get (WYSIWYG) as a Design Principle. The WYSIWYG property is
+desirable for two reasons. The first is diagnostic: as there are “no surprises” at test time, all properties
+of a model at test time are already evident at the training stage. It cannot be the case, for example, that
+a WYSIWYG model has small disparate impact on the training data, but large disparate impact at test
+time. The second reason is algorithmic: to mitigate any unwanted test-time behavior, it is sufficient
+to mitigate this behavior on the training data. This means that algorithm designers can be concerned
+only with achieving desirable behavior at train time, as the WYSIWYG property guarantees it holds
+at test time too. In practice, this enables the usage of many theoretically principled algorithms which
+were developed in the underparameterized regime to also apply in the modern overparameterized
+(deep learning) setting. For example, we find that interventions such as importance sampling, or
+algorithms for distributionally robust optimization, which fail without additional regularization, work
+exactly as intended with WYSIWYG (See Figure 1 for an illustration).
+As WYSIWYG is a high-level conceptual property, we have to formalize it to use in computational
+practice. We do so using the notion of Distributional Generalization (DG), as introduced by Nakkiran
+and Bansal [2020], Kulynych et al. [2022]. If classical generalization ensures that the values of
+the model’s loss on the training dataset and at test time are close on average [Shalev-Shwartz et al.,
+2010], distributional generalization ensures that values of any other bounded test function—not only
+loss—are close on training and test time. We say that a model which satisfies an appropriately high
+level of distributional generalization exhibits the WYSIWYG property.
+Achieving DG in Practice. Our key observation is that distributional generalization is formally
+implied by differential privacy (DP) [Dwork et al., 2006, 2014]). The spirit of this observation is
+not novel: DP training is known to satisfy much stronger notions of generalization (e.g., robust
+generalization, see Section 6 for more details), and stability than standard SGD [Dwork et al., 2015a,
+Cummings et al., 2016, Bassily et al., 2016, Steinke and Zakynthinou, 2020]. We show that a similar
+connection holds for the notion of distributional generalization, and prove (and improve) tight bounds
+relating DP, stability, and DG. This guarantees the WYSIWYG property for any method that is
+differentially-private, including DP-SGD on deep neural networks [Abadi et al., 2016].
+We demonstrate how DG can be a useful design principle in three concrete settings. First, we
+show that we can mitigate disparate impact of DP training [Bagdasaryan et al., 2019, Pujol et al.,
+2020] by leveraging importance sampling. Second, we study the setting of distributionally robust
+2
+
+optimization [e.g., Sagawa et al., 2019a, Hu et al., 2018]. We show how ideas from DP can be used
+to construct heuristic optimizers, which do not formally satisfy DP, yet empirically exhibit DG. Our
+heuristics lead to competitive results with SOTA algorithms in five datasets in the distributional
+robustness setting. Third, we show that the heuristic optimizer is also capable of reducing overfitting
+of adversarial loss in adversarial training [Madry et al., 2018, Zhang et al., 2019, Rice et al., 2020].
+Our Contributions. We develop the theoretical connection between Differential Privacy (DP) and
+Distributional Generalization (DG), and we leverage our theory to improve empirical performance in
+privacy, fairness, and robustness applications. Theoretically (Sections 2 to 4):
+1. We provide tighter bounds than previously reported connecting DP and strong forms of
+generalization, and show that DP training methods satisfy DG, thus the WYSIWYG property.
+2. We introduce DP-IS-SGD, an importance-sampling version of DP-SGD, and show it satisfies
+DP and DG.
+Experimentally (Section 5):
+1. We use our framework to shed light on disparate impact: The disparity in accuracy across
+groups at test time are provably reflected by the accuracy disparity on the train dataset.
+2. We use our DP-IS-SGD algorithm to largely mitigate the disparate impact of DP using
+importance sampling.
+3. Based on our theoretical intuitions, we propose a DP-inspired heuristic: addition of gradient
+noise. We find this empirically achieves competitive and even improved results in several
+DRO settings, and reduces overfitting of adversarial loss in adversarial training.
+Taken together, our results emphasize the central role of the WYSIWYG property in designing
+machine learning algorithms which avoid the “pathologies” of standard SGD. We also establish DP
+as a useful tool for achieving WYSIWYG, thus extend its applications further beyond privacy.
+
+2
+
+Theory of “What You See is What You Get” Generalization
+
+We first review the notion of distributional generalization and demonstrate why it captures the
+WYSIWYG property. Second, we show that strong stability notions imply distributional generalization. Finally, we improve on the known stability guarantees of differential privacy. As a result, we
+extend the connections between differential privacy, stability, and generalization to distributional
+generalization, showing that stability and privacy imply the WYSIWYG property.
+Notation. We consider a learning task with a set of examples X and labels Y. We assume that a
+source distribution of labeled examples z , (x, y) ⇠ D is defined over D = X ⇥ Y. Given an
+i.i.d.-sampled dataset S ⇠ Dn of size n, we use a randomized training algorithm T (S) that outputs
+a model’s parameter vector ✓ from the set ⇥. We denote by f✓ (x) the resulting prediction function.
+2.1
+
+Distributional Generalization and WYSIWYG
+
+If on-average generalization [Shalev-Shwartz et al., 2010] guarantees closeness only of loss values
+on train and test data, distributional generalization (DG) also guarantees closeness of values of all
+test functions (z; ✓) 2 [0, 1] beyond only loss:
+
+Definition 2.1 (Based on Nakkiran and Bansal [2020]). An algorithm T (S) satisfies -distributional
+generalization if for all : D ⇥ ⇥ ! [0, 1],
+E
+
+S⇠D n
+z⇠S
+
+z; T (S)
+
+E
+
+S⇠D n
+z⇠D
+
+z; T (S)
+
+ .
+
+(1)
+
+By the variational characterization of the total-variation (TV) distance [see, e.g., Polyanskiy and
+Wu, 2014, Chapter 6.3], Equation (1) is equivalent to the bound dTV (P1 , P0 )  , where P1 and P0
+are both distributions of z, T (S) over the randomness of S ⇠ Dn and the training algorithm T (·),
+with the difference that z ⇠ S in the case of P1 (train), and z ⇠ D in the case of P0 (test).
+It might seem that DG only ensures average closeness of bounded tests on train and test data. This is
+not, however, the full picture. Consider generalization in terms of a broader class of functions:
+3
+
+Definition 2.2 (Kulynych et al. [2022]). An algorithm T (S) satisfies ( , ⇡)-distributional generalization if for a given property function ⇡ : D ⇥ ⇥ ! Rk it holds that dTV (⇡] P1 , ⇡] P0 )  , where ⇡] P
+is the distribution of ⇡(T ) for T ⇠ P .
+Because TV distance is preserved under post-processing, we can see that -distributional generalization implies ( , ⇡)-distributional generalization for all property functions. Informally, -DG means
+that for all numeric property functions ⇡(z; ✓) of a model, the distributions of the property values are
+close on the train and test data, on average. This fact captures the high-level idea of the “What You
+See is What You Get” (WYSIWYG) guarantee. Some example property functions:
+• Subgroup loss: ⇡(z; ✓) = {z 2 G} · `(z; ✓), for some subgroup G ⇢ D.
+• Counterfactual fairness: ⇡((x, y); ✓) = f✓ (x0 ) f✓ (x), where x0 is a counterfactual version
+of x had it had a different value of a sensitive attribute [Kusner et al., 2017].
+• Robustness to corruptions: ⇡(z; ✓) = `(A(z); ✓), where A(x) is a possibly randomized
+transformation that distorts the example, e.g., by adding Gaussian noise.
+• Adversarial robustness: ⇡(z; ✓) = `(A✓ (z); ✓), where A✓ (z) is an adversarial example, e.g.
+generated using the PGD attack [Madry et al., 2018].
+In the next sections, we show how a training algorithm can provably satisfy DG and therefore provide
+WYSIWYG guarantees for all properties, including the ones above.
+2.2
+
+Distributional Generalization from Stability and Differential Privacy
+
+The connections between privacy, stability, and generalization are well-known. In particular, stability
+of the learning algorithm—its non-sensitivity to limited changes in the training data—implies generalization [Bousquet and Elisseeff, 2002, Shalev-Shwartz et al., 2010]. In turn, differential privacy
+implies strong forms of stability, thus ensuring generalization through the chain Privacy ) Stability
+) Generalization [Raskhodnikova et al., 2008, Dwork et al., 2015b,a, Wang et al., 2016].
+
+Let us formally define differential privacy:
+Definition 2.3 (Differential Privacy [Dwork et al., 2006, 2014]). An algorithm T (S) is (✏, )differentially private (DP) if for any two neighbouring datasets—differing by one example—S, S 0 of
+size n, for any subset K ✓ ⇥ it holds that Pr[T (S) 2 K]  exp(✏) Pr[T (S 0 ) 2 K] + .
+DP mathematically encodes a notion of plausible deniability of the inclusion of an example in the
+dataset. However, it can also be thought as a strong form of stability [Dwork et al., 2015b]. As such,
+DP implies other notions of stability. We consider the following notion, which has been studied in
+the literature under multiple names. In the context of privacy, it is equivalent to (0, )-differential
+privacy, and has been called additive differential privacy [Geng et al., 2019], and total-variation
+privacy [Barber and Duchi, 2014]. In the context of learning, it has been called total-variation (TV)
+stability [Bassily et al., 2016]. We take this last approach and refer to it as TV stability:
+Definition 2.4 (TV Stability). An algorithm T (S) is -TV stable if for any two neighbouring datasets
+S, S 0 of size n, for any subset T ✓ ⇥ it holds that Pr[T (S) 2 K]  Pr[T (S 0 ) 2 K] + .
+It is easy to see that (✏, )-DP immediately implies
+0
+
+= exp(✏)
+
+0
+
+-TV stability with:
+1+ .
+
+(2)
+
+From Classical to Distributional Generalization. Similarly to the classical generalization, one way
+to achieve distributional generalization is through strong stability:
+Theorem 2.5. Suppose that the training algorithm is -TV stable. Then, the algorithm satisfies -DG.
+We refer to Appendix B for the proofs of this and all other formal statements in the rest of the paper.
+As DP implies TV-stability, by Theorem 2.5 we have that DP also implies DG. We show that DP
+algorithms enjoy a significantly stronger stability guarantee than previously known, which means
+that the DG guarantee that one obtains from DP is also stronger.
+Proposition 2.6. An algorithm which is (✏, )-DP is also 0 -TV stable with:
+0
+
+=
+
+exp(✏) 1 + 2
+.
+exp(✏) + 1
+4
+
+1.5
+1
+DG
+
+In Appendix A.2, we discuss the relationship of this
+result to other works in the literature on informationtheoretic generalization. In particular, to Steinke and
+Zakynthinou [2020] whose results can also be used
+to relate DP and DG. Figure 2 shows that the known
+bounds quickly become vacuous unlike the bound in
+Proposition 2.6. In fact, we show that our bound is
+tight in Appendix B.
+
+Equation (2)
+Steinke and Zakynthinou [2020]
+Proposition 2.6 (Ours)
+
+0.5
+0
+
+0
+
+0.5
+
+1
+
+1.5
+
+2
+
+2.5
+✏
+
+3
+
+3.5
+
+4
+
+4.5
+
+5
+
+Figure 2: DG bound from (✏, 0)-DP.
+
+Stronger Distributional Generalization Guarantees. Although DG immediately implies generalization for all bounded properties, it is possible to obtain tighter bounds from TV stability. For example,
+directly applying -DG to the subgroup loss property yields a bound that decays with the size of the
+subgroup: accuracy on very small subgroups is not guaranteed to generalize well. In Appendix C.1
+we show that TV stability in fact implies “subgroup DG”, which guarantees that the accuracy on even
+small subgroups generalizes well in expectation. As another example, in Appendix C.2 we show that
+TV stability also ensures the generalization of calibration properties of the learning algorithm.
+
+3
+
+Example Applications
+
+To demonstrate that WYSIWYG is a useful property in algorithm design, in the remainder of this
+paper we use it to construct simple and high-performing algorithms for three example applications:
+mitigation of disparate impact of DP, ensuring group-distributional robustness, and mitigation of
+robust overfitting in adversarial training.
+Mitigating Disparate Impact of DP. First, we consider applications in which learning presents
+privacy concerns, e.g., in the case that the training data contains sensitive information. Using training
+procedures that satisfy DP is a standard way to guarantee privacy in such settings. Training with
+DP, however, is known to incur disparate impact on the model accuracy: some subgroups of inputs
+can have worse test accuracy than others. For example, Bagdasaryan et al. [2019] show that using
+DP-SGD—a standard algorithm for satisfying DP [Abadi et al., 2016]—in place of regular SGD
+causes a significant accuracy drop on “darker skin” faces in models trained on the CelebA dataset of
+celebrity faces [Liu et al., 2015], but a less severe drop on “lighter skin” faces. Our goal is to mitigate
+such disparate impact. This issue—a quality-of-service harm [Madaio et al., 2020]—is but one of
+many possible harms due to ML systems. We do not aim to mitigate any other broad fairness-related
+issues, nor claim this is possible within our framework.
+Formally, we assume
+groups indexed by set G = {1, . . . , m},
+Pm the data distribution D is a mixture of m
+m
+such
+that
+D
+=
+q
+D
+.
+The
+vector
+(q
+,
+.
+.
+.
+,
+q
+)
+2
+[0,
+1]
+represents the group probabilities, with
+i
+i
+i
+m
+i=1
+Pm
+q
+=
+1.
+For
+given
+parameters
+(✏,
+),
+we
+want
+to
+learn
+a
+model ✓ that simultaneously satisfies
+i
+i=1
+(✏, )-DP, has high overall accuracy, and incurs small loss disparity:
+max
+
+E [`(z; ✓)]
+
+g,g 0 2G z⇠Dg
+
+E [`(z; ✓)] .
+
+z⇠Dg0
+
+(3)
+
+Group-Distributional Robustness. Next, we consider a setting of group-distributionally robust
+optimization [e.g., Sagawa et al., 2019a, Hu et al., 2018]. If in the standard learning approach we
+want to train a model that minimizes average loss, in this setting, we want to minimize the worst-case
+(highest) group loss. This objective can be used to mitigate fairness concerns such as those discussed
+previously, as well as to avoid learning spurious correlations [Sagawa et al., 2019a].
+Formally, we want to learn a model ✓ that minimizes the worst-case group loss:
+max E [`(z; ✓)] .
+g2G z⇠Dg
+
+(4)
+
+Unlike the previous application, in this setting, we do not require privacy of the training data. We use
+training with DP as a tool to ensure the generalization of the worst-case group loss.
+Mitigating Robust Overfitting. Finally, we consider the setting of robustness to test-time adversarial
+examples through adversarial training [Goodfellow et al., 2014]. A common way to train robust
+models in this sense in image domains is to minimize robust (adversarial) loss [Madry et al., 2018]:
+
+E
+max
+`((xadv , y); ✓) ,
+(5)
+(x,y)⇠D
+
+kx xadv kp 
+
+5
+
+Algorithm 1 DP-IS-SGD (DP Importance Sampling SGD)
+Input: Dataset S, loss `(z; ✓), initial parameters ✓0 , learning rate ⌘, maximal gradient norm C, noise
+parameter , number of epochs T , sampling rate p̄, group probabilities (q1 , . . . , qm ) .
+for t = 1, . . . , T do
+Sample batch St
+Samplep(·) (S), with sampling probabilities p(z) , p̄/m·qg(z)
+P
+1
+1
+1
+g̃t
+z2St /max{1, C ·kr✓ `(z;✓)k2 } ·r✓ `(z; ✓) + C · N (0, I)
+|St |
+|
+{z
+}
+|
+{z
+}
+Gradient clipping
+
+✓t
+
+Gradient noise
+
+✓t 1 + ⌘ · g̃t
+
+The highlighted parts indicate the differences with respect to DP-SGD. We obtain DP-SGD as a special case
+when we have a single group with q = 1 (implying p(z) = p̄).
+
+where > 0 is a small constant. Rice et al. [2020] observed that adversarially trained models
+exhibit “robust overfitting”: higher generalization gap of robust loss than that of the regular loss. In
+this application, we similarly aim to use a relaxed version of training with DP as a tool to ensure
+generalization of robust loss, thus mitigate robust overfitting.
+
+4
+
+Algorithms which Distributionally Generalize
+
+In this section, we construct algorithms for the applications in Section 3. Our approach follows the
+blueprint: First, we apply a principled algorithmic intervention that ensures desired behavior on the
+training data (e.g., importance sampling). Second, we modify the resulting algorithm to additionally
+ensure DG, which guarantees that the desired behavior generalizes to test time.
+4.1
+
+DP Training with Importance Sampling
+
+Our first algorithm, DP-IS-SGD (Algorithm 1), is a version of DP-SGD [Abadi et al., 2016] which
+performs importance sampling. DP-IS-SGD is designed to mitigate disparate impact while retaining
+DP guarantees. The standard DP-SGD samples data batches using uniform Poisson subsampling:
+Each example in the training set is chosen into the batch according to the outcome of a Bernoulli trial
+with probability p̄ 2 [0, 1]. To correct for unequal representation and the resulting disparate impact,
+we use non-uniform Poisson subsampling: Each example z 2 S has a possibly different probability
+p(z) of being selected into the batch, where p(z) does not depend on the dataset S otherwise, and is
+bounded: 0  p(z)  p⇤  1. We denote this subsampling procedure as Samplep(·) (S).
+
+We assume that we know to which group any z = (x, y) belongs, denoted as g(z), e.g., the group is
+one of the features in x. We choose p(z) to satisfy two properties. First, to increase the sampling
+probability for examples in minority groups: p(z) / 1/qg(z) . Second, to keep the average batch
+size equal to p̄ · n as in standard DP-SGD. In the rest of the paper, we assume that the group
+probabilities (q1 , . . . , qm ) are known, but it is possible to estimate them in a private way using
+standard methods [Nelson and Reuben, 2020]. We present DP-IS-SGD in Algorithm 1, along with its
+differences to the standard DP-SGD.
+
+DP Properties of DP-IS-SGD. Uniform Poisson subsampling is well-known to amplify the privacy
+guarantees of an algorithm [Chaudhuri and Mishra, 2006, Li et al., 2012]. For example, Li et al. [2012]
+show that if an algorithm T (S) satisfies (✏, )-DP, then T Samplep̄ (S) provides approximately
+(O(p̄✏), p̄ )-DP for small values of ✏. We show in Appendix B that non-uniform Poisson subsampling
+provides the same amplification guarantee with p̄ = p⇤ , where p⇤ is the maximum value of p(·).
+As this guarantee is independent of the internal workings of T (S), it is loose. For DP-SGD, one way
+of computing tight privacy guarantees of subsampling is using the notion of Gaussian differential
+privacy (GDP) [Dong et al., 2019]. GDP is parameterized by a single parameter µ. If an algorithm
+T (S) satisfies µ-GDP, one can efficiently compute a set of (✏, )-DP guarantees also satisfied by
+T (S) [Dong et al., 2019]. We show that we can use any GDP-based mechanism for computing the
+privacy guarantee of DP-SGD to obtain the privacy guarantees of DP-IS-SGD in a black-box manner:
+Proposition 4.1. Let us denote by µ(p̄, , C, T ) (see Algorithm 1) a function that returns a µ-GDP
+guarantee of DP-SGD. Then, DP-IS-SGD satisfies a GDP guarantee µ(p⇤ , , C, T ).
+6
+
+4.2
+
+Gaussian Gradient Noise
+
+We showed that DP-IS-SGD enjoys theoretical guarantees for both DP and DG. DP models, however,
+often have lower test accuracy compared to standard training [Chaudhuri et al., 2011]. This can be
+an unnecessary disadvantage in settings where privacy is not required, such as in our robustness
+applications. Thus, we explore training algorithms which are inspired by our theory yet do not come
+with generic theoretical guarantees of DG.
+Note that DP-SGD uses gradient clipping and noise (see Algorithm 1). Individually, these are used as
+regularization methods for improving stability and generalization [Hardt et al., 2016, Neelakantan
+et al., 2015]. Following this, we relax DP-IS-SGD to only use gradient noise. This sacrifices privacy
+guarantees in exchange for practical performance. Specifically, we apply gradient noise to three
+standard algorithms for achieving group-distributional robustness: importance sampling (IS-SGD),
+importance weighting (IW-SGD) [Gretton et al., 2009], and gDRO [Sagawa et al., 2019a]. This
+results in the following variations: IS-SGD-n, IW-SGD-n, gDRO-n, respectively. Similarly, we apply
+gradient noise to standard PGD adversarial training [Madry et al., 2018]. See Appendix D for details.
+
+5
+
+Experiments
+
+We empirically study the distributional generalization in real-world applications. The code for the
+experiments is available at https://github.com/yangarbiter/dp-dg.
+Datasets. We use the following datasets with group annotations: CelebA [Liu et al., 2015], UTKFace [Zhang et al., 2017], iNaturalist2017 (iNat) [Horn et al., 2018], CivilComments [Borkan et al.,
+2019], MultiNLI [Williams et al., 2018, Sagawa et al., 2019a], and ADULT [Kohavi et al., 1996].
+For every dataset, each example belongs to one group (e.g., CelebA) or multiple groups (e.g., CivilComments). For example, in the CelebA dataset, there are four groups: “blond male”, “male with
+other hair color”, “blond female”, and “female with other hair color”. Additionally, we use the
+CIFAR-10 [Krizhevsky et al., 2009] dataset for the adversarial-overfitting application. We present
+more details on the datasets, their groups, and used model architectures in Appendix E.
+5.1
+
+Enforcing DG in Practice
+
+In practice, it is not possible to compute the exact DG gap. As
+a proxy in applications which concern subgroup performance
+in this section, and Sections 5.2 and 5.3, we use the difference
+between train-time and test-time worst-group accuracy. This (a)
+follows the empirical approach by Nakkiran and Bansal [2020]
+which proposes to estimate the gap in Equation (1) using a finite
+set of test functions, and (b) measures the aspect of distributional
+generalization that is relevant to our applications. We provide
+more details on this choice of the proxy measure in Appendix E.2.
+We train a model on CelebA using DP-SGD for varying levels of
+✏. Figure 3 shows that the gap between training and testing worstgroup accuracy increases as the level of privacy decreases, which
+is consistent with our theoretical bounds. In Appendix E.3 we
+also explore how regularization methods which do not necessarily
+formally imply DG, can empirically improve DG.
+5.2
+
+Worst-group accuracy
+
+We empirically confirm that a training procedure with DP guarantees also has a bounded DG gap.
+1.0
+0.8
+
+Train
+Test
+
+0.6
+0.4
+0.2
+0.0
+10 1 102 105
+
+1010
+
+1015
+
+SGD
+
+Privacy budget ✏
+
+Figure 3: Privacy induces DG.
+Train/test worst-case group accuracies as a function of privacy parameter ✏ of DP-SGD on CelebA
+(x axis). Increasing privacy reduces the generalization gap.
+
+Disparate Impact of Differentially Private Models
+
+We evaluate DP-IS-SGD (Algorithm 1), and demonstrate that it can mitigate the disparate impact in
+realistic settings where both privacy and fairness are required.
+Figure 4 shows the accuracy disparity, test accuracy, and worst-case group accuracy, computed as
+in Equation (3), as a function of the privacy budget ✏. The models are trained with DP-SGD and
+DP-IS-SGD. When comparing DP-SGD and DP-IS-SGD with the same or similar ✏, we observe that
+DP-IS-SGD achieves lower disparity on all datasets. However, this comes with a drop in average
+7
+
+0.8
+
+0.8
+0.6
+0.4
+0.2
+0
+
+5
+
+10
+
+15
+
+0.6
+0.4
+0.2
+
+DP-SGD
+DP-IS-SGD
+
+0.0
+
+20
+
+0
+
+Privacy budget ✏
+
+(a) Accuracy disparity (lower is better)
+
+Test accuracy
+
+DP-SGD
+DP-IS-SGD
+
+Worst-group accuracy
+
+Accuracy disparity
+
+1.0
+
+5
+
+10
+
+15
+
+0.8
+0.6
+0.4
+
+DP-SGD
+DP-IS-SGD
+
+0.2
+20
+
+Privacy budget ✏
+
+(b) Worst-group accuracy (higher is better)
+
+0
+
+5
+
+10
+
+15
+
+20
+
+Privacy budget ✏
+
+(c) Test accuracy (higher is better)
+
+Figure 4: Importance Sampling Improves Disparate Impact of DP-SGD. The accuracy disparity
+of the models trained with DP-SGD and DP-IS-SGD on CelebA. Adding importance sampling (IS)
+improves disparate impact at most privacy budgets in this setting. We set = 1/2n, where n is the
+number of training examples. We use GDP accountant to compute the privacy budget ".
+accuracy. On CelebA, with ✏ 2 [2, 12], DP-IS-SGD has around 8 p.p. lower test accuracy than
+DP-SGD. At the same time, the disparity drop ranges from 40 p.p. to 60 p.p., which is significantly
+higher than the accuracy drop. We observe similar results on UTKFace. On iNat, however, although
+DP-IS-SGD decreases disparity, the overall test accuracy suffers a significant hit. This is likely
+because the minority subgroup is very small, which results in high maximum sampling probability p⇤ ,
+thus deteriorating the privacy guarantee. Details for UTKFace and iNat are in Appendix E.4.
+In summary, we find that DP-IS-SGD can achieve lower disparity at the same privacy budget compared
+to standard DP-SGD, with mild impact on test accuracy.
+Comparison to DP-SGD-F [Xu et al., 2021]. DP-SGD-F is a variant of DP-SGD which dynamically
+adapts gradient-clipping bounds for different groups to reduce the disparate impact. We did not
+manage to achieve good overall performance of DP-SGD-F on the datasets above. In Appendix E.4,
+we compare it to DP-IS-SGD on the ADULT dataset (used by Xu et al. [2021]), finding that DP-ISSGD obtains lower disparity for the same privacy level, yet also lower overall accuracy.
+5.3
+
+Group-Distributionally Robust Optimization
+
+We investigate whether our proposed versions of standard algorithms with Gaussian gradient noise
+(Section 4.2) can improve group-distributional robustness. To do so, we evaluate empirical DG using
+worst-group accuracy as a proxy for DG gap as in Section 5.1, following the evaluation criteria in
+prior work [Sagawa et al., 2019a, Idrissi et al., 2022]. State-of-the-art (SOTA) methods apply `2
+regularization and early-stopping to achieve the best performance. We compare three baselines with
+`2 regularization, IS-SGD-`2 , IW-SGD-`2 , and gDRO-`2 to our noisy-gradient variations as well as
+DP-IS-SGD. We use the validation set to select the best-performing regularization parameter and
+epoch (for early stopping) for each method. See Appendix E.5 for details on the experimental setup.
+Table 1 shows the worst-group accuracy of each algorithm on five datasets. When comparing IS-SGD,
+IW-SGD, and gDRO with their noisy counterparts, we observe that the noisy versions in general have
+similar or slightly better performance compared to non-noisy counterparts. For instance, IS-SGD-n
+improves the SOTA results on CivilComments dataset. This showcases that in terms of learning
+distributionally robust models, noisy gradient can be a more effective regularizer than the currently
+standard `2 regularizer. We also find that DP-IS-SGD improves on baseline methods or even achieves
+SOTA-competetitive performance on several datasets. For instance, on CelebA and MNLI, DP-ISSGD achieves better performance than IS-SGD-`2 . This is surprising, as DP tends to deteriorate
+performance. This suggests that distributional robustness and privacy are not incompatible goals.
+Moreover, DP can be a useful tool even when privacy is not required.
+5.4
+
+Mitigating Robust Overfitting
+
+As in the previous section, we expect that a modification of a standard projected gradient descent
+(PGD) method for adversarial training [Madry et al., 2018] with added Gaussian gradient noise
+(Section 4.2) improves the generalization behavior of adversarial training.
+1
+
+IW-SGD numbers are different from Fig. 1, as in the figure we do not apply regularization.
+
+8
+
+Table 1: Our noisy-gradient algorithms produce competitive results compared to counterparts
+with `2 regularization. The table shows the worst-group accuracy of each algorithm. Baselines are
+in the top rows; our algorithms are in the bottom. For gDRO-`2 -SOTA, we show avg. ± std. over
+five runs from Idrissi et al. [2022]. For CelebA, we show avg. ± std. over three random splits.
+CelebA
+
+UTKFace iNat.
+
+SGD-`2
+73.0 ± 2.2
+IS-SGD-`2
+82.4 ± 0.5
+IW-SGD-`2 1
+89.0 ± 0.9
+gDRO-`2
+84.5 ± 0.8
+gDRO-`2 -SOTA 86.9 ± 0.5
+DP-IS-SGD
+IS-SGD-n
+IW-SGD-n
+gDRO-n
+
+86.3
+85.8
+86.5
+85.2
+—
+
+86.0 ± 0.8
+84.9 ± 1.0
+88.5 ± 0.4
+83.3 ± 0.5
+
+82.5
+85.5
+88.5
+87.5
+
+MNLI
+
+51.4
+71.0
+70.9
+56.4
+
+70.4
+71.9
+69.9
+71.3
+
+72.3
+70.8
+69.7
+78.0
+
+0.50
+Ours
+Early stopping
+
+0.2
+
+Robust accuracy
+
+Robust accuracy gap
+
+0.3
+
+Civil.
+
+41.8
+57.4
+67.9
+70.6
+64.3
+70.4
+67.6
+65.7
+68.1
+67.3
+67.3
+75.9
+— 69.9 ± 0.5 78.0 ± 0.3
+
+0.1
+
+Ours
+Early stopping
+
+0.45
+0.40
+0.35
+0.30
+
+0
+
+10
+
+3
+
+10
+
+2
+
+0
+
+Noise parameter
+
+10 3
+
+10 2
+
+Noise parameter
+
+(a) Gen. gap of robust accuracy (lower is better)
+
+(b) Robust accuracy (higher is better)
+
+Figure 5: Noisy gradient reduces overfitting in adversarial training. We show the generalization
+gap of robust accuracy (left), and test-time robust accuracy (right) of adversarially trained models with
+different levels of noise magnitude. The dash orange lines represent the performance of adversarial
+training with early stopping. The model trained without noise exhibits “robust overfitting” of about
+30 p.p. Gradient noise reduces the generalization gap by more than 3⇥ for all values of the noise
+parameter at a cost of decreased robust accuracy as the noise gets larger.
+To verify this, we adversarially train models on the CIFAR-10 dataset with varying levels of the noise
+magnitude. We provide more details on the setup in Appendix E.6. Figure 5 shows that in standard
+adversarial training without noise the gap between robust training accuracy and robust test accuracy
+is large at approximately 30 p.p., which is consistent with the prior observations of Rice et al. [2020].
+By injecting noise into the gradient, our proposed approach decreases the generalization gap of robust
+accuracy by more than 3⇥ to less than 10 p.p. Surprisingly, in our experiments, training with gradient
+noise achieves both a small adversarial accuracy gap and better adversarial test accuracy compared
+to standard adversarial training, when using a small noise magnitude ( = 5 ⇥ 10 4 ). In terms of
+resulting robust accuracy, the method’s performance is comparable to early stopping, identified as
+the most effective way to prevent robust overfitting by Rice et al. [2020]. These experimental results
+demonstrate how WYSIWYG can be a useful design principle in practice.
+
+6
+
+Related Work
+
+DP and Strong Generalization. DP is known to imply a stronger than standard notion of generalization, called robust generalization2 [Cummings et al., 2016, Bassily et al., 2016]. Robust
+generalization can be thought as a high-probability counterpart of DG: generalization holds with
+high probability over the train dataset, not only on average over datasets. We focus on our notion of
+DG for both conceptual and theoretical simplicity. A more comprehensive discussion of relations to
+robust generalization is in Appendix A.1. It can also be useful to consider intermediary definitions,
+varying in strength from DG to robust generalization. In Appendix C, we introduce such an notion
+(“strong DG”) and show its connections to DP. Other than robust generalization, our connections in
+2
+
+Unrelated to “robust overfitting” in adversarial training.
+
+9
+
+Section 2 can also be derived from weaker generalization bounds that rely on information-theoretic
+measures [Steinke and Zakynthinou, 2020]. We detail this in Appendix A.2.
+Disparate Impact of DP. Bagdasaryan et al. [2019], Pujol et al. [2020] have shown that ensuring
+DP in algorithmic systems can cause error disparity across population groups. Xu et al. [2021]
+proposed a variant of DP-SGD for reducing disparate impact. We compare our method to DP-SGD-F
+in Appendix E.4. In another line of related work, Sanyal et al. [2022], Cummings et al. [2019] show
+fundamental trade-offs between model’s loss and DP training. As our theoretical results concern
+generalization, not loss per se, our results do not contradict these theoretical trade-offs. We discuss
+the relationship in detail in Appendix A.3.
+Group-Distributional Robustness. Group-distributional robustness aims to improve the worst-case
+group performance. Existing approaches include using worst-case group loss [Mohri et al., 2019,
+Sagawa et al., 2019a, Zhang et al., 2020], balancing majority and minority groups by reweighting or
+subsampling [Byrd and Lipton, 2019, Sagawa et al., 2019b, Idrissi et al., 2022], leveraging generative
+models [Goel et al., 2020], and applying various regularization techniques [Sagawa et al., 2019a, Cao
+et al., 2019]. Although some work [Sagawa et al., 2019a, Cao et al., 2019] discusses the importance of
+regularization in distributional robustness, they have not explored potential reasons for this (e.g. via
+the connection to generalization). Another line of work studies how to improve group performance
+without group annotations [Duchi et al., 2021, Liu et al., 2021, Creager et al., 2021], which is a
+different setting from ours as we assume the group annotations are known.
+Robust Overfitting. Rice et al. [2020], Yu et al. [2022] have shown that adversarially trained models
+tend to overfit in terms of robust loss. Rice et al. [2020] proposed to use regularization to mitigate
+overfitting, but the noisy gradient has not been explored for this. We showed that the WYSIWYG
+framework can serve as an alternative direction for mitigating and explaining this issue.
+
+7
+
+Conclusions and Future Work
+
+We argue that a “What You See is What You Get” property, which we formalize through the notion of
+distributional generalization (DG), can be desirable for learning algorithms, as it enables principled
+algorithm design in settings including deep learning. We show that this property is possible to achieve
+with DP training. This enables us to leverage advances in DP to enforce DG in many applications.
+We propose enforcing DG as a general design principle, and we use it to construct simple yet effective
+algorithms in three settings. In certain fairness settings, we largely mitigate the disparate impact
+of differential privacy by using importance sampling and enforcing DG in our new algorithm DPIS-SGD. In our analysis, however, the privacy and DG guarantees of DP-IS-SGD deteriorate in the
+presence of very small groups. Future work could explore individual-level accounting [Feldman
+and Zrnic, 2021] for a tighter analysis. In certain worst-case generalization settings, inspired by
+DP-SGD, we propose using a noisy-gradient regularizer. Compared to SOTA algorithms in DRO,
+noisy gradient achieves competitive results across many standard benchmarks. In certain adversarialrobustness settings, our proposed noisy-gradient regularizer significantly reduces robust overfitting.
+An interesting direction for future work would be to explore its effectiveness in large-scale settings,
+e.g., ImageNet [Croce and Hein, 2022]. We hope future work can explore extending this design
+principle to ensure generalization of other properties, such as calibration and counterfactual fairness.
+Acknowledgements
+We thank Kamalika Chaudhuri, Benjamin L. Edelman, Saurabh Garg, Gautam Kamath, Maksym
+Andriushchenko, and Cassidy Laidlaw for useful feedback on an early draft. BK acknowledges
+support from the Swiss National Science Foundation with grant 200021-188824. Yao-Yuan Yang
+thanks NSF under CNS 1804829 and ARO MURI W911NF2110317 for the research support.
+Yaodong Yu acknowledges support from the joint Simons Foundation-NSF DMS grant #2031899. PN
+is grateful for support of the NSF and the Simons Foundation for the Collaboration on the Theoretical
+Foundations of Deep Learning3 through awards DMS-2031883 and #814639.
+
+3
+
+https://deepfoundations.ai
+
+10
+
+References
+Martin Abadi, Andy Chu, Ian Goodfellow, H Brendan McMahan, Ilya Mironov, Kunal Talwar, and
+Li Zhang. Deep learning with differential privacy. In Proceedings of the 2016 ACM SIGSAC
+conference on computer and communications security, 2016.
+Eugene Bagdasaryan, Omid Poursaeed, and Vitaly Shmatikov. Differential privacy has disparate
+impact on model accuracy. In Advances in Neural Information Processing Systems 32: Annual
+Conference on Neural Information Processing Systems (NeurIPS), 2019.
+Rina Foygel Barber and John C Duchi. Privacy and statistical risk: Formalisms and minimax bounds.
+arXiv preprint arXiv:1412.4451, 2014.
+Raef Bassily, Kobbi Nissim, Adam D. Smith, Thomas Steinke, Uri Stemmer, and Jonathan R. Ullman.
+Algorithmic stability for adaptive data analysis. In Proceedings of the 48th Annual ACM SIGACT
+Symposium on Theory of Computing, STOC, 2016.
+Elettra Bietti. From ethics washing to ethics bashing: a view on tech ethics from within moral
+philosophy. In Proceedings of the Conference on Fairness, Accountability, and Transparency,
+2020.
+Daniel Borkan, Lucas Dixon, Jeffrey Sorensen, Nithum Thain, and Lucy Vasserman. Nuanced metrics
+for measuring unintended bias with real data for text classification. In Companion proceedings of
+the 2019 World Wide Web conference, 2019.
+Olivier Bousquet and André Elisseeff. Stability and generalization. The Journal of Machine Learning
+Research, 2002.
+Yuheng Bu, Shaofeng Zou, and Venugopal V Veeravalli. Tightening mutual information-based
+bounds on generalization error. IEEE Journal on Selected Areas in Information Theory, 2020a.
+Zhiqi Bu, Jinshuo Dong, Qi Long, and Weijie J Su. Deep learning with gaussian differential privacy.
+Harvard data science review, 2020b.
+Joy Buolamwini and Timnit Gebru. Gender shades: Intersectional accuracy disparities in commercial
+gender classification. In Conference on fairness, accountability and transparency, 2018.
+Jonathon Byrd and Zachary Chase Lipton. What is the effect of importance weighting in deep
+learning? In Proceedings of the 36th International Conference on Machine Learning, ICML, 2019.
+Kaidi Cao, Colin Wei, Adrien Gaidon, Nikos Arechiga, and Tengyu Ma. Learning imbalanced
+datasets with label-distribution-aware margin loss. In Advances in Neural Information Processing
+Systems 32: Annual Conference on Neural Information Processing Systems (NeurIPS), 2019.
+Kamalika Chaudhuri and Nina Mishra. When random sampling preserves privacy. In Annual
+International Cryptology Conference. Springer, 2006.
+Kamalika Chaudhuri, Claire Monteleoni, and Anand D Sarwate. Differentially private empirical risk
+minimization. Journal of Machine Learning Research, 2011.
+Elliot Creager, Jörn-Henrik Jacobsen, and Richard Zemel. Environment inference for invariant
+learning. In Proceedings of the 38th International Conference on Machine Learning, ICML, 2021.
+Francesco Croce and Matthias Hein. On the interplay of adversarial robustness and architecture
+components: patches, convolution and attention. arXiv preprint arXiv:2209.06953, 2022.
+Rachel Cummings, Katrina Ligett, Kobbi Nissim, Aaron Roth, and Zhiwei Steven Wu. Adaptive
+learning with robust generalization guarantees. In Proceedings of the 29th Conference on Learning
+Theory, COLT, 2016.
+Rachel Cummings, Varun Gupta, Dhamma Kimpara, and Jamie Morgenstern. On the compatibility of
+privacy and fairness. In Adjunct Publication of the 27th Conference on User Modeling, Adaptation
+and Personalization, 2019.
+11
+
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. BERT: Pre-training of deep
+bidirectional transformers for language understanding. In Proceedings of the 2019 Conference of
+the North American Chapter of the Association for Computational Linguistics: Human Language
+Technologies, Volume 1 (Long and Short Papers), 2019.
+Jinshuo Dong, Aaron Roth, and Weijie J Su. Gaussian differential privacy. arXiv preprint
+arXiv:1905.02383, 2019.
+John C Duchi, Peter W Glynn, and Hongseok Namkoong. Statistics of robust optimization: A
+generalized empirical likelihood approach. Mathematics of Operations Research, 2021.
+Cynthia Dwork, Frank McSherry, Kobbi Nissim, and Adam Smith. Calibrating noise to sensitivity in
+private data analysis. In Theory of cryptography conference. Springer, 2006.
+Cynthia Dwork, Aaron Roth, et al. The algorithmic foundations of differential privacy. Found. Trends
+Theor. Comput. Sci., 2014.
+Cynthia Dwork, Vitaly Feldman, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Aaron Roth.
+Generalization in adaptive data analysis and holdout reuse. In Advances in Neural Information
+Processing Systems 28: Annual Conference on Neural Information Processing Systems 2015,
+December 7-12, 2015, Montreal, Quebec, Canada, 2015a.
+Cynthia Dwork, Vitaly Feldman, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Aaron Leon
+Roth. Preserving statistical validity in adaptive data analysis. In Proceedings of the 47th Annual
+ACM on Symposium on Theory of Computing, STOC, 2015b.
+Vitaly Feldman and Tijana Zrnic. Individual privacy accounting via a Renyi filter. In Advances in
+Neural Information Processing Systems 34: Annual Conference on Neural Information Processing
+Systems (NeurIPS), 2021.
+Quan Geng, Wei Ding, Ruiqi Guo, and Sanjiv Kumar. Optimal noise-adding mechanism in additive
+differential privacy. In The 22nd International Conference on Artificial Intelligence and Statistics,
+AISTATS, 2019.
+Karan Goel, Albert Gu, Yixuan Li, and Christopher Re. Model patching: Closing the subgroup performance gap with data augmentation. In 8th International Conference on Learning Representations,
+ICLR, 2020.
+Ian J Goodfellow, Jonathon Shlens, and Christian Szegedy. Explaining and harnessing adversarial
+examples. arXiv preprint arXiv:1412.6572, 2014.
+Arthur Gretton, Alex Smola, Jiayuan Huang, Marcel Schmittfull, Karsten Borgwardt, and Bernhard
+Schölkopf. Covariate shift by kernel mean matching. Dataset shift in machine learning, 2009.
+Mahdi Haghifam, Jeffrey Negrea, Ashish Khisti, Daniel M Roy, and Gintare Karolina Dziugaite.
+Sharpened generalization bounds based on conditional mutual information and an application to
+noisy, iterative algorithms. In Advances in Neural Information Processing Systems 33: Annual
+Conference on Neural Information Processing Systems (NeurIPS), 2020.
+Moritz Hardt, Ben Recht, and Yoram Singer. Train faster, generalize better: Stability of stochastic
+gradient descent. In Proceedings of the 33nd International Conference on Machine Learning,
+ICML, 2016.
+Charles R. Harris, K. Jarrod Millman, Stéfan J. van der Walt, Ralf Gommers, Pauli Virtanen, David
+Cournapeau, Eric Wieser, Julian Taylor, Sebastian Berg, Nathaniel J. Smith, Robert Kern, Matti
+Picus, Stephan Hoyer, Marten H. van Kerkwijk, Matthew Brett, Allan Haldane, Jaime Fernández
+del Rı́o, Mark Wiebe, Pearu Peterson, Pierre Gérard-Marchant, Kevin Sheppard, Tyler Reddy,
+Warren Weckesser, Hameer Abbasi, Christoph Gohlke, and Travis E. Oliphant. Array programming
+with NumPy. Nature, 2020.
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image
+recognition. In 2016 IEEE Conference on Computer Vision and Pattern Recognition, CVPR, 2016.
+12
+
+Grant Van Horn, Oisin Mac Aodha, Yang Song, Yin Cui, Chen Sun, Alexander Shepard, Hartwig
+Adam, Pietro Perona, and Serge J. Belongie. The inaturalist species classification and detection
+dataset. In 2018 IEEE Conference on Computer Vision and Pattern Recognition, CVPR, 2018.
+Weihua Hu, Gang Niu, Issei Sato, and Masashi Sugiyama. Does distributionally robust supervised
+learning give robust classifiers? In Proceedings of the 35th International Conference on Machine
+Learning, ICML, 2018.
+Badr Youbi Idrissi, Martin Arjovsky, Mohammad Pezeshki, and David Lopez-Paz. Simple data
+balancing achieves competitive worst-group-accuracy. In Conference on Causal Learning and
+Reasoning, 2022.
+Peter Kairouz, Sewoong Oh, and Pramod Viswanath. The composition theorem for differential
+privacy. In Proceedings of the 32nd International Conference on Machine Learning, ICML, 2015.
+Allison Koenecke, Andrew Nam, Emily Lake, Joe Nudell, Minnie Quartey, Zion Mengesha, Connor
+Toups, John R Rickford, Dan Jurafsky, and Sharad Goel. Racial disparities in automated speech
+recognition. Proceedings of the National Academy of Sciences, 2020.
+Pang Wei Koh, Shiori Sagawa, Henrik Marklund, Sang Michael Xie, Marvin Zhang, Akshay Balsubramani, Weihua Hu, Michihiro Yasunaga, Richard Lanas Phillips, Irena Gao, et al. Wilds: A
+benchmark of in-the-wild distribution shifts. In Proceedings of the 38th International Conference
+on Machine Learning, ICML, 2021.
+Ron Kohavi et al. Scaling up the accuracy of Naive-Bayes classifiers: A decision-tree hybrid. In
+KDD, 1996.
+Alex Krizhevsky, Geoffrey Hinton, et al. Learning multiple layers of features from tiny images. 2009.
+Bogdan Kulynych, Mohammad Yaghini, Giovanni Cherubin, Michael Veale, and Carmela Troncoso.
+Disparate vulnerability to membership inference attacks. Proceedings on Privacy Enhancing
+Technologies, 2022.
+Matt J. Kusner, Joshua R. Loftus, Chris Russell, and Ricardo Silva. Counterfactual fairness. In
+Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information
+Processing Systems (NeurIPS), 2017.
+Ninghui Li, Wahbeh Qardaji, and Dong Su. On sampling, anonymization, and differential privacy
+or, k-anonymization meets differential privacy. In Proceedings of the 7th ACM Symposium on
+Information, Computer and Communications Security, 2012.
+Evan Z Liu, Behzad Haghgoo, Annie S Chen, Aditi Raghunathan, Pang Wei Koh, Shiori Sagawa,
+Percy Liang, and Chelsea Finn. Just train twice: Improving group robustness without training
+group information. In Proceedings of the 38th International Conference on Machine Learning,
+ICML, 2021.
+Ziwei Liu, Ping Luo, Xiaogang Wang, and Xiaoou Tang. Deep learning face attributes in the wild. In
+2015 IEEE International Conference on Computer Vision, ICCV 2015, Santiago, Chile, December
+7-13, 2015, 2015.
+Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization. In 7th International
+Conference on Learning Representations, ICLR, 2019.
+Michael A Madaio, Luke Stark, Jennifer Wortman Vaughan, and Hanna Wallach. Co-designing
+checklists to understand organizational challenges and opportunities around fairness in ai. In
+Proceedings of the 2020 CHI Conference on Human Factors in Computing Systems, 2020.
+Aleksander Madry, Aleksandar Makelov, Ludwig Schmidt, Dimitris Tsipras, and Adrian Vladu.
+Towards deep learning models resistant to adversarial attacks. In 6th International Conference on
+Learning Representations, ICLR, 2018.
+Mehryar Mohri, Gary Sivek, and Ananda Theertha Suresh. Agnostic federated learning. In Proceedings of the 36th International Conference on Machine Learning, ICML, 2019.
+13
+
+Preetum Nakkiran and Yamini Bansal. Distributional generalization: A new kind of generalization.
+arXiv preprint arXiv:2009.08092, 2020.
+Hongseok Namkoong and John C. Duchi. Stochastic gradient methods for distributionally robust
+optimization with f-divergences. In Advances in Neural Information Processing Systems 29:
+Annual Conference on Neural Information Processing Systems (NeurIPS), 2016.
+Arvind Neelakantan, Luke Vilnis, Quoc V Le, Ilya Sutskever, Lukasz Kaiser, Karol Kurach, and
+James Martens. Adding gradient noise improves learning for very deep networks. arXiv preprint
+arXiv:1511.06807, 2015.
+Boel Nelson and Jenni Reuben. SoK: Chasing accuracy and privacy, and catching both in differentially
+private histogram publication. Trans. Data Priv., 2020.
+The pandas development team. pandas-dev/pandas: Pandas, 2020.
+Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor
+Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, et al. Pytorch: An imperative style,
+high-performance deep learning library. In Advances in Neural Information Processing Systems
+32: Annual Conference on Neural Information Processing Systems (NeurIPS), 2019.
+Yury Polyanskiy and Yihong Wu. Lecture notes on information theory. 2014.
+David Pujol, Ryan McKenna, Satya Kuppam, Michael Hay, Ashwin Machanavajjhala, and Gerome
+Miklau. Fair decision making using privacy-protected data. In Proceedings of the Conference on
+Fairness, Accountability, and Transparency, 2020.
+Sofya Raskhodnikova, Adam Smith, Homin K Lee, Kobbi Nissim, and Shiva Prasad Kasiviswanathan.
+What can we learn privately. In Proceedings of the 54th Annual Symposium on Foundations of
+Computer Science, 2008.
+Leslie Rice, Eric Wong, and Zico Kolter. Overfitting in adversarially robust deep learning. In
+Proceedings of the 37th International Conference on Machine Learning, ICML, 2020.
+Daniel Russo and James Zou. How much does your data exploration overfit? controlling bias via
+information usage. IEEE Transactions on Information Theory, 2019.
+Shiori Sagawa, Pang Wei Koh, Tatsunori B Hashimoto, and Percy Liang. Distributionally robust
+neural networks for group shifts: On the importance of regularization for worst-case generalization.
+arXiv preprint arXiv:1911.08731, 2019a.
+Shiori Sagawa, Aditi Raghunathan, Pang Wei Koh, and Percy Liang. An investigation of why
+overparameterization exacerbates spurious correlations. In Proceedings of the 37th International
+Conference on Machine Learning, ICML, 2019b.
+Amartya Sanyal, Yaxi Hu, and Fanny Yang. How unfair is private learning?
+arXiv:2206.03985, 2022.
+
+arXiv preprint
+
+Shai Shalev-Shwartz, Ohad Shamir, Nathan Srebro, and Karthik Sridharan. Learnability, stability
+and uniform convergence. The Journal of Machine Learning Research, 2010.
+Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. Membership inference attacks
+against machine learning models. In IEEE symposium on security and privacy (SP), 2017.
+Thomas Steinke and Lydia Zakynthinou. Reasoning about generalization via conditional mutual
+information. In Conference on Learning Theory, 2020.
+Grant Van Horn and Pietro Perona. The devil is in the tails: Fine-grained classification in the wild.
+arXiv preprint arXiv:1709.01450, 2017.
+Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau,
+Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt,
+Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric
+Jones, Robert Kern, Eric Larson, C J Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas,
+14
+
+Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E. A. Quintero, Charles R. Harris,
+Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0
+Contributors. SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature
+Methods, 2020.
+Yu-Xiang Wang. Per-instance differential privacy. arXiv preprint arXiv:1707.07708, 2017.
+Yu-Xiang Wang, Jing Lei, and Stephen E Fienberg. Learning with differential privacy: Stability,
+learnability and the sufficiency and necessity of erm principle. The Journal of Machine Learning
+Research, 2016.
+Larry Wasserman and Shuheng Zhou. A statistical framework for differential privacy. Journal of the
+American Statistical Association, 2010.
+Adina Williams, Nikita Nangia, and Samuel Bowman. A broad-coverage challenge corpus for
+sentence understanding through inference. In Proceedings of the Conference of the North American
+Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume
+1 (Long Papers), 2018.
+Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony Moi,
+Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, et al. Huggingface’s transformers:
+State-of-the-art natural language processing. arXiv preprint arXiv:1910.03771, 2019.
+Aolin Xu and Maxim Raginsky. Information-theoretic analysis of generalization capability of learning
+algorithms. In Advances in Neural Information Processing Systems 30: Annual Conference on
+Neural Information Processing Systems, 2017.
+Depeng Xu, Wei Du, and Xintao Wu. Removing disparate impact on model accuracy in differentially
+private stochastic gradient descent. In Proceedings of the 27th ACM SIGKDD Conference on
+Knowledge Discovery & Data Mining, 2021.
+Yao-Yuan Yang, Cyrus Rashtchian, Hongyang Zhang, Ruslan Salakhutdinov, and Kamalika Chaudhuri. A closer look at accuracy vs. robustness. In Advances in Neural Information Processing
+Systems 33: Annual Conference on Neural Information Processing Systems (NeurIPS), 2020.
+Ashkan Yousefpour, Igor Shilov, Alexandre Sablayrolles, Davide Testuggine, Karthik Prasad, Mani
+Malek, John Nguyen, Sayan Ghosh, Akash Bharadwaj, Jessica Zhao, Graham Cormode, and
+Ilya Mironov. Opacus: User-friendly differential privacy library in PyTorch. arXiv preprint
+arXiv:2109.12298, 2021.
+Chaojian Yu, Bo Han, Li Shen, Jun Yu, Chen Gong, Mingming Gong, and Tongliang Liu. Understanding robust overfitting of adversarial training and beyond. In Proceedings of the 39th International
+Conference on Machine Learning, ICML, 2022.
+Hongyang Zhang, Yaodong Yu, Jiantao Jiao, Eric Xing, Laurent El Ghaoui, and Michael Jordan.
+Theoretically principled trade-off between robustness and accuracy. In Proceedings of the 36th
+International Conference on Machine Learning, ICML, 2019.
+Jingzhao Zhang, Aditya Menon, Andreas Veit, Srinadh Bhojanapalli, Sanjiv Kumar, and Suvrit Sra.
+Coping with label shift via distributionally robust optimisation. arXiv preprint arXiv:2010.12230,
+2020.
+Zhifei Zhang, Yang Song, and Hairong Qi. Age progression/regression by conditional adversarial
+autoencoder. In 2017 IEEE Conference on Computer Vision and Pattern Recognition, CVPR, 2017.
+
+15
+
+Checklist
+1. For all authors...
+(a) Do the main claims made in the abstract and introduction accurately reflect the paper’s
+contributions and scope? [Yes]
+(b) Did you describe the limitations of your work? [Yes] We address the limitations where
+appropriate, e.g., high-level limitations in Section 3, and the fact that some methods we
+use in the empirical evaluations deviate from theory in Sections 4 and 5.
+(c) Did you discuss any potential negative societal impacts of your work? [Yes] In
+Section 3 we caution against using WYSIWYG for fairness-washing [Bietti, 2020]
+through technical solutionism. Other than this, our potential negative societal impacts
+are the same as with any other academic work which aims to improve the performance
+of deep learning: we risk improving performance of deep learning in downstream
+applications that are harmful, e.g., privacy-invasive, or violating other civil liberties. It
+is beyond the scope of our work to discuss such broad issues.
+(d) Have you read the ethics review guidelines and ensured that your paper conforms to
+them? [Yes]
+2. If you are including theoretical results...
+(a) Did you state the full set of assumptions of all theoretical results? [Yes]
+(b) Did you include complete proofs of all theoretical results? [Yes] See Appendix B.
+3. If you ran experiments...
+(a) Did you include the code, data, and instructions needed to reproduce the main experimental results (either in the supplemental material or as a URL)? [Yes] We included
+the experiment code as supplemental material.
+(b) Did you specify all the training details (e.g., data splits, hyperparameters, how they
+were chosen)? [Yes] See Appendix E.
+(c) Did you report error bars (e.g., with respect to the random seed after running experiments multiple times)? [Yes] For experimental settings in which it was feasible for us
+to repeat experiments multiple times, we reported the standard errors (Table 1).
+(d) Did you include the total amount of compute and the type of resources used (e.g., type
+of GPUs, internal cluster, or cloud provider)? [Yes] See Appendix E.1.
+4. If you are using existing assets (e.g., code, data, models) or curating/releasing new assets...
+(a) If your work uses existing assets, did you cite the creators? [Yes] See Appendix E.1.
+(b) Did you mention the license of the assets? [Yes] See Appendix E.1.
+(c) Did you include any new assets either in the supplemental material or as a URL? [N/A]
+(d) Did you discuss whether and how consent was obtained from people whose data you’re
+using/curating? [Yes] See Appendix E.1.
+(e) Did you discuss whether the data you are using/curating contains personally identifiable
+information or offensive content? [Yes] See Appendix E.1.
+5. If you used crowdsourcing or conducted research with human subjects...
+(a) Did you include the full text of instructions given to participants and screenshots, if
+applicable? [N/A]
+(b) Did you describe any potential participant risks, with links to Institutional Review
+Board (IRB) approvals, if applicable? [N/A]
+(c) Did you include the estimated hourly wage paid to participants and the total amount
+spent on participant compensation? [N/A]
+
+16
+
+

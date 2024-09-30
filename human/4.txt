@@ -1,0 +1,2590 @@
+arXiv:2409.08701v2 [q-fin.ST] 17 Sep 2024
+
+Tuning into Climate Risks: Extracting Innovation from Television
+News for Clean Energy Firms
+Wasim Ahmad∗
+Indian Institute of Technology Kanpur
+
+Mohammad Arshad Rahman
+Indian Institute of Technology Kanpur
+
+Suruchi Shrimali
+Indian Institute of Technology Kanpur
+
+Preeti Roy
+Indian Institute of Technology Dhanbad
+
+September 18, 2024
+
+Abstract
+This article develops multiple novel climate risk measures (or variables) based on the television
+news coverage by Bloomberg, CNBC, and Fox Business, and examines how they affect the
+systematic and idiosyncratic risks of clean energy firms in the United States. The measures are
+built on climate related keywords and cover the volume of coverage, type of coverage (climate
+crisis, renewable energy, and government & human initiatives), and media sentiments. We show
+that an increase in the aggregate measure of climate risk, as indicated by coverage volume,
+reduces idiosyncratic risk while increasing systematic risk. When climate risk is segregated, we
+find that systematic risk is positively affected by the physical risk of climate crises and transition
+risk from government & human initiatives, but no such impact is evident for idiosyncratic risk.
+Additionally, we observe an asymmetry in risk behavior: negative sentiments tend to increase
+idiosyncratic risk and decrease systematic risk, while positive sentiments have no significant
+impact. These findings remain robust to including print media and climate policy uncertainty
+variables, though some deviations are noted during the COVID-19 period.
+Keywords: Climate change, climate finance, GDELT, media sentiment, physical risk, transition
+risk.
+
+1
+
+Introduction
+
+Climate change has become a pressing reality, prompting governments worldwide to address the
+physical risk (damages and losses to property due to physical consequences of climate change such
+as hurricanes) of the climate crisis and develop policies to manage transition risk (the potential
+costs to society in evolving to a low carbon economy to mitigate climate change) (NGFS, 2024).
+∗
+
+Email
+addresses:
+preetir@iitism.ac.in.
+
+wasimad@iitk.ac.in,
+
+marshad@iitk.ac.in,
+
+1
+
+suruchi@iitk.ac.in,
+
+and
+
+A key component of these policies involves reducing carbon emissions from fossil fuel consumption and advancing clean energy solutions for a sustainable future i.e., mitigating and adapting to
+climate change (Kreibiehl et al., 2022). However, clean energy companies−a vital instrument in
+climate change mitigation−face stiff competition for investment in the financial market, which is
+closely tied to their risk profile (Bloomberg, 2024). According to asset pricing models (e.g., Capital
+Asset Pricing Model, Merton, 1973), the total risk is divided into systematic (or market) risk and
+idiosyncratic (or unsystematic) risk. Idiosyncratic (systematic) risk can (cannot) be reduced or
+eliminated through diversification and so (higher risk is associated with higher expected returns)
+does not command a risk premium. However, investor irrationality resulting from environmental,
+social, and governance (ESG) criteria may limit portfolio diversification and consequently idiosyncratic risks may positively affect expected stock returns Levy (1978); Merton (1987); Goyal and
+Santa-Clara (2003); Pastor et al. (2021); Roy et al. (2022); Jagannathan et al. (2023). Research on
+the factors influencing systematic and/or idiosyncratic risks is expanding, particularly in climate
+finance. Amongst the factors, two determinants that have garnered attention are climate risk measures and sentiment variables constructed from print media sources. However, the development of
+these measures from television news coverage and subsequent econometric analysis remains unexplored. This paper addresses the gap by developing climate risk metrics and sentiment variables
+using snippets from three television news channels–Bloomberg, CNBC, and Fox Business–and assessing their impact on both idiosyncratic and systematic risks for clean energy firms in the United
+States (US).
+At a broader level, this paper advances the literature on utilizing media news data–encompassing
+textual, visual, or audio elements–to deepen our understanding of the financial market, particularly
+concerning climate risk and sentiment metrics. Enhanced media coverage raises public awareness
+about climate change (Sampei and Aoyagi-Usui, 2009), leading to more informed investment decisions and improved returns on sustainability stock indices (El-Ouadghiri et al., 2021). Within
+the realm of climate risk research (and sentiment analysis, discussed later), the focus has been on
+extracting information from textual sources in print media, such as newspapers and financial magazines. For instance, Engle et al. (2020) analyze textual content in The Wall Street Journal (WSJ)
+to develop an aggregate measure of climate risk and propose a dynamic strategy for hedging climate risk. Faccini et al. (2023) utilize texts from Reuters climate-change news to segregate different
+
+2
+
+types of climate risks and find that only transition risk from government intervention is priced in
+the US stocks. Ardia et al. (2023) use content from US newspapers and newswires to demonstrate
+that green stocks tend to outperform brown stocks when climate change concerns rise. In a similar
+vein, Bessec and Fouquau (2024) analyze newspaper contents and find that excess stock returns of
+green and brown stocks are sensitive to newspaper coverage of environmental issues. Additionally,
+Venturini (2022) reviews different types of data required for modeling subdivisions of physical and
+transition risks, and how they affect the cross-section of stock returns. Other articles, a brief and
+incomplete list we must mention, that make use of textual sources to construct measures of physical
+and transition risks (to examine various issues) include Stroebel and Wurgler (2021), Bua et al.
+(2024), Li et al. (2024), and Kölbel et al. (2024).
+We deviate from existing literature and instead construct (for the first time) several measures of
+climate-related risks derived from television news coverage of climate change by Bloomberg, CNBC,
+and Fox Business. Drawing inspiration from Engle et al. (2020), we create a composite measure of
+climate risk based on the frequency of climate-change snippets aired each month, with each snippet
+being a 15-second block of coverage excluding advertisements. This aggregate measure essentially
+assesses the extent of coverage related to climate change. Building on the work of Faccini et al.
+(2023) and others, we further analyze this coverage by categorizing climate risk into three themes:
+climate crisis, renewable energy, and government & human initiative. The first theme pertains
+to physical risks, while the latter two are associated with transition risks which are particularly
+relevant to market participants and financial news outlets. This classification is important because
+investors react differently to various types of climate risks and attune their investment accordingly.
+We evaluate both the overall and thematic climate risks, providing a thorough analysis of their
+effects on the systematic and idiosyncratic risks faced by clean energy firms.
+Apart from climate risks, researchers have paid great attention to extracting media sentiments
+from textual sources and incorporating them into asset price models. Tetlock (2007) pioneered this
+approach by developing a measure of media pessimism from the content of “Abreast of the Market”
+column from the WSJ, and showed that media pessimism had significant explanatory power for
+predicting stock returns. Expanding on this work, Tetlock et al. (2008) utilize negative words
+from articles published in WSJ and Dow Jones News Service (DJNS) about individual S&P 500
+companies and find that pessimism impact both stock returns and future cash flows. Dougal et al.
+
+3
+
+(2012) also report a similar finding. Taking the analysis further, Garcia (2013) examined two New
+York Times columns spanning over a century (1905–2005) by analyzing the frequency of positive
+and negative words in the text; and found that language tone is correlated with future stock returns,
+particularly during recessions. Huang et al. (2014) report an asymmetric effect, where investors
+react more strongly to negative texts than to positive ones. A rich source on textual sentiment
+literature is the review article by Kearney and Liu (2014) and references therein. More recent
+works that find evidence of asymmetric media sentiments include Heston and Sinha (2017), Bajo
+and Raimondo (2017), Huang et al. (2018), Jia et al. (2023), and He et al. (2024). Other articles
+in this genre, to name a few, include Engle et al. (2020), and Bask et al. (2024).
+Our research distinguishes itself from previous studies by utilizing television news channels as
+our data source, in contrast to print media. We construct two sentiment indices–positive and
+negative–using the NRC Emotion Lexicon (EmoLex), which encompasses two sentiments and eight
+emotions (Mohammad and Turney, 2012). The positive (negative) sentiment index is created as
+the percentage of positive (negative) words in the television news coverage of climate change each
+month, and serves as a proxy for optimism (pessimism) towards climate change. Our goal is to
+examine for asymmetric effect of negative and positive sentiments, if any, on the risk profile and
+stock prices of clean energy firms in the US.
+The climate risk and sentiment metrics, discussed in the previous paragraphs, are constructed at
+the monthly level using data between December 2013 to August 2021. We then employ fixed-effect
+regressions to analyze how climate risk and sentiment measures–alongside the government’s COVID19 policy, firm-specific, and macroeconomic variables–affect the idiosyncratic and systematic risks
+of 48 clean energy firms in the US. Our results show that the volume of coverage, which serves
+as an indicator of aggregate climate risk, has a significant and positive effect on systematic risk.
+This provides evidence that the stock prices of clean energy firms account for climate risks, and as
+climate risk increases, so does systematic risk. Consequently, investors may demand higher returns
+to compensate for the elevated risk. Conversely, the volume of coverage has a negative effect on
+idiosyncratic risk. This implies that an increase in climate-related news decreases the volatility of
+returns for clean energy firms and makes it attractive to investors.
+When the climate risk is segregated to physical and transition risks, we find that climate crisis
+(an indicator for physical risks) and government & human initiatives (which represent a form of
+
+4
+
+transition risk) positively influences systematic risk. This, in turn, raises investors’ expectation
+for stock returns from clean energy firms. However, neither physical nor transition risks have any
+significant effect on the firms’ idiosyncratic risk. On the impact of sentiment indices, our results
+confirm the negativity bias found in existing literature. We observe that negative sentiments
+tend to increase idiosyncratic risk and decrease systematic risk, while positive sentiments have no
+significant impact. In addition, we conduct three robustness check to ensure that our results are
+reliable and not unduly affected by the presence of print media sentiment variables (CH Negative
+Climate Change News index (Engle et al., 2020) and Media Climate Change Concerns (Ardia et al.,
+2023)), climate policy uncertainty index (Gavriilidis, 2021), and disruptions during the COVID-19
+period.
+This article makes several contributions to the literature on climate finance. First, this is the
+first study that utilizes television news coverage to create measures of climate risks and sentiment
+metrics. Second, by analyzing the impact of metrics derived from television news on firms’ risk
+profiles, it offers a new perspective on whether financial markets adjust asset prices for climate risks
+or if these risks are simply firm-specific traits that investors can eliminate through diversification.
+Third, it establishes the impact of climate risks and sentiment variables on the risk profiles of clean
+energy firms in the US. Fourth, it provides evidence that the information obtained from television
+news is distinct from those captured by economic policy uncertainty and print media sources, which
+have been prevalent in climate finance research.
+The remainder of the paper is organized as follows. Section 2 details the creation of climate risk
+and sentiment variables, provides a brief overview of the constructed metrics and other macroeconomic variables, and outlines the calculation of systematic and idiosyncratic risks using the three
+factor Fama-French model. Section 3 introduces the econometric model and discusses how the
+constructed metrics affect the systematic and idiosyncratic risks of clean energy firms. Section 4
+presents a variety of robustness checks and finally, Section 5 provides concluding remarks and points
+to directions for future research.
+
+2
+
+Data
+
+In this section, we present the data that has been compiled from a variety of sources and utilized
+to conduct the study. Section 2.1 uses television news data from the Global Dataset of Events,
+
+5
+
+Language, and Tone (GDELT) database, and constructs six novel climate risk variables classified
+into three categories. Section 2.2 describes the firm-level and macroeconomic variables which are
+used as controls in the regressions. Finally, Section 2.3 explains the construction of dependent
+variables i.e., systematic and idiosyncratic risks, using the three factor Fama-French model.
+
+2.1
+
+Climate Risk Data
+
+We construct multiple climate risk measures from the television broadcast news data collected from
+the GDELT database. The GDELT covers news in more than 100 languages from print, broadcast,
+and web media beginning January 1, 1979. We extract television broadcast news data from the
+GDELT’s Television Explorer, an interface that allows users to browse television news using keyword
+search (beginning July 2009) for more than 160 national, local US, and some international news
+stations. To sample relevant news data for our climate risk measures, we need to select (a) US
+news channels, and (b) relevant climate related keywords.
+With respect to choice of financial news stations, we choose Bloomberg, CNBC, and Fox Business. This is done for a couple of reasons. First, a typical audience of these US based channels
+comprise of active stock market participants for whom television news contributes to decision making. Second, news stations are constrained by airtime availability, so financial news channels are
+more likely to focus on important issues pertaining to the financial market. We extract news data
+for the three stations between December 2013 to August 2021. Our time frame is limited by data
+availability because Bloomberg does not provide television news data prior to December, 2013.
+Our selection of climate related keywords are guided by three conditions: underlying data, goals
+on variable construction, and caution against data mining (i.e., to avoid over fitting in in-sample
+prediction and poor performance in out-of-sample prediction) as suggested by (Engle et al., 2020).
+The underlying data are snippets from the Television Explorer, where a snippet is a 15-seconds
+block of airtime, excluding advertisements. Our goal is to construct climate risk measures, so our
+choice of keywords relate to climate change vocabulary such that the largest number of relevant
+snippets are selected. Such a dictionary based approach with some manual supervision, unlike
+machine learning methods, minimizes false positives and negatives (Li et al., 2024). So, we judiciously select our keywords as opposed to entire vocabulary, such as in Engle et al. (2020), because
+a vocabulary may include words (e.g., methane, nitrogen, and weather) which may not relate to
+
+6
+
+climate change. With the above conditions in mind, we examined 26 climate change glossaries1 and
+used the following keywords: black carbon, cap and trade, carbon intensity, carbon budget,
+carbon emission, carbon footprint, carbon market, carbon tax, climate change, climate
+crisis, climate feedback, CO2, conference of the parties, COP 16, COP 21, emissions
+trading, global warming, greenhouse effect, greenhouse gases, intergovernmental panel
+on climate change, ipcc, Kyoto protocol, Montreal protocol, Paris agreement, renewable
+energy, and UNFCCC. Based on these keywords, we obtain a total of 37,948 snippets from the three
+news channels. For the baseline analysis, we aggregate all snippets from the three channels for each
+month.
+The extracted snippets (of 15 seconds each) are climate change specific data and they relate
+to physical risk as well as transition risk, which is a leading concern for financial news channels.
+We employ textual analysis of snippets to define climate risk measures which are likely to affect
+decisions of clean energy stock market participants whenever discussions are on issues of climate
+change. To define the climate risk measures, we classify the content into three categories: volume
+of coverage, type of coverage, and the type of media sentiment reflected in the language.
+The first measure i.e., volume of coverage of climate change (V olCov) is defined as the (logarithm) number of climate-change snippets in each month (t). A plot of the number of snippets
+per month is presented in Figure 1 with annotation of major events. It is apparent from the figure
+that climate change coverage increases around major events such as international climate summit
+(e.g., September 2019 Climate Summit), large natural disasters (e.g., COVID-19), and important
+changes to climate regulation (e.g., Paris Agreement in April 2016).
+To understand the second measure i.e., type of climate change coverage, we rely on our understanding of the coverage pattern and construct vocabulary lists for three main themes – climate
+crisis, renewable energy, and government & human initiatives. The climate crisis theme, as the
+name suggests, focuses on crises due to changes in the physical climate (e.g., pollution, global
+warming, hurricanes, wildfire etc). In constrast, renewable energy theme focuses on clean energy
+1
+
+Auburn University, BBC, Cambridge, Canadian Broadcasting Corporation (CBC), Center for Climate and Energy
+Solutions (C2ES), CNBC, Conservation in Changing Climate, DASolar, EDF, EMS Environmental, European Climate
+Adaptation, Platform (Climate ADAPT), European Environmental Agency (EEA), Global Greenhouse Warming,
+IPCC Special Report, MacMillan, National Geographic, New York Times, Statewide Integrated Flora and Fauna
+Teams (SWIFFT), The Guardian, The National Academy of Sciences, US Energy Information Administration (EIA),
+UK Climate Impacts Programme (UKCIP), United Nations Framework Convention on Climate Change (UNFCCC),
+University of California Davis, University of Miami, and Wikipedia.
+
+7
+
+Figure 1: Volume of snippets per month with annotation of major events.
+technologies (e.g., solar, wind, and other green energy). Lastly, the government & human initiatives theme capture governmental and international regulations, and climate adaption & mitigation
+strategies (e.g., carbon tax, afforestation, biodiversity restoration, etc.). We construct the vocabulary list by scanning 26 relevant sources (see Footnote 1) and assigning climate change-related term
+to each of the three themes. In total, we include 154, 152, and 132 wildcard words in the climate
+crisis, renewable energy, and government and human initiative vocabularies, respectively.
+The coverage index for theme i during month t is calculated as: Covi,t = Nit /(W Ct )∗100, where
+Nit is the frequency of words related to theme i during period t, and W Ct is the total word count
+in all snippets during period t. Thus, Covi,t represents the percentage of words in theme i relative
+to the total number of words during time period t. In our study, i can be climate crisis (CC),
+renewable energy (RE), or government and human initiatives (GHI). Our climate crises theme
+represents physical risk, whereas the renewable energy and government & human initiative themes
+are part of transition risk. Figure 2 displays a time series plot illustrating the monthly percentage
+of words associated with the three themes. It shows that CovCC reached its lowest point near the
+Global Climate Action Summit in September 2018, while it peaked around the 2014 UN Climate
+Summit. In contrast, CovRE was at its highest during the 2018 Global Climate Action Summit,
+
+8
+
+Figure 2: Type of coverage as percentage of total words.
+and CovGHI saw its peak when President Donald Trump withdrew from the Paris Agreement.
+Analyzing these three themes together helps us understand how various types of climate news
+coverage impact the clean energy sector.
+Finally, to capture news stations’ sentiment around climate change topics, we construct two
+sentiments variables in the spirit of Birz and Lott (2011) using the NRC Emotion Lexicon aka
+EmoLex (Mohammad and Turney, 2012), a dictionary of two sentiments (negative or positive) and
+eight emotions (anger, anticipation, disgust, fear, joy, sadness, surprise, and trust). Specifically,
+t
+the negative sentiment index is calculated as: N egSentt = NWegW
+Ct ∗ 100, where N egWt depicts the
+
+frequency of negative words in month t and W Ct is as defined earlier. Thus, N egSentt shows
+pessimism in the language of television discourse around climate change for period t. Similarly,
+
+9
+
+Figure 3: Type of sentiments as percentage of total words.
+a positive sentiment index (P osSentt ) is defined as the frequency of positive words (P osWt ) divided by W Ct and multiplied by 100. Figure 3 presents a time series plot of positive and negative
+sentiments, and points to correlation with major events on climate change. For instance, positive sentiments peaked around the signing of Paris Agreement in April 2016, while negative (and
+positive) sentiments were at their highest (and lowest) around 2014 UN Climate Change Conference. Notably, negative sentiments reached their lowest point around the 2018 Global Climate
+Action Summit. Together, these sentiment variables allow us to analyze any potential asymmetric
+reactions within the clean energy stock market.
+A description of all the climate variables and basic data summary is presented in the first
+panel of Table 1. On average, there are 12.76 ≈ exp(2.546) snippets discussing climate change for
+the period under consideration. Regarding the thematic coverage, about 7 percent of the words,
+with a standard deviation of 1.05, pertain to climate crisis. The average percentage of words
+related to renewable energy (government and human initiatives) is 1.30 (0.48), with a standard
+deviation of 0.68 (0.28). With respect to media sentiment, we see the average number of words
+with positive sentiment (8.90) is higher than the average number of words with negative sentiment
+(4.92), although the standard deviation for the former is only somewhat higher than that of the
+latter.
+We anticipate our coverage and media sentiment variables will have an effect on the clean
+energy sector in a certain way. Following Engle et al. (2020), we assume that “all news is bad
+news,” implying that any increase in climate change coverage volume and negative sentiments entail
+higher climate risks. Regarding the type of coverage, climate crises can be viewed as disruptions
+10
+
+Table 1: Data summary: The table presents the mean (Mean), median (Med), standard deviation
+(Std), and skewness (Skew) of the variables used in the fixed-effects regressions.
+variable
+
+Description
+
+Mean
+
+Med
+
+Std
+
+Skew
+
+2.546
+7.002
+1.299
+0.478
+
+2.572
+7.135
+1.158
+0.421
+
+0.239
+1.051
+0.685
+0.287
+
+−0.089
+−0.940
+1.494
+1.608
+
+8.896
+4.923
+
+8.767
+4.727
+
+0.951
+0.800
+
+1.077
+0.939
+
+−1.733
+13.741
+2.503
+9.287
+9.996
+−0.784
+
+4.300
+13.744
+3.211
+9.111
+11.192
+1.010
+
+23.75
+2.772
+1.794
+1.727
+4.488
+37.616
+
+−1.717
+−2.294
+−0.833
+0.359
+−1.221
+−19.384
+
+−0.442
+
+1.865
+
+17.422
+
+−8.426
+
+−0.248
+0.353
+5.179
+9.933
+
+1.251
+−3.027
+5.162
+0
+
+10.053
+23.165
+0.390
+20.382
+
+−6.999
+1.459
+0.131
+1.582
+
+4.040
+
+0.458
+
+7.899
+
+1.610
+
+8.491
+
+1.103
+
+10.902
+
+4.605
+
+Television coverage and sentiment variables
+V olCov
+CovCC
+CovRE
+CovGHI
+P osSent
+N egSent
+
+Logarithm of number of climate-change snippets
+Percent of words related to climate crisis
+Percent of words related to renewable energy
+Percent of words related to government and human initiatives
+Percent of words with positive sentiment
+Percent of words with negative sentiment
+Firm-level variables
+
+ROA
+MktCap
+Leverage
+StockVol
+IntAsset
+MBV
+
+Return on Assets
+Logarithm of market capitalization
+Total debt of a company divided by total capital
+Logarithm of volume of stocks (’000) exchanged in a day
+Logarithm of total value of a company’s intangible assets
+Market to book value
+Macroeconomic controls
+
+PSE
+MSCIWOR
+OVX
+EPU
+Covid×PS
+
+Logarithmic returns of Arca Tech 100 index maintained by
+NYSE
+Logarithmic returns of MSCI world index (US $)
+Logarithm of returns in crude oil volatility index
+Logarithm of economic policy uncertainty index
+Interaction of global COVID death and policy stringency
+(e.g., lockdown and other restrictions)
+Systematic and Idiosyncratic Risks
+
+SysRisk
+IdRisk
+
+Sytematic risk, calculated using the three factor FamaFrench model (FF3)
+Idiosyncratic risk, calculated using FF3
+
+to economic activity, thereby posing an operational risk to all firms. Thus, news coverage about
+climate crises may negatively influence the clean energy stocks. In addition, news about renewable
+energy and pro-environmental government and human initiatives typically represent positive news
+for the clean energy sector. However, news coverage about government and human initiatives
+could imply policy change, which could increase uncertainty. This increases transition risks and,
+ultimately, market risks. Lastly, we expect negative and positive media sentiments to have an
+asymmetric effect on clean energy stocks.
+
+11
+
+2.2
+
+Firm Level and Macroeconomic Data
+
+While our primary goal is to analyze the effect of climate risk variables on the idiosyncratic and
+systematic risks (see Section 2.3) of 48 clean energy firms2 , we utilize several firm-level and macroeconomic variables as controls to limit the influence of confounding and extraneous variables, and
+thereby reduce omitted variable bias. Data for all the firm-level variables and the first three
+macroeconomic variables (PSE, MSCIWOR, and OVX) are taken from Thomson Reuters; whereas
+for other variables they are curated from various sources. These variables are described in Table 1
+along with basic data summary.
+With respect to firm-level, we have six variables as described in the second panel of Table 1. The
+variable return on assets is used as a proxy for a firm’s profitability. Similarly, market capitalization
+(i.e., total value of a company’s outstanding shares) is used to proxy market’s perception of a
+company’s total equity value. We also include financial leverage which is the use of debt (borrowed
+funds) to invest in assets. Leverage is often used as a measure of excessive risk taking and hence a
+higher leverage indicates a risky bet for potential investors. The volume of stocks exchanged in a
+day indicates a company’s liquidity and higher volume is considered better for short-term trading.
+On the other hand, value of intangible assets add to a company’s future worth and can be far more
+valuable than tangible assets. Lastly, MBV is the ratio of a company’s book value to its market
+value and is utilized by investors as an indicator of market’s perception of a particular stock’s value.
+To cover the macroeconomic aspect, we include five variables as described in the third panel
+of Table 1. Arca Tech 100 (PSE) index, maintained by New York Stock Exchange, is a price
+weighted index composed of common stocks and ADRs of technology related companies listed on
+the US stock exchange. Returns to PSE is used as a proxy for average return from technology
+related firms. We also include the MSCI World index, a popular measure of the global stock
+market that tracks the performance of large and mid-cap companies across 23 developed countries.
+To measure energy market uncertainty, we utilize the crude oil volatility index (OVX) from the
+2
+Acuity Brands, Advanced Emissions Solutions, Advanced Energy Industries, Air Products and Chemicals,
+Ameresco, American Superconductor, Amtech Systems, Amyris, Badger Meter, CECO Environmental, Ceres Power
+Holdings, China Longyuan Power Group, China Everbright International, Cia Energetica De Minas Grais, Codexis,
+Comtec Solar Systems Group, Cree, Daqo New Energy Corporation, Enel Americas, Energy Recovery, EnerSys,
+ESCO Technologies, First Solar, Franklin Electric, Gentherm, Green Plains, Hexcel, Itron, JinkoSolar Holding, LSI
+Industries, MYR Group, Nextera Energy, ON Semiconductor, Orion Energy Systems, Ormat Technologies, Plug
+Power, Power Integrations, Pure Cycle, Quanta Services, Renesola, REX American Resources, Sunpower, Tesla,
+Universal Display, Veeco Instruments, Vicor Corporation.
+
+12
+
+Chicago Board Option Exchange. In addition, we include the US economic policy uncertainty
+(EPU) index as a measure of uncertainties in economic policy. Data for EPU is taken from Baker
+et al. (2016). Lastly, we include the interaction of global COVID-19 death (data source: https:
+//github.com/CSSEGISandData/COVID-19) with policy stringency (data taken from Hale et al.,
+2021) to control for the negative impact of the COVID-19 period.
+
+2.3
+
+Systematic and Idiosyncratic Risk
+
+In this section, we explain the construction of dependent variables i.e., the systematic and idiosyncratic (or non-systematic) risks from the three factor Fama-French model (FF3). The FF3 is
+an extension of the Capital Asset Pricing Model (CAPM) and aims to explain stock return of a
+company based on three factors: market risk, size premium, and value premium. Specifically, the
+equation for firm/stock i at time t is expressed as,
+(Rit − rf t ) = αit + βER (RM t − rf t ) + βSM B SM Bt + βHM L HM Lit + εit ,
+
+(1)
+
+where Rit denotes the total return of stock i at time t, rf t is the risk free rate of return at time
+t, and RM t is total market portfolio return at time t. The difference (Rit − rf t ) is the expected
+excess return of stock i at time t. On the right hand side, the first factor (RM t − rf t ) is the excess
+return on the market portfolio index (i.e., the difference between daily market return proxied by
+the S&P500 index and the risk free return) at time t. The second factor SM B captures the size
+effect and is defined as the excess return of small-cap companies over big-cap companies. Lastly,
+the third factor HM L represents value premium and is defined as the spread in returns between
+companies with a high book-to-market ratio and companies with a low book-to-market ratio.
+The coefficient βER represents sensitivity to market risk and is typically used as a measure of
+systematic risk; while the standard deviation of εit , denoted σε , is used as an idiosyncratic risk.
+We adopt these definitions and estimate FF3 models on daily data for each trading month for the
+period December 2013 to August 2021. Note that monthly data is the unit of analysis in our panel
+data models. The estimates β̂ER and σ̂ε obtained from the regression, as outlined in equation (1),
+serve as the dependent variables in subsequent analysis.
+
+13
+
+3
+
+Empirical Analysis
+
+With the dependent variables and independent variables (media sentiment, firm, and macroeconomic variables) available, we estimate the following fixed-effects regression (Greene, 2017),
+yit =
+
+J
+X
+
+x′ij,t βj + α + γi + ξit ,
+
+(2)
+
+j=1
+
+where yit is either the estimated idiosyncratic risk (σ̂ϵ ) or estimated systematic risk (β̂ER ) for firm i
+at month t, x′it is a vector of independent variables (comprising of climate risk, sentiment, firm-level,
+and macroeconomic variables) described in Table 1, α is a constant, γi denotes firm level fixed-effect,
+and ξit denotes the error term. The estimation results from the regression of idiosyncratic risk on
+the independent variables is presented in Table 2, and those from the regression of systematic risk
+on the same covariates is displayed in Table 3.
+We see from column M1 in Table 2 that the volume of climate change coverage (V olCov)
+has a negative impact on idiosyncratic risk (or firm risk); a one unit change in V olCov decreases
+idiosyncratic risk by 12.42 percentage points. An increase in climate news coverage increases public
+and investors’ awareness on climate issues (Sampei and Aoyagi-Usui, 2009). If investors perceive
+clean energy firms as valuable, they may be more willing to invest, resulting in better risk and
+debt management by the firm (El-Ouadghiri et al., 2021). Consequently, this will decrease the
+idiosyncratic risk associated with the firms. In contrast, V olCov, as seen from the column M1
+in Table 3, has a positive impact on systematic risk and a one unit change in V olCov increases
+systematic risk by 6.45 percentage points. This result follows from the fact that market risk tend
+to increase in light of higher climate change coverage. Overall, we find comprehensive support for
+the claim that volume of media coverage has a significant effect on the idiosyncratic and systematic
+risks of clean energy firms in the US.
+Next, we analyze the impact of different types of climate news coverage–climate crisis (CovCC ),
+renewable energy (CovRW ), and government & human initiatives (CovGHI )–on the risk profile of
+clean energy firms. The results for idiosyncratic and systematic risks are presented in columns M2
+to M4 of Table 2 and Table 3, respectively. We see that the type of coverage is not important for
+idiosyncratic risk as the coefficients for CovCC , CovRE , and CovGHI are statistically insignificant
+at 5 percent level (the default significance level). In contrast, the systematic risk is positively
+
+14
+
+Table 2: Results (coefficient estimates and robust standard errors in parenthesis) from fixed-effects
+regression of idiosyncratic risk on television coverage, media sentiment, firm, and macroeconomic
+variables. ∗∗ and ∗ denote significance at 1 and 5 percents, respectively
+M1
+Constant
+V olCov
+CovCC
+CovRE
+CovGHI
+P osSent
+N egSent
+ROA
+M ktCap
+Leverage
+StockV ol
+IntAsset
+M BV
+P SE
+M SCIW OR
+OV X
+EP U
+Covid × P S
+R–squared
+
+M2
+
+M3
+
+M4
+
+M5
+
+M6
+
+0.3469
+−0.6331
+−0.3997
+−0.3968
+−0.4207
+0.3117
+(1.2746)
+(1.2274)
+(1.1801)
+(1.1892)
+(1.1816)
+(1.2027)
+−0.1242∗∗
+..
+..
+..
+..
+..
+(0.0409)
+..
+..
+..
+..
+..
+..
+0.0200
+..
+..
+..
+..
+..
+(0.0213)
+..
+..
+..
+..
+..
+..
+−0.0170
+..
+..
+..
+..
+..
+(0.0273)
+..
+..
+..
+..
+..
+..
+−0.0162
+..
+..
+..
+..
+..
+(0.0641)
+..
+..
+..
+..
+..
+..
+0.0020
+..
+..
+..
+..
+..
+(0.0183)
+..
+∗∗
+..
+..
+..
+..
+.. −0.0859
+..
+..
+..
+..
+..
+(0.0294)
+−0.0019
+−0.0019
+−0.0019
+−0.0019
+−0.0019
+−0.0018
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+0.0381
+0.0384
+0.0383
+0.0382
+0.0382
+0.0368
+(0.0332)
+(0.0333)
+(0.0333)
+(0.0333)
+(0.0333)
+(0.0331)
+0.0185
+0.0186
+0.0185
+0.0183
+0.0183
+0.0179
+(0.0183)
+(0.0184)
+(0.0184)
+(0.0183)
+(0.0184)
+(0.0182)
+0.2055∗∗
+0.2046∗∗
+0.2039∗∗
+0.2040∗∗
+0.2040∗∗
+0.2019∗∗
+(0.0622)
+(0.0617)
+(0.0616)
+(0.0616)
+(0.0616)
+(0.0623)
+0.0105
+0.0103
+0.0103
+0.0103
+0.0103
+0.0106
+(0.0147)
+(0.0149)
+(0.0149)
+(0.0149)
+0.0149
+(0.0147)
+0.0010∗∗
+0.0011∗∗
+0.0011∗∗
+0.0010∗∗
+0.0010∗∗
+0.0010∗∗
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+0.0308∗∗
+0.0362∗∗
+0.0363∗∗
+0.0359∗∗
+0.0361∗∗
+0.0351∗∗
+(0.0091)
+(0.0089)
+(0.0089)
+(0.0091)
+(0.0088)
+(0.0089)
+−0.0512∗∗ −0.0603∗∗ −0.0604∗∗ −0.0597∗∗ −0.0601∗∗ −0.0591∗∗
+(0.0162)
+(0.0161)
+(0.0161)
+(0.0166)
+(0.0158)
+(0.0161)
+0.0054∗∗
+0.0044∗∗
+0.0045∗∗
+0.0046∗∗
+0.0046∗∗
+0.0045∗∗
+(0.0012)
+(0.0012)
+(0.0012)
+(0.0011)
+(0.0012)
+(0.0012)
+−0.0022
+0.0213
+0.0086
+0.0056
+0.0054
+−0.0427
+(0.1092)
+(0.1102)
+(0.1098)
+(0.1089)
+(0.1090)
+(0.1097)
+0.0148∗∗
+0.0150∗∗
+0.0149∗∗
+0.0149∗∗
+0.0144∗∗
+0.0152∗∗
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+0.0867
+
+0.0845
+
+0.0843
+
+15
+
+0.0843
+
+0.0843
+
+0.0865
+
+Table 3: Results (coefficient estimates and robust standard errors in parenthesis) from fixed-effects
+regression of systematic risk on television coverage, media sentiment, firm, and macroeconomic
+variables. ∗∗, ∗, and † denote significance at 1, 5, and 10 percents, respectively.
+M1
+Constant
+V olCov
+CovCC
+CovRE
+CovGHI
+P osSent
+N egSent
+ROA
+M ktCap
+Leverage
+StockV ol
+IntAsset
+M BV
+P SE
+M SCIW OR
+OV X
+EP U
+Covid × P S
+R–squared
+
+M2
+
+M3
+
+M4
+
+M5
+
+M6
+
+−0.2643
+−0.4264
+0.1328
+0.0728
+−0.1284
+−0.3650
+(0.7266)
+(0.6744)
+(0.7040)
+(0.7216)
+(0.7707)
+(0.7316)
+0.0645∗∗
+..
+..
+..
+..
+..
+(0.0409)
+..
+..
+..
+..
+..
+..
+0.0483∗
+..
+..
+..
+..
+..
+(0.0197)
+..
+..
+..
+..
+..
+..
+−0.0256
+..
+..
+..
+..
+..
+(0.0241)
+..
+..
+..
+..
+..
+..
+0.1166†
+..
+..
+..
+..
+..
+(0.0618)
+..
+..
+..
+..
+..
+..
+0.0301
+..
+..
+..
+..
+..
+(0.0216)
+..
+∗∗
+..
+..
+..
+..
+..
+0.0589
+..
+..
+..
+..
+..
+(0.0205)
+−0.0005
+−0.0004
+−0.0004
+−0.0004
+−0.0005
+−0.0005
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+−0.0358
+−0.0356
+−0.0358
+−0.0359
+−0.0363
+−0.0349
+(0.0271)
+(0.0272)
+(0.0271)
+(0.0272)
+(0.0273)
+(0.0268)
+−0.0106
+−0.0099
+−0.0102
+−0.0105
+−0.0109
+−0.0102
+(0.0156)
+(0.0157)
+(0.0157)
+(0.0156)
+(0.0158)
+(0.0157)
+0.1716∗∗
+0.1737∗∗
+0.1723∗∗
+0.1724∗
+0.1726∗
+0.1739∗∗
+(0.0638)
+(0.0632)
+(0.0639)
+(0.0645)
+(0.0646)
+(0.0633)
+−0.0082
+−0.0080
+−0.0080
+−0.0083
+−0.0082
+−0.0082
+(0.0090)
+(0.0091)
+(0.0090)
+(0.0089)
+(0.0090)
+(0.0092)
+−0.0012∗∗ −0.0011∗∗ −0.0012∗∗ −0.0012∗∗ −0.0012∗∗ −0.0012∗∗
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+−0.0184∗∗ −0.0207∗∗ −0.0207∗∗ −0.0201∗∗ −0.0206∗∗ −0.0206∗∗
+(0.0061)
+(0.0066)
+(0.0066)
+(0.0067)
+(0.0065)
+(0.0067)
+0.0344∗∗
+0.0384∗∗
+0.0384∗∗
+0.0370∗∗
+0.0376∗∗
+0.0384∗∗
+(0.0101)
+(0.0109)
+(0.0109)
+(0.0112)
+(0.0108)
+(0.0110)
+0.0006
+0.0006
+0.0009
+0.0010
+0.0010
+0.0011
+(0.0009)
+(0.0009)
+(0.0009)
+(0.0009)
+0.0009
+(0.0009)
+0.0383
+0.0724
+0.0390
+0.0337
+0.0325
+0.0674
+(0.0684)
+(0.0671)
+(0.0685)
+(0.0683)
+(0.0681)
+(0.0717)
+−0.0017
+−0.0018
+−0.0015
+−0.0012
+−0.0014
+−0.0012
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+0.0156
+
+0.0163
+
+0.0155
+
+16
+
+0.0155
+
+0.0153
+
+0.0160
+
+associated with coverage of climate crisis (CovCC ) and government and human initiatives (CCGHI ),
+with the latter being significant only at the 10 percent significance level. CovCC , which represents
+physical risk, works through the channel of economic disruption caused by climate crises. For
+example, hurricanes can damage roads and impair industrial & economic activities by disrupting
+transportation facilities. This will have an adverse impact on the operation of clean energy firms,
+leading to increase in total and systematic risks. Our results align with those of Balvers et al.
+(2017), Bansal et al. (2019), and Nagar and Schoenfeld (2021), who also observe significant impacts
+of physical risk. On the other hand, the arrival of news related to government and human initiatives,
+which reflects transition risk, increases policy uncertainty, thereby increasing systematic risk. Our
+finding agrees with Faccini et al. (2023), where they find that only transition risk though government
+intervention is priced in the US stocks. To summarize, we find notable variation in how different
+types of climate coverage affect the risk profiles of clean energy firms.
+Our results presented in Tables 2 and 3 also reveal that investors exhibit an asymmetric reaction
+to positive and negative climate news. We observe that the coefficient for positive sentiment
+(P osSent) is statistically insignificant, but that of negative sentiment (N egSent) is statistically
+significant (even at 1 percent significance level). Therefore, investors or participants in the clean
+energy stock market react strongly to negative sentiments, but not so much to positive sentiments.
+Such an asymmetric response to media sentiments, but constructed from news reports and articles,
+is consistent with the findings of Huang et al. (2014), Heston and Sinha (2017), Bajo and Raimondo
+(2017), Huang et al. (2018), and He et al. (2024). Consequently, our results confirm the negativity
+bias documented in the climate finance literature.
+Beyond the negativity bias, we find that N egSent has a negative effect on idiosyncratic risk.
+While it is counter intuitive to think that an increase in negative news about climate change would
+reduce the idiosyncratic risk of clean energy firms, we may observe such scenarios through shifts
+in investments driven by ESG considerations. When climate risk increases, thereby increasing
+N egSent, it can prompt investors to reassess their portfolios and seek investments that align with
+sustainability goals (El-Ouadghiri et al., 2021). As a result, clean energy firms may see increased
+investor interest and capital inflows, reducing their idiosyncratic risk related to funding and liquidity
+issues. On the other hand, N egSent has a positive effect on systematic risk since an increase in
+negative news increases the overall and systematic risks.
+
+17
+
+Besides the climate risk and media sentiment variables introduced in this paper, Tables 2 and 3
+also report the coefficients of some common firm-level and macroeconomic variables typically found
+in this type of research. We see from Table 2 that StockV ol, M BV , P SE, OV X, and Covid ×
+P S positively affect idiosyncratic risk, while M SCIW OR has a negative effect. These findings
+align with our intuition and existing literature. For instance, higher trading volume (StockV ol)
+generally enhances market liquidity, which tend to reduce idiosyncratic risk. Likewise, an increase
+in M BV reflects elevated growth expectations, which can lead to greater price volatility and higher
+idiosyncratic risk. An increase in returns for technology firms (as represented by P SE), energy
+market uncertainty (given by OV X), and policy stringency during the COVID-19 period (given by
+the interaction term Covid × P S) all contribute positively to idiosyncratic risk as expected. Lastly,
+higher returns from the global stock market (M SCIW OR) are associated with a reduction in the
+idiosyncratic risk of clean energy firms.
+Turning to the results for systematic risk shown in Table 3, we find that two variables StockV ol
+and M SCIW OR have a positive effect, whereas M BV and P SE have a negative effect on systematic risk. Once again, these findings align with explanations provided earlier and are consistent with
+established literature. For example, a higher M BV may signal stable and predictable earnings,
+thereby decreasing a firm’s exposure to systematic risk due to reduced sensitivity to economic fluctuations. The other variables, such as OV X and Covid×P S, which are significant for idiosyncratic
+risk, do not show statistical significance for systematic risk.
+
+4
+
+Robustness Check
+
+In this section, we examine the robustness of our results in the presence of alternative modes of
+media sentiments, climate coverage variables that distinguishes between policy initiatives versus
+physical occurrences, and the disturbances during the COVID-19 period.
+
+4.1
+
+Robustness with Print Media Sentiment Variable
+
+In Section 3, we have shown that negative sentiment in television news coverage of climate change
+has a significant effect on both idiosyncratic and systematic risks of clean energy firms. Our finding
+resonates with existing research, which has documented the impact of sentiment from print media
+on firms’ risk profiles. For instance, Huang et al. (2018) finds that media sentiment (positive and
+
+18
+
+negative) extracted from news report is positively associated with firm’s total and idiosyncratic
+risks. Similarly, Bask et al. (2024) find that negative media sentiment, derived from news articles
+published in Financial Times, is an important factor to explaining stock returns in various asset
+pricing models.
+However, the impact of sentiments derived from television news coverage is distinct to those re-
+
+Table 4: The coefficient estimates and robust standard errors (in parenthesis) from fixed-effect
+regression in the presence of CH Negative Index from Engle et al. (2020) and the MCCC Index
+from Ardia et al. (2023). ∗∗, ∗, and † denote significance at 1, 5, and 10 percents, respectively.
+Idiosyncratic Risk
+CHN eg
+M CCC
+Constant
+N egSent
+CHN eg
+M CCC
+ROA
+M ktCap
+Leverage
+StockV ol
+IntAsset
+M BV
+P SE
+M SCIW OR
+OV X
+EP U
+R–squared
+
+Systematic Risk
+CHN eg
+M CCC
+
+2.0007
+(1.3631)
+−0.0569†
+(0.0305)
+−73.5957∗
+(36.2728)
+..
+..
+−0.0021
+(0.0018)
+0.0093
+(0.0507)
+0.0036
+(0.0226)
+0.0978
+(0.0798)
+0.0018
+(0.0096)
+0.0017∗∗
+(0.0001)
+−0.0306†
+(0.0174)
+0.0409
+(0.0274)
+0.0032
+(0.0021)
+−0.1088
+(0.1330)
+
+2.2393†
+(1.3224)
+−0.0675∗
+(0.0302)
+..
+..
+−0.2189∗
+(0.0974)
+−0.0021
+(0.0017)
+0.0068
+(0.0504)
+0.0069
+(0.0212)
+0.0773
+(0.0771)
+0.0057
+(0.0116)
+0.0016∗∗
+(0.0001)
+−0.0349∗
+(0.0165)
+0.0443
+(0.0270)
+0.0030
+(0.0021)
+−0.0511
+(0.1329)
+
+−2.4774∗
+(1.2254)
+0.0646∗∗
+(0.0217)
+283.9628∗∗
+(47.1770)
+..
+..
+−0.0010
+(0.0010)
+−0.0478
+(0.0403)
+−0.0176
+(0.0256)
+0.1339
+(0.0799)
+−0.0016
+(0.0096)
+−0.0012∗∗
+(0.0001)
+−0.0454∗∗
+(0.0141)
+0.0838
+(0.0160)
+0.0023
+(0.0017)
+0.6052∗∗
+(0.1355)
+
+−1.7467
+(1.2833)
+0.0521∗
+(0.0208)
+..
+..
+−0.0844
+(0.0773)
+−0.0006
+(0.0009)
+−0.0444
+(0.0397)
+−0.0272
+(0.0240)
+0.1464†
+(0.0859)
+−0.0032
+(0.0111)
+−0.0013∗∗
+(0.0001)
+−0.0592∗∗
+(0.0133)
+0.1004∗∗
+(0.0166)
+0.0036†
+(0.0018)
+0.4640∗∗
+(0.1380)
+
+0.0095
+
+0.096
+
+0.0449
+
+0.0275
+
+19
+
+sulting from print media coverage. To substantiate this, we regress the systematic and idiosyncratic
+risks on N egSent and measures of climate change news via print media channel, while controlling
+for firm and macroeconomic variables. In the first model, we include the CH Negative Climate
+Change News index (CHN eg) from Engle et al. (2020). The CHN eg index measures the proportion of total articles with negative tones in the complete collection of articles from various news
+sources, which are filtered based on the keyword “climate change”. Whereas in the second model,
+we incorporate the Media Climate Change Concerns (M CCC) index from Ardia et al. (2023). The
+MCCC index measures the concern in media about climate change using climate change news in 10
+newspapers and 2 news wires published in the US. The data for CHN eg and M CCC are in months
+and available until May 2018 and June 2018, respectively. Accordingly, the estimation results for
+the robustness of print media variables belong to a smaller time period, i.e., Dec, 2013–May, 2018
+for models that include CHN eg and Dec, 2013–Jun, 2018 for models that incorporate M CCC.
+The regression results for the print media variables CHN eg and M CCC are shown in Table 4
+and they reinforce the findings from Tables 2 and 3. When regressing idiosyncratic risk on CHN eg
+(M CCC) and other control variables, the coefficient for N egSent is significant at the 10% (5%)
+significance level. However, when systematic risk is regressed on CHN eg or M CCC and other
+control variables, N egSent is significant at 5% or lower significance level. Overall, the significance
+of the television climate change sentiment variable, N egSent, remains robust even when accounting
+for the print media sentiment indices. This suggests that television media offers additional insights
+to investors beyond what is provided by print media and news wires, thereby improving their
+decision-making process for a better portfolio.
+
+4.2
+
+Robustness with Climate Policy Uncertainty
+
+In the previous section, we analyzed the impact of two print media variables on firms risk profile, but
+both CHN eg and M CCC do not distinguish between coverage of climate change-related physical
+events and climate change policy initiatives. However, it is crucial to separate the effects of news
+coverage on policy initiatives, as governments worldwide are enacting various policies to combat
+climate change. While the policies differ in scope and execution from one country to another, they
+impact both the idiosyncratic and systematic risks of clean energy companies, thereby affecting
+their stock returns.
+
+20
+
+To achieve the aforementioned objective, we incorporate the climate policy uncertainty (CP U )
+index from Gavriilidis (2021) as a covariate in our regression models. The CP U is a media-based
+policy uncertainty index, constructed by searching climate change related keywords (e.g., global
+warming, climate change) along with terms related to policy and uncertainty (e.g., regulation,
+White House, EPA, policy) in eight major U.S. newspapers: Boston Globe, Chicago Tribune, Los
+Angeles Times, Miami Herald, New York Times, Tampa Bay Times, USA Today and the Wall Street
+Journal. Table 5 presents the empirical results, with columns (M1)-(M6) summarizing findings for
+idiosyncratic risk and columns (M7)-(M12) for systematic risk. With idiosyncratic as the dependent
+variable, we observe that both negative sentiment from television news coverage (N egSent) and
+coverage volume (V olCov) are statistically significant at 1% significance level, with minimal change
+in their coefficients. For the regressions with systematic risk, the coefficient for V olCov increases
+but that of N egSent shows a minor decrease. Both variables remain significant at 5% significance
+level. Thus, the influence of coverage volume and negative sentiment on the risk profiles of clean
+energy firms are robust to the inclusion of economic policy uncertainty index in the model.
+
+4.3
+
+Robustness Check for the COVID-19 Period
+
+The COVID-19 pandemic caused widespread disruptions in the global economy and affected the
+financial markets, including the renewable energy sector. For instance, Roy et al. (2022) find
+that the clean energy sector under performed during COVID-19 period. Consequently, we aim to
+investigate whether the climate risk and sentiment measures had varying effects on the idiosyncratic
+and systematic risks during the COVID-19 pandemic. To do this, we re-estimate our regression
+models from Table 2 and Table 3 for the COVID-19 period: January, 2020 to August, 2021.
+The results for the COVID-19 period are reported in Table 6, where the first six columns (M1)(M6) display the regression results of idiosyncratic risk while the remaining six columns (M7)-(M12)
+report the regression results of systematic risk. A comparison of the coefficients for climate risk
+measures in Table 6 with those from the full sample, in Tables 2 and 3, reveals notable differences.
+Beginning with the volume of coverage, we find that for idiosyncratic risk the coefficient for V olCov
+increases in magnitude and remains significant at 1% significance level. Whereas for systematic
+risk, the coefficient for V olCov changes from being positive to negative, but significance level drops
+from 1% to 5%. The COVID-19 pandemic caused a major disruption in the economic and financial
+
+21
+
+Table 5: The table presents the coefficient estimates and robust standard errors (in parenthesis) from the regression of idiosyncratic
+and systematic risks on all the covariates in the presence of climate policy uncertainty (CPU) variable from Gavriilidis (2021).
+∗∗ and ∗ denote significance at 1 and 5 percents, respectively.
+Idiosyncratic Risk
+M1
+Constant
+V olCov
+CovCC
+CovRE
+CovGHI
+P osSent
+N egSent
+
+22
+
+CP U
+ROA
+M ktCap
+Leverage
+StockV ol
+IntAsset
+M BV
+P SE
+M SCIW OR
+OV X
+EP U
+Covid × P S
+R–squared
+
+M2
+
+M3
+
+M4
+
+Systematic Risk
+M5
+
+M6
+
+0.3441
+−0.7034
+−0.4367
+−0.4315
+−0.4335
+0.3122
+(1.2795)
+(1.2633)
+(1.2000)
+(1.2059)
+(1.1893)
+(1.2457)
+−0.1360∗∗
+..
+..
+..
+..
+..
+(0.0410)
+..
+..
+..
+..
+..
+..
+−0.1360
+..
+..
+..
+..
+..
+(0.0410)
+..
+..
+..
+..
+..
+..
+−0.0180
+..
+..
+..
+..
+..
+(0.0277)
+..
+..
+..
+..
+..
+..
+−0.0252
+..
+..
+..
+..
+..
+(0.0610)
+..
+..
+..
+..
+..
+..
+−0.0008
+..
+..
+..
+..
+..
+(0.0196)
+..
+..
+..
+..
+..
+.. −0.0859∗∗
+..
+..
+..
+..
+..
+(0.0314)
+0.0926
+0.0541
+0.0464
+0.0484
+0.0454
+−0.0003
+(0.0636)
+(0.0662)
+(0.0645)
+(0.0617)
+(0.0671)
+(0.0684)
+−0.0019
+−0.0018
+−0.0019
+−0.0019
+−0.0019
+−0.0018
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+(0.0014)
+0.0383
+0.0385
+0.0384
+0.0384
+0.0384
+0.0368
+(0.0333)
+(0.0334)
+(0.0333)
+(0.0333)
+(0.0334)
+(0.0330)
+0.0187
+0.0187
+0.0186
+0.0184
+0.0184
+0.0179
+(0.0183)
+(0.0184)
+(0.0184)
+(0.0183)
+(0.0184)
+(0.0182)
+0.2043∗∗
+0.2039∗∗
+0.2033∗∗
+0.2033∗∗
+0.2034∗∗
+0.2019∗∗
+(0.0621)
+(0.0614)
+(0.0612)
+(0.0613)
+(0.0612)
+(0.0620)
+0.0102
+0.0101
+0.0102
+0.0102
+0.0101
+0.0106
+(0.0146)
+(0.0148)
+(0.0148)
+(0.0148)
+(0.0148)
+(0.0147)
+0.0010∗∗
+0.0011∗∗
+0.0010∗∗
+0.0010∗∗
+0.0010∗∗
+0.0010∗∗
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+0.0287∗∗
+0.0354∗∗
+0.0356∗∗
+0.0350∗∗
+0.0353∗∗
+0.0351∗∗
+(0.0085)
+(0.0085)
+(0.0085)
+(0.0088)
+(0.0083)
+(0.0085)
+−0.0480∗∗ −0.0589∗∗ −0.0593∗∗ −0.0583∗∗ −0.0588∗∗ −0.0591∗∗
+(0.0154)
+(0.0154)
+(0.0155)
+(0.0160)
+(0.0151)
+(0.0154)
+0.0056∗∗
+0.0045∗∗
+0.0046∗∗
+0.0046∗∗
+0.0047∗∗
+0.0045∗∗
+(0.0012)
+(0.0012)
+(0.0012)
+(0.0011)
+(0.0011)
+(0.0011)
+−0.0737
+−0.0182
+−0.0266
+−0.0313
+−0.0291
+−0.0425
+(0.0988)
+(0.0986)
+(0.0987)
+(0.0996)
+(0.0994)
+(0.0987)
+0.0151∗∗
+0.0148∗∗
+0.0150∗∗
+0.0148∗∗
+0.0149∗∗
+0.0144∗∗
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+(0.0022)
+0.0871
+
+0.0846
+
+0.0845
+
+0.0844
+
+0.0844
+
+0.0865
+
+M7
+
+M8
+
+M9
+
+M10
+
+M11
+
+M12
+
+−0.2620
+−0.3882
+0.1700
+0.1206
+−0.1098
+−0.3344
+(0.7241)
+(0.6859)
+(0.7077)
+(0.7223)
+(0.7681)
+(0.7522)
+0.0741∗
+..
+..
+..
+..
+..
+(0.0326)
+..
+..
+..
+..
+..
+..
+0.0741∗
+..
+..
+..
+..
+..
+(0.0326)
+..
+..
+..
+..
+..
+..
+−0.0247
+..
+..
+..
+..
+..
+(0.0244)
+..
+..
+..
+..
+..
+..
+0.1289∗
+..
+..
+..
+..
+..
+(0.0591)
+..
+..
+..
+..
+..
+..
+0.0342
+..
+..
+..
+..
+..
+(0.0233)
+..
+..
+..
+..
+..
+..
+0.0570∗
+..
+..
+..
+..
+..
+(0.0226)
+−0.0747
+−0.0294
+−0.0467
+−0.0666
+−0.0663
+−0.0187
+(0.0629)
+(0.0599)
+(0.0587)
+(0.0560)
+(0.0632)
+(0.0625)
+−0.0005
+−0.0004
+−0.0005
+−0.0004
+−0.0005
+−0.0005
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+(0.0007)
+−0.0360
+−0.0357
+−0.0359
+−0.0361
+−0.0366
+−0.0350
+(0.0270)
+(0.0272)
+(0.0271)
+(0.0271)
+(0.0273)
+(0.0268)
+−0.0107
+−0.0099
+−0.0103
+−0.0106
+−0.0110
+−0.0102
+(0.0156)
+(0.0157)
+(0.0157)
+(0.0155)
+(0.0158)
+(0.0157)
+0.1726∗∗
+0.1741∗∗
+0.1729∗∗
+0.1734∗∗
+0.1736∗∗
+0.1741∗∗
+(0.0634)
+(0.0631)
+(0.0636)
+(0.0643)
+(0.0644)
+(0.0632)
+−0.0079
+−0.0079
+−0.0078
+−0.0081
+−0.0079
+−0.0082
+(0.0091)
+(0.0091)
+(0.0091)
+(0.0090)
+(0.0091)
+(0.0093)
+−0.0011∗∗ −0.0011∗∗ −0.0011∗∗ −0.0011∗∗ −0.0012∗∗ −0.0012∗∗
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+(0.0001)
+−0.0168∗∗ −0.0202∗∗ −0.0200∗∗ −0.0189∗∗ −0.0194∗∗ −0.0203∗∗
+(0.0062)
+(0.0066)
+(0.0066)
+(0.0067)
+(0.0066)
+(0.0067)
+0.0319∗∗
+0.0377∗∗
+0.0372∗∗
+0.0351∗∗
+0.0357∗∗
+0.0379∗∗
+(0.0102)
+(0.0110)
+(0.0110)
+(0.0112)
+(0.0109)
+(0.0110)
+0.0004
+0.0006
+0.0008
+0.0010
+0.0009
+0.0010
+(0.0008)
+(0.0009)
+(0.0009)
+(0.0009)
+(0.0009)
+(0.0009)
+0.0960
+0.0939
+0.0745
+0.0845
+0.0829
+0.0806
+(0.0806)
+(0.0763)
+(0.0776)
+(0.0799)
+(0.0813)
+(0.0783)
+−0.0017
+−0.0017
+−0.0015
+−0.0011
+−0.0013
+−0.0012
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+(0.0011)
+0.0159
+
+0.0164
+
+0.0151
+
+0.0158
+
+0.0156
+
+0.0161
+
+Table 6: COVID-19 Phase. The table presents the coefficient estimates and robust standard errors (in parenthesis) from the
+regression of idiosyncratic and systematic risks on climate risk measures, firm and macroeconomic variables using data for the
+period: January, 2020–August, 2021. ∗∗, ∗, and † denote significance at 1, 5, and 10 percents, respectively.
+Idiosyncratic Risk
+M1
+Constant
+V olCov
+CovCC
+CovRE
+CovGHI
+P osSent
+N egSent
+
+23
+
+ROA
+M ktCap
+Leverage
+StockV ol
+IntAsset
+M BV
+P SE
+M SCIW OR
+OV X
+EP U
+R–squared
+
+M2
+
+M3
+
+M4
+
+Systematic Risk
+M5
+
+M6
+
+0.3860 −7.1713∗∗ −7.1109∗∗ −7.5720∗∗ −9.9350∗∗
+−3.6082
+(3.2599)
+(1.9974)
+(1.9947)
+(1.9446)
+(2.0392)
+(2.1634)
+−0.4775∗∗
+..
+..
+..
+..
+..
+(0.1436)
+..
+..
+..
+..
+..
+..
+−0.0422
+..
+..
+..
+..
+..
+(0.0680)
+..
+..
+..
+..
+..
+..
+0.1127
+..
+..
+..
+..
+..
+(0.0277)
+..
+..
+..
+..
+..
+..
+1.0469∗
+..
+..
+..
+..
+..
+(0.4516)
+..
+..
+..
+..
+..
+..
+0.2672∗
+..
+..
+..
+..
+..
+(0.1057)
+..
+..
+..
+..
+..
+.. −0.4582∗∗
+..
+..
+..
+..
+..
+(0.1275)
+−0.0051
+−0.0056
+−0.0055
+−0.0056
+−0.0057
+−0.0055
+(0.0042)
+(0.0041)
+(0.0041)
+(0.0040)
+(0.0041)
+(0.0042)
+0.0583
+0.0685
+0.0686
+0.0717
+0.0735
+0.0719
+(0.0644)
+(0.0645)
+(0.0652)
+(0.0645)
+(0.0633)
+(0.0635)
+−0.0166
+−0.0347
+−0.0336
+−0.0317
+−0.0366
+−0.0372
+(0.0246)
+(0.0241)
+(0.0246)
+(0.0244)
+(0.0245)
+(0.0239)
+0.4663∗∗
+0.4592∗∗
+0.4475∗∗
+0.4466∗∗
+0.4657∗∗
+0.4451∗∗
+(0.1144)
+(0.0957)
+(0.0979)
+(0.1011)
+(0.0947)
+(0.0985)
+0.0230
+0.0260
+0.0247
+0.0237
+0.0270
+0.0298
+(0.0284)
+(0.0264)
+(0.0274)
+(0.0263)
+(0.0257)
+(0.0270)
+0.1149∗∗
+0.1097∗∗
+0.1102∗∗
+0.1101∗∗
+0.1082∗∗
+0.1098∗∗
+(0.0086)
+(0.0090)
+(0.0091)
+(0.0093)
+(0.0103)
+(0.0092)
+0.0108∗∗
+0.0525∗∗
+0.0520∗∗
+0.0530∗∗
+0.0655∗∗
+0.0481∗∗
+(0.0146)
+(0.0163)
+(0.0164)
+(0.0165)
+(0.0148)
+(0.0169)
+−0.0186 −0.0959∗∗ −0.0953∗∗ −0.0983∗∗ −0.1222∗∗ −0.0897∗∗
+(0.0268)
+(0.0304)
+(0.0309)
+(0.0309)
+(0.0273)
+(0.0313)
+0.0108∗∗
+0.0049†
+0.0046∗∗
+0.0063∗∗
+0.0024
+0.0017
+(0.0023)
+(0.0025)
+(0.0022)
+(0.0023)
+(0.0021)
+(0.0020)
+−0.0297
+0.8069∗∗
+0.7288∗∗
+0.7897∗∗
+0.8591∗∗
+0.4637∗∗
+(0.2973)
+(0.1686)
+(0.1780)
+(0.1699)
+(0.1697)
+(0.1783)
+0.1605
+
+0.1401
+
+0.1419
+
+0.1442
+
+0.1485
+
+0.1528
+
+M7
+
+M8
+
+M9
+
+M10
+
+M11
+
+M12
+
+2.2540
+−0.7046
+−0.5415
+−1.0258
+−2.9654
+−0.8568
+(2.2062)
+(1.4059)
+(1.3878)
+(1.4751)
+(1.8722)
+(1.5904)
+−0.1873∗
+..
+..
+..
+..
+..
+(0.0825)
+..
+..
+..
+..
+..
+.. −0.2544∗∗
+..
+..
+..
+..
+..
+(0.0598)
+..
+..
+..
+..
+..
+..
+0.3109∗∗
+..
+..
+..
+..
+..
+(0.0571)
+..
+..
+..
+..
+..
+..
+0.8242∗∗
+..
+..
+..
+..
+..
+(0.2974)
+..
+..
+..
+..
+..
+..
+0.2180∗∗
+..
+..
+..
+..
+..
+(0.0705)
+..
+..
+..
+..
+..
+..
+0.0185
+..
+..
+..
+..
+..
+(0.0912)
+−0.0015
+−0.0018
+−0.0016
+−0.0017
+−0.0018
+−0.0016
+(0.0018)
+(0.0021)
+(0.0020)
+(0.0020)
+(0.0020)
+(0.0020)
+0.0602
+0.0699
+0.0668
+0.0671
+0.0687
+0.0637
+(0.0546)
+(0.0545)
+(0.0531)
+(0.0549)
+(0.0534)
+(0.0573)
+0.0332
+0.0244
+0.0285
+0.0284
+0.0244
+0.0263
+(0.0336)
+(0.0309)
+(0.0325)
+(0.0314)
+(0.0308)
+(0.0325)
+0.2318∗∗
+0.2236∗∗
+0.2351∗∗
+0.2337∗∗
+0.2527∗∗
+0.2429∗∗
+(0.0604)
+(0.0532)
+(0.0573)
+(0.0557)
+(0.0526)
+(0.0564)
+−0.0327†
+−0.0313†
+−0.0351†
+−0.0333†
+−0.0307†
+−0.0317†
+(0.0186)
+(0.0178)
+(0.0183)
+(0.0184)
+(0.0179)
+(0.0184)
+0.0358
+0.0310†
+0.0340†
+0.0339†
+0.0323†
+0.0340
+(0.0217)
+(0.0176)
+(0.0193)
+(0.0198)
+(0.0179)
+(0.0204)
+0.0242†
+0.0430∗∗
+0.0403∗∗
+0.0411∗∗
+0.0513∗∗
+0.0405∗∗
+(0.0137)
+(0.0110)
+(0.0109)
+(0.0109)
+(0.0114)
+(0.0110)
+−0.0422† −0.0801∗∗ −0.0740∗∗ −0.0749∗∗ −0.0946∗∗ −0.0722∗∗
+(0.0241)
+(0.0194)
+(0.0191)
+(0.0188)
+(0.0202)
+(0.0192)
+−0.0050∗ −0.0051∗∗ −0.0070∗∗ −0.0061∗∗ −0.0092∗∗ −0.0074∗∗
+(0.0020)
+(0.0018)
+(0.0017)
+(0.0019)
+(0.0017)
+(0.0018)
+−0.5060∗
+0.1331
+−0.2626†
+−0.1696
+−0.1118
+−0.1877
+(0.2125)
+(0.1981)
+(0.1523)
+(0.1608)
+(0.1654)
+(0.1751)
+0.0472
+
+0.0625
+
+0.0692
+
+0.0464
+
+0.0517
+
+0.0417
+
+market. With this in background, one may expect higher climate risk to have a positive impact
+on idiosyncratic risk (thus increasing volatility in returns) and negative impact on systematic risk
+(thereby reducing returns on stocks).
+Turning attention to type of coverage variables, we find that for idiosyncratic risk the coefficient
+for CovCC remains statistically insignificant; whereas for systematic risk it changes from being
+positive to negative with an increase in significance level. So, during the pandemic, climate crises
+does not impact volatility of returns, but does reduce the expected stock return for clean energy
+firms. The variable CovRE shows an insignificant effect on idiosyncratic risk in the full sample
+and COVID-19 subsample, while for systematic risk the impact changes from being insignificant to
+positive during the pandemic. An interesting phenomenon is observed for CovGHI , where we see
+a positive impact on both idiosyncratic and systematic risks during the COVID-19 period. The
+significant positive effect of CovRE and CovGHI on systematic risk in the clean energy sector can be
+linked to higher uncertainty during the COVID-19 period, affecting both macroeconomic conditions
+and government policy.
+Lastly, for media sentiments, we find that the negative impact of N egSent on idiosyncratic
+risk is significantly stronger in the COVID-19 subsample as compared to the full sample. For
+systematic risk, the effect of N egSent changes from being positive and significant to insignificant
+during the pandemic. Interestingly, the positive sentiment variable P osSent which has remained
+insignificant in our entire analysis, is positive and significant for both idiosyncratic and systematic
+risks. In summary, during the COVID-19 period, volume of coverage, coverage of government &
+human initiatives, and sentiment measures are crucial to understanding idiosyncratic risk; whereas
+the type of coverage appears to be more important for explaining systematic risk of clean energy
+firms.
+
+5
+
+Conclusion
+
+This paper pioneers the use of television news coverage data to develop climate risk and sentiment
+measures, and utilizes these measures to assess the risk profiles of US clean energy firms. We focus
+on clean energy firms due to their critical role in combating climate change. Using monthly data
+from December 2013 to August 2021, we derive our climate risk and sentiment metrics from the
+television news coverage by Bloomberg, CNBC, and Fox Business; sourced from the Global Dataset
+
+24
+
+of Events, Language, and Tone (GDELT) database. We then employ fixed-effects regression to
+explore how these metrics, along with government COVID-19 policies, firm-specific factors, and
+macroeconomic variables, influence the idiosyncratic and systematic risks of clean energy firms.
+Our results indicate that volume of coverage, which is a proxy for aggregate risk (Engle et al.,
+2020), positively affects systematic risk, which in turn will raise expected return. Moreover, the
+volume of coverage negatively affects idiosyncratic risk, suggesting that an increase in climaterelated news decreases the volatility of returns for clean energy firms and makes it attractive to
+investors.
+Next, following Faccini et al. (2023) we categorize aggregate risk into two types: physical risks
+related to climate-induced weather events and transition risks tied to policy changes regarding
+renewable energy and government & human initiatives. Our analysis reveals that both physical
+risks and transition risks from government & human initiatives have a positive impact on systematic
+risk. Consequently, this raises investors’ expectations for returns from clean energy firms. However,
+neither physical risks nor transition risks significantly affect the firms’ idiosyncratic risk. Our
+findings also support the negativity bias identified in existing research, showing that negative
+sentiments tend to increase idiosyncratic risk and decrease systematic risk, while positive sentiments
+have no notable effect. We conduct several robustness checks and find that innovations from
+television news coverage differ from those arising from print media sources and climate policy
+uncertainty index. However, analysis during the COVID-19 period reveals some deviations from
+the results observed in the full sample.
+Television news coverage in the GDELT database offers a goldmine of data for developing
+climate risk metrics and integrating them into asset pricing models, and thereby enriching the
+climate finance literature. With this extensive data, a range of research questions can be explored.
+Here, we highlight three key areas for investigation. First, television news coverage can be utilized
+to create more detailed measures of physical and transition risks (Venturini, 2022; Faccini et al.,
+2023), and analyze their effect on firms risk profiles and stock returns. Second, new insights from
+television coverage can be employed to design a dynamic hedging portfolio, extending the approach
+of Engle et al. (2020). Third, building on the work of Huynh and Xia (2021), one can investigate
+whether climate risk measures derived from television news coverage are priced in the corporate
+bond market.
+
+25
+
+CRediT authorship contribution statement
+Wasim Ahmad: Conceptualization, Methodology, Resources, and Editing. Mohammad Arshad
+Rahman: Writing & Editing. Suruchi Shrimali: Data Curation, Methodology, Analysis. Preeti
+Roy: Data Curation, Resources, and Analysis.
+
+Declaration of competing interest
+None.
+
+26
+
+References
+Ardia, D., Bluteau, K., Boudt, K., and Inghelbrecht, K. (2023), “Climate Change Concerns and
+the Performance of Green versus Brown Stocks,” Management Science, 69, 7607–7632.
+Bajo, E. and Raimondo, C. (2017), “Media Sentiment and IPO Underpricing,” Journal of Corporate
+Finance, 46, 139–153.
+Baker, S. R., Bloom, N., and davis, S. J. (2016), “Measuring Economic Policy Uncertainty,” The
+Quarterly Journal of Economics, 131, 1593–1636.
+Balvers, R., Du, D., and Zhao, X. (2017), “Temperature Shocks and the Cost of Equity Capital:
+Implications for Climate Change Perception,” Journal of Banking and Finance, 77, 18–34.
+Bansal, R., Kiku, D., and Ochao, M. (2019), “Climate Change Risk,” Federal Reserve Bank of San
+Francisco Working Paper, pp. 1–74.
+Bask, M., Forsberg, L., and Ostling, A. (2024), “Media Sentiment and Stock Returns,” Quarterly
+Review of Economics and Finance, 94, 303–311.
+Bessec, M. and Fouquau, J. (2024), “A Green Wave in Media: A Change of Tack in Stock Markets,”
+Oxford Bulletin of Economics and Statistics, pp. 1–32.
+Birz, G. and Lott, J. R. (2011), “The Effect of Macroeconomic News on Stock Returns: New
+Evidence from Newspaper Coverage,” Journal of Banking and Finance, 35, 2791–2800.
+Bloomberg
+(2024),
+“Energy
+Transition
+Investment
+Trends
+2024,”
+https://assets.bbhub.io/professional/sites/24/Energy-Transition-Investment-Trends-2024.pdf,
+[Last accessed: 10 September 2024].
+Bua, G., Kapp, D., Ramella, F., and Rognone, L. (2024), “Transition versus Physical Climate
+Risk Pricing in European Financial Markets: A Text-based Approach,” The European Journal
+of Finance, pp. 1–35.
+Dougal, C., Engelberg, J., Garcia, D., and Parsons, C. A. (2012), “Journalists and the Stock
+Market,” The Review of Financial Studies, 25, 639–679.
+El-Ouadghiri, I., Guesmi, K., Peillex, J., and Zeigler, A. (2021), “Public Attention to Environmental
+Issues and Stock Market Returns,” Ecological Economics, 180, Article No. 106836.
+Engle, R. F., Giglio, S., Kelly, B., Lee, H., and Stroebel, J. (2020), “Hedging Climate Change
+News,” Review of Financial Studies, 33, 1184–1216.
+Faccini, R., Matin, R., and Skiadopoulos, G. (2023), “Dissecting Climate Risks: Are they Reflected
+in Stock Prices?” Journal of Banking and Finance, 155, Article No. 106948.
+Garcia, D. (2013), “Sentiment During Recessions,” The Journal of Finance, 68, 1267–1300.
+Gavriilidis,
+K.
+(2021),
+“Measuring
+https://dx.doi.org/10.2139/ssrn.3847388.
+
+Climate
+
+27
+
+Policy
+
+Uncertainty,”
+
+SSRN,
+
+Goyal, A. and Santa-Clara, P. (2003), “Idiosyncratic Risk Matters!” The Journal of Finance, 58,
+975–1007.
+Greene, W. H. (2017), Econometric Analysis, 8th Edition, Prentice Hall, New York.
+Hale, T., Angrist, N., Goldszmidt, R., Kira, B., Petherick, A., Phillips, T., Samuel Webster, E.
+C.-B., Hallas, L., Majumdar, S., and Tatlow, H. (2021), “A Global Panel Database of Pandemic
+Policies (Oxford Covid-19 Government Response Tracker),” Nature Human Behaviour, 5, 529–
+538.
+He, Y., Lu, S., Wei, R., and Wang, S. (2024), “Local Media Sentiment towards Pollution and its
+Effect on Corporate Green Innovation,” International Review of Financial Analysis, 94, Article
+No. 103332.
+Heston, S. L. and Sinha, N. R. (2017), “News vs Sentiment: Predicting Stock Returns from News
+Stories,” Financial Analysts Journal, 73, 67–83.
+Huang, A. H., Zang, A. Y., and Zheng, R. (2014), “Evidence on the Information Content of Text
+in Analyst Reports,” The Accounting Review, 89, 2151–2180.
+Huang, J., Roberts, H., and Tan, E. K. M. (2018), “The Impact of Media Sentiment on Firm Risk,
+Corporate Investment and Financial Policies,” SSRN, https://dx.doi.org/10.2139/ssrn.3099307.
+Huynh, T. D. and Xia, Y. (2021), “Climate Change News Risk and Corporate Bond Returns,”
+Journal of Financial and Quantitative Analysis, 56, 1985–2009.
+Jagannathan, R., Ravikumar, A., and Sammon, M. (2023), “Environmental, Social, and Governance Criteria: Why Investors are Paying Attention,” NBER Working Paper No. w24063, pp.
+1–27.
+Jia, Z., Li, D., Shi, Y., and Xing, L. (2023), “Firm-level Media News, Bank Loans, and the Role of
+Institutional Environments,” Journal of Corporate Finance, 83, Article No. 102491.
+Kearney, C. and Liu, S. (2014), “Textual Sentiment in Finance: A Survey of Methods and Models,”
+International Review of Financial Analysis, 33, 171–185.
+Kölbel, J. F., Leippold, M., Rillaerts, J., and Wang, Q. (2024), “Ask BERT: How Regulatory
+Disclosure of Transition and Physical Climate Risks Affects the CDS Term Structure,” Journal
+of Financial Econometrics, 22, 30–69.
+Kreibiehl, S., Jung, T. Y., Battiston, S., Carvajal, P. E., Clapp, C., Dasgupta, D., Dube, N.,
+Jachnik, R., Morita, K., Samargandi, N., and Williams, M. (2022), “Investment and Finance,”
+in In IPCC, 2022: Climate Change 2022: Mitigation of Climate Change. Contribution of Working
+Group III to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change,
+eds. P. R. Shukla, J. Skea, R. Slade, A. A. Khourdajie, R. V. Diemen, D. McCollum, M. Pathak,
+S. Some, P. Vyas, R. Fradera, M. Belkacemi, A. Hasija, G. Lisboa, S. Luz, and J. Malley, pp.
+1547–1640, Cambridge University Press, Cambridge, UK and New York, NY, USA.
+Levy, H. (1978), “Equilibrium in an Imperfect Market: A Constraint on the Number of Securities
+in the Portfolio,” The American Economic Review, 68, 643–658.
+28
+
+Li, Q., Shan, H., Tang, Y., and Yao, V. (2024), “Corporate Climate Risk: Measurements and
+Responses,” The Review of Financial Studies, 37, 1778–1830.
+Merton, R. C. (1973), “An Intertemporal Capital Asset Pricing Model,” Econometrica, 41, 867–887.
+Merton, R. C. (1987), “A Simple Model of Capital Market Equilibrium with Incomplete Information,” The Journal of Finance, 42, 483–510.
+Mohammad, S. M. and Turney, P. D. (2012), “Crowdsourcing a Word-Emotion Association Lexicon,” Computational Intelligence, 29, 436–465.
+Nagar, V. and Schoenfeld, J. (2021), “Is Weather a Systematic Risk? Evidence from Annual
+Reports,” Behavioral and Experimental Finance eJournal.
+NGFS (2024), “Nature-related Financial Risks: a Conceptual Framework to guide Action by Central Banks and Supervisors,” https://www.ngfs.net/sites/default/files/medias/documents/ngfsconceptual-framework-nature-risks.pdf, [Last accessed: 10 September 2024].
+Pastor, L., Stambaugh, R. F., and Taylor, L. A. (2021), “Sustainable Investing in Equilibrium,”
+Journal of Financial Economics, 142, 550–571.
+Roy, P., Ahmad, W., Sadorsky, P., and Phani, B. V. (2022), “What do we know about the Idiosyncratic Risk of Clean Energy Equities,” Energy Economics, 112, Article No. 106167.
+Sampei, Y. and Aoyagi-Usui, M. (2009), “Mass-media Coverage, its Influence on Public Awareness
+of Climate-change Issues, and Implications for Japan’s National Campaign to Reduce greenhouse
+Gas Emissions,” Global Environmental Change, 19, 203–212.
+Stroebel, J. and Wurgler, J. (2021), “What do you think about Climate Finance?” Journal of
+Financial Economics, 142, 487–498.
+Tetlock, P. C. (2007), “Giving Content to Investor Sentiment: The Role of Media in the Stock
+Market,” The Journal of Finance, 62, 1139–1168.
+Tetlock, P. C., Saar-Tsechansky, M., and ackassy, S. (2008), “More Than Words: Quantifying
+Language to Measure Firms’ Fundamentals,” The Journal of Finance, 63, 1437–1467.
+Venturini, A. (2022), “Climate Change, Risk Factors and Stock Returns: A Review of the Literature,” International Review of Financial Analysis, 79.
+
+29
+
+

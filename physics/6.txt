@@ -1,0 +1,2205 @@
+arXiv:2403.10220v1 [cs.LG] 15 Mar 2024
+
+From Chaos to Clarity: Time Series Anomaly
+Detection in Astronomical Observations
+Xinli Hao∗ , Yile Chen† , Chen Yang‡ , Zhihui Du§ , Chaohong Ma∗ , Chao Wu¶ ,Xiaofeng Meng#∗
+∗ Renmin University of China, Bejing, China
+† Nanyang Technological University, Singapore
+‡ China National Clearing Center, Beijing, China
+§ New Jersey Institute of Technology, Newark, USA
+¶ National Astronomical Observatories, CAS, Beijing, China
+{xinli hao, chaohma, xfmeng}@ruc.edu.cn, yile001@e.ntu.edu.sg,
+chenyang@cncc.cn, zhihui.du@njit.edu, cwu@bao.ac.cn
+
+Abstract—With the development of astronomical facilities,
+large-scale time series data observed by these facilities is being
+collected. Analyzing anomalies in these astronomical observations
+is crucial for uncovering potential celestial events and physical
+phenomena, thus advancing the scientific research process. However, existing time series anomaly detection methods fall short in
+tackling the unique characteristics of astronomical observations
+where each star is inherently independent but interfered by
+random concurrent noise, resulting in a high rate of false alarms.
+To overcome the challenges, we propose AERO, a novel twostage framework tailored for unsupervised anomaly detection
+in astronomical observations. In the first stage, we employ a
+Transformer-based encoder-decoder architecture to learn the
+normal temporal patterns on each variate (i.e., star) in alignment
+with the characteristic of variate independence. In the second
+stage, we enhance the graph neural network with a window-wise
+graph structure learning to tackle the occurrence of concurrent
+noise characterized by spatial and temporal randomness. In
+this way, AERO is not only capable of distinguishing normal
+temporal patterns from potential anomalies but also effectively
+differentiating concurrent noise, thus decreasing the number
+of false alarms. We conducted extensive experiments on three
+synthetic datasets and three real-world datasets. The results
+demonstrate that AERO outperforms the compared baselines.
+Notably, compared to the state-of-the-art model, AERO improves
+the F1-score by up to 8.76% and 2.63% on synthetic and realworld datasets respectively.
+Index Terms—Time series, Anomaly detection, AI for science
+
+I. I NTRODUCTION
+In recent years, scientific discovery in astronomy has experienced significant advancements owing to the development
+of modern facilities, such as optical or radio telescopes with
+higher temporal and spatial resolution. These cutting-edge
+developments have greatly facilitated the collection of largescale astronomical data, including optical images and radio
+signals, thus providing researchers with valuable resources to
+explore and explain the natural world. Meanwhile, the availability of such extensive datasets highlights the necessity for
+automated data analysis and interpretation to enhance related
+disciplines. In particular, anomalies (i.e., deviations from the
+normal patterns) identified in astronomical observations are
+# Corresponding author: Xiaofeng Meng.
+
+Magnitude
+StarID Magnitude
+Star1
+
+7.88
+
+Star2
+
+5.89
+
+Star3
+
+6.25
+
+Star4
+
+6.55
+
+Time
+
+Cloud
+
+Time
+
+Star1
+Star2
+Star3
+
+Star5
+
+7.65
+
+Star4
+
+……
+
+……
+
+Star5
+
+Time
+
+(a) Stars' images captured (b) Magnitude extracting
+at several times
+
+True anomaly Concurrent noise
+(False Positive)
+
+Star…
+
+Time
+(c) Forming multivariate time series
+
+Fig. 1. An illustration for multivariate time series obtained from multiple
+stars and examples for anomaly detection. (a) Images of stars captured by
+telescopes. (b) The magnitudes (i.e. brightness) of stars are extracted. (c)
+Multiple magnitudes series constitute a multivariate time series containing
+true anomalies and concurrent noise.
+
+critical indicators for potential celestial events or physical
+phenomena [1]. Given the vast volume of data records, it is
+important to design an effective anomaly detection method to
+assist in the scientific research process.
+The collected astronomical observations of multiple stars
+can be represented as a kind of multivariate time series. For
+example, as depicted in Fig. 1, the magnitude (i.e. brightness)
+of a star can be extracted from the image observed by
+telescopes. The magnitudes of a given star from a sequence of
+observations form a univariate time series. Subsequently, by
+aggregating multiple univariate time series, a multivariate time
+series can be constructed, which serves as the foundational
+data format for further analysis and scientific event discovery.
+While sharing the general format of multivariate time series,
+the data obtained from astronomical observations possess
+unique properties: 1) Variate independence. In astronomical
+multivariate time series, each variate corresponds to the time
+series of a star’s magnitude. Given that stars are separated by
+vast physical distances and characterized by various physical
+properties, these variates are considered inherently independent and lack mutual influence. This contrasts with the multivariate time series from industrial devices [2] or IT systems
+[3], where variates, typically from a single entity such as a
+server, exhibit close interdependencies throughout their opera-
+
+Temporal
+Reconstruction
+Module
+
+general AD model
+normal
+
+anomaly
+
+smaller error
+
+normal
+smaller error
+
+larger error
+concurrent
+noise
+
+true
+anomaly
+
+AERO
+
+potential
+anomaly
+larger error
+Concurrent Noise
+Reconstruction Module
+concurrent
+noise
+
+true
+anomaly
+
+false positive celestial event
+smaller error
+larger error
+(a) The anomaly detection process of
+(b) The anomaly detection process of
+general AD model
+AERO
+
+Fig. 2. Illustration of the anomaly detection process. (a) existing anomaly
+detection (AD) methods fail to distinguish normal data from concurrent noise
+in astronomical observations. (b) AERO overcomes the limitations through a
+two-stage framework.
+
+tion; 2) Concurrent noise. Astronomical observations obtained
+via telescopes are vulnerable to environmental interferences,
+such as shadowing effects from cloud coverage or extreme
+weather conditions. When affected by such factors, the magnitudes of a subset of stars exhibit simultaneous fluctuations
+over a time period, a phenomenon characterized as concurrent
+noise (Fig. 1(c)). Moreover, the presence of this concurrent
+noise is both spatially and temporally random, rendering its
+occurrence inherently unpredictable. However, such noise does
+not correspond to actual celestial events, and therefore should
+not be interpreted as true anomalies. Unfortunately, these two
+unique properties present challenges to existing time series
+anomaly detection methods, because they are not designed to
+accommodate these two characteristics.
+First, to tackle the property of variate independence, it is
+natural to employ univariate time series anomaly detection
+methods, which focus on modeling each variate separately
+[4]. While these methods are well-suited to the aspect of
+variate independence, they fail to identify the concurrent noise
+due to their inability to capture correlations across multiple
+stars. As a result, such noise might be mistakenly classified
+as true anomalies (celestial events), leading to an increased
+rate of false positives (Fig. 2(a)). Conversely, to tackle the
+property of concurrent noise, it is necessary to treat the
+magnitudes series of multiple stars jointly as a multivariate
+time series. However, existing methods for multivariate time
+series anomaly detection are primarily designed for systems,
+such as industry devices and urban infrastructures [2], [5],
+[6]. They operate under the assumption of persistent and predictable correlations among all variates. Such an assumption
+contradicts the inherent independence characteristic among
+stars during the absence of concurrent noise. Therefore, these
+methods result in suboptimal performance when applied to
+astronomical observations.
+Second, recent studies have proposed to treat each variate
+in multivariate time series as a node, and applied graph neural
+networks (GNNs) to uncover latent dependencies among these
+variates [7]–[9]. While these methods demonstrate enhanced
+performance in capturing latent dependencies among variates
+
+compared to conventional multivariate time series methods,
+they still encounter issues in effectively modeling concurrent
+noise. Specifically, GNNs in these methods are developed to
+explicitly learn the structure of either a global static graph
+or a dynamic temporal graph. As mentioned previously, the
+intrinsic unpredictability of environmental interferences indicates that concurrent noise exhibits both spatial and temporal
+randomness. In other words, concurrent noise can affect an undetermined number of stars within any region while occurring
+at any time. This suggests the absence of stable dependencies
+among variates and the lack of predictable, fixed temporal
+evolution patterns. Such randomness not only undermines
+the basic premise of constructing a static graph, but also
+challenges the core rationale behind the implementation of
+learning a dynamic graph.
+To overcome these challenges, we propose a novel method
+named AERO for Anomaly dEtection in astRonomical
+Observations in an unsupervised manner. Our method employs
+a two-stage detection framework to address the limitations in
+both types of existing anomaly detection methods. In the first
+stage, we adopt a Transformer-based encoder-decoder model,
+and apply it independently to each variate to reconstruct
+univariate time series. This strategy encodes prior knowledge
+of variate independence, thus enabling the model to learn
+the normal temporal patterns of stars effectively. Through
+this process, potential anomalies with large reconstruction
+errors can be preliminarily identified. In the second stage,
+based on the results from the first stage, we consider the
+variate dependencies to further differentiate true anomalies
+and concurrent noise, as shown in Fig. 2(b). To further
+distinguish concurrent noise and tackle its spatial and temporal
+randomness feature, we integrate GNN with a novel windowwise graph structure learning technique. This module leverages
+the information from the potential anomalies identified in the
+first stage, and avoids the assumptions of stable dependencies
+among stars or fixed evolution patterns applied in previous
+methods. By doing this, our model is better equipped to
+focus on reconstructing concurrent noise, thus enhancing its
+effectiveness in the context of astronomical observations.
+The contributions of our work are summarized as follows:
+• We propose AERO, a novel two-stage time series anomaly
+detection method tailored for tackling unique characteristics
+in astronomical observations. To the best of our knowledge,
+we are the first to systematically identify and address the
+challenges in astronomical time series anomaly detection.
+• The proposed AERO employs a Transformer-based encoderdecoder on each variate to select anomaly candidates in
+alignment with the variate independence property. Then it
+enhances GNN with a window-wise graph structure learning technique to effectively adapt to the concurrent noise
+property.
+• We conduct extensive experiments on both synthetic datasets
+and real-world datasets, the latter obtained from the National
+Astronomical Observatories of China. Experiments against
+11 baseline methods demonstrate that AERO outperforms
+them in most cases and achieves the highest F1-scores.
+
+II. R ELATED W ORK
+In this section, we present a range of anomaly detection
+methods relevant to our proposed method. First, we first introduce typical anomaly detection techniques that are applicable
+to univariate and multivariate time series. Then we concentrate
+on specialized methods that utilize GNN and Transformer
+architectures.
+A. Time Series Anomaly Detection
+Existing studies can be categorized into two groups of
+techniques, based on their applicability on either univariate
+or multivariate time series data.
+Univariate techniques focus on analyzing a single variate or
+treating each variate in time series separately, while neglecting
+their potential correlations. Early studies in this area typically
+utilize statistical methods. SPOT [10] employs Extreme Value
+Theory (EVT) to identify outliers of extreme values in streaming univariate time series, bypassing the need for predefined
+thresholds or assumptions about data distribution. Building
+on this, FluxEV extends SPOT [11] by identifying not only
+extreme values but also abnormal patterns through fluctuation
+extraction and smoothing processes. In addition, SR [12]
+adapts the spectral residual model from computer vision to
+anomaly detection in industrial services. With the advances
+in deep learning, numerous methods have been developed for
+anomaly detection based on various models, such as Long
+Short Term Memory (LSTM) [13], [14] and variational autoencoder (VAE) [15], [16]. Moreover, VAE-LSTM [17] is a
+hybrid method that combines VAE for robust local feature
+extraction over short windows with LSTM for long-term
+correlation modeling. However, as discussed in Sec. I, these
+univariate techniques fail to address the issue of concurrent
+noise encountered in astronomical data scenarios.
+Multivariate techniques consider a collection of variates
+in time series as a unified entity. These methods usually
+model the normal temporal patterns by considering both intervariate dependencies and variate-specific behaviors, and identify anomalies when data points exhibit large reconstruction errors. Notably, LSTM-NDT [18] incorporates a nonparametric
+anomaly thresholding approach into LSTM for anomaly detection in spacecraft monitoring systems. MSCRED [6] applies
+an attention-based convolutional LSTM model for anomaly
+detection and diagnosis in power plants. OmniAnomaly [19]
+is the first to explicitly account for both temporal dependency
+and variable stochasticity using VAE. Building upon this
+idea, InterFusion [3] combines inter-metric correlation and
+temporal dependency through a hierarchical VAE framework.
+VQRAEs [20] further enables this structure by incorporating
+bi-directional capability. In addition, generative adversarial
+networks (GANs) have been also adapted for anomaly detection in methods like MAD-GAN [21] and DAEMON [22].
+TimesNet [23] is developed as a foundation model applicable
+to both univariate and multivariate time series anomaly detection tasks. It introduces an approach of transforming time
+series from 1D to 2D space using Fast Fourier Transform
+
+(FFT) and then applies convolution operations to capture temporal and variate dependencies. While these methods consider
+multiple time series as a collective unit, none of them address
+the issue of concurrent noise. Consequently, they fall short of
+mitigating false positives caused by this issue.
+B. GNNs for Time Series Anomaly Detection
+Considering the dependencies among different variates in
+time series, GNNs [24], which treat each variate as a node and
+employ message passing between nodes, have been utilized in
+multiple time series tasks [25], including time series anomaly
+detection. GDN [7] assumes that variate dependencies (i.e.
+graph structure) do not change over time, and proposes to
+capture the static dependencies through embedding learning
+for each variate. In line with this assumption, several network
+structures, such as MTAD-GAT [26], Stgat-Mad [27], MTGNN [28], and RGSL [29], are developed to learn a static,
+and globally optimal static graph for multivariate time series.
+On the other hand, other methods argue that dependencies
+among variates and dynamic and evolve over time. These
+methods, including Event2Graph [9], GraphAD [30], BrainNet
+[31], METRO [8], ESG [32], and TSAT [33], aim to perform
+dynamic graph structure learning. They achieve this by constructing graphs at every timestamp and employing sequential
+modeling on the graph structures using RNN [8], [9], [32]
+or Transformer [33]. Bridging these two assumptions, SRD
+[34] decomposes variate dependencies into a static graph and
+is supplemented by dynamic variations unique to individual
+samples. While all these methods can selectively learn dependencies among variates, they are not capable of modeling the
+spatial and temporal randomness characteristic of concurrent
+noise.
+C. Transformer for Time Series Anomaly Detection
+The success of Transformer [35] in sequence modeling has
+significantly influenced its adoption for time series anomaly
+detection [36]. Compared to VAE-based methods, Transformer
+architecture demonstrates its superiority as both an encoder
+and decoder to account for temporal modeling. Based on this,
+Transformer variants have been developed in several methods to enhance anomaly detection capabilities. For example,
+TranAD [37] enhances the standard Transformer by integrating
+self-conditioning and adversarial training processes to improve
+performance in anomaly detection. AnomalyTransformer [38]
+employs a specialized anomaly attention mechanism to better distinguish normal and abnormal in both univariate and
+multivariate time series. GTA [5] augments the input in the
+Transformer with graph convolutions and hierarchical dilated
+convolutions to capture variate dependencies and temporal
+patterns more effectively. Unfortunately, similar to other time
+series anomaly detection methods, these methods still face
+challenges in being adequately adapted for astronomical observation scenarios.
+III. P ROPOSED M ETHOD
+In this section, we first formulate the problem of anomaly
+detection in astronomical observations. Next, we introduce an
+
+sliding window
+
+Fig. 3. Data format for astronomical observations, which includes N variates
+(series of magnitudes from N stars) over CT timestamps. A sliding window
+of length W is used to partition the complete time series into instances as
+Xt ∈ RN ×W .
+
+overview of our method, followed by detailed descriptions of
+each component. Finally, we describe the offline training and
+online detection process.
+A. Problem Statement
+Astronomical observation data can be represented as a time
+series, which consists of N variates (series of magnitudes from
+N stars) over CT timestamps, denoted as:
+T = {x1 , · · · , xCT }
+where each datapoint xt is collected at a specific timestamp
+(1)
+(2)
+(N )
+t and xt = {xt , xt , · · · , xt } ∈ RN denotes the magnitudes of N stars at time t.
+Following the practices in previous studies [3], [37], instead
+of directly utilizing the raw time series T as training input,
+we partition the entire time series into multiple instances by
+employing a sliding window of length W . As illustrated in
+Fig. 3, for a given timestamp t, a window of length W
+generates the instance Xt as follows:
+Xt = {xt−W +1 , · · · , xt } ∈ RN ×W
+In this way, the raw time series T is transformed into a
+collection of instances X = {XW , XW +1 , · · · , XCT } to serve
+as the data for model training.
+(n)
+Our objective is to determine whether an observation xt
+for each star at every timestamp is anomalous or not in an
+unsupervised manner. To achieve this, we aim to learn a
+predictive function:
+F(Xt ) → Ot
+N
+
+where Ot ∈ {0, 1} denotes the binary anomaly labels for N
+variates at timestamp t. By aggregating the results from each
+instance within the sliding window collection X , we are able
+to obtain the predictions for the complete time series T .
+B. Overview
+The framework of AERO is illustrated in Fig. 4. Building
+on the concept of reconstruction-based anomaly detection,
+AERO is composed of two modules, namely the temporal
+reconstruction module and concurrent noise reconstruction
+module, which are specifically designed to address the two
+distinct properties (i.e., variate independence and concurrent
+noise) in astronomical observations.
+
+The temporal reconstruction module utilizes a Transformerbased encoder-decoder architecture to model the normal temporal patterns of each star. In accordance with the variate
+independence property, it treats multiple variates as independent univariate time series through a shared network. For a
+given instance with a window length W from a variate, this
+module further employs a shorter window with length ω for
+reconstruction. This approach ensures that the reconstruction
+is more focused on the latter parts of the time series while
+leveraging a longer context to capture temporal patterns better.
+Such a manner aligns well with the inference stage of anomaly
+detection at the last timestamp for each instance, as described
+in Sec. III-A. Through this module, anomaly candidates are
+initially identified based on large reconstruction errors.
+The concurrent noise reconstruction module aims to further
+filter out instances affected by concurrent noise. To achieve
+this, it models the reconstruction errors from the temporal
+reconstruction module using a novel graph structure learning
+technique within GNN. Given the spatial and temporal randomness characteristic of concurrent noise, we devise a simple
+yet effective window-wise graph structure learning technique,
+which allows for the generation of a distinct adjacent matrix
+for every time window. This technique avoids the GNN’s
+tendency to learn stable spatial correlations or predictable
+temporal patterns in previous methods, which are inconsistent
+with the randomness in concurrent noise.
+Through the integration of these two modules, AERO
+proficiently reconstructs both normal temporal patterns and
+concurrent noise. The final anomaly detection results produced
+by AERO are the combination of both modules. Compared to
+existing methods, the proposed two-stage framework, tailored
+for astronomical observations, significantly reduces the number of false positives in practical applications.
+C. Temporal Reconstruction Module
+Transformer has demonstrated its effectiveness in modeling
+sequential data in various tasks [39], [40], and therefore
+has been recently adopted in time series anomaly detection
+[36]. Its performance surpasses previous reconstruction-based
+encoder-decoder backbones, such as VAE and RNN [37]. In
+light of this, we utilize a modified Transformer architecture
+as a temporal reconstruction module to learn normal temporal
+patterns through a reconstruction process for each variate. As
+depicted in Fig. 4(b), this module consists of five components,
+including time embedding, input embedding, encoder, decoder,
+and output layer.
+Time Embedding. The standard Transformer utilizes positional encoding to integrate order information into a sequence
+with the latent assumption that intervals between consecutive
+steps are equal. However, this assumption is not applicable to
+astronomical observations, which are usually recorded with
+irregular intervals. To consider irregular intervals of observations, we propose to adopt an enhanced time encoding
+technique that incorporates not only the absolute positions
+in the original trigonometric function but also encodes time
+intervals as learnable phase shifts [41], [42]. Following the
+
+W
+
+Object Independent
+
+Encoder
+TE
+
+Object Concatenate
+
+N
+
+Split short window
+Temporal
+Reconstruction
+Module
+short window
+
+multi-head
+attention
+
+add and
+normalize
+
+multi-head
+attention
+
+add and
+normalize
+
+feed
+forward
+
+add and
+normalize
+
+Decoder
+
+TE
+
+multi-head
+attention
+
+add and
+normalize
+
+feed
+forward
+
+Sigmoid
+
+(b) Temporal reconstruction Module
+
+Residual
+Concurrent
+Noise
+Reconstruction
+Module
+
+(a) Overall structure and data flow of AERO
+
+time
+slide window
+
+pair-wise similarity
+for every window
+
+window-wise learned
+graph structure
+
+GCN
+
+(c) Concurrent Noise Reconstruction Module
+
+Fig. 4. An illustration of AERO. (a) The overview framework of AERO. A multivariate time series representing magnitudes series of multiple stars is first
+divided into univariate time series as the input of the temporal reconstruction module. The initial reconstruction errors from the first module are concatenated
+as the input of the concurrent noise reconstruction module. (b) Details of temporal reconstruction module. (c) Details of concurrent noise reconstruction
+module.
+
+practice in [37], we sum sin and cos terms as the final time
+embedding function, which produces improved performance.
+Then the j-th dimension of time embedding T Et at timestamp
+t is defined as:
+T Etj = sin(f j × post + αj × ∆t )
+(1)
++ cos(f j × post + αj × ∆t )
+where f j represents the pre-defined angle frequency, calculated as f j = (1/10000)j/dm , j ∈ [0, dm ], dm is the dimensions of hidden states in Transformer, post is the absolute
+position of timestamp t, ∆t is the time interval between the
+current timestamp and the previous one, and αj is a learnable
+parameter.
+Input Embedding. For the reconstruction process, we
+generate two types of model inputs, Xt ∈ RN ×W derived
+from long sliding windows, and its subsequence Yt in the latter
+part with a short window length of ω (ω < W ), written as
+follow:
+Yt = {xt−ω+1 , · · · , xt } ∈ RN ×ω
+(2)
+The rationale behind this strategy is aligned with the inference stage of time series anomaly detection, where anomaly
+scores are progressively determined for the last timestamps
+using sliding windows. Consequently, our primary focus is
+on the reconstruction of the latter parts of a time series (i.e.,
+Yt ), while still leveraging a longer context (i.e., Xt ) for the
+effective modeling of temporal patterns.
+Incorporating the prior knowledge of variate independence
+in astronomical observations, we model Xt and Yt separately
+(n)
+(n)
+as Lt ∈ R1×W and St ∈ R1×ω as follows:
+n
+o
+(n)
+(n)
+(n)
+(n)
+Lt = Xt = xt−W +1 , . . . , xt
+,
+o
+n
+(3)
+(n)
+(n)
+(n)
+(n)
+St = Yt = xt−ω+1 , . . . , xt
+.
+(n)
+(n)
+Then, Lt and St are projected into an dm dimensional
+
+embedding by a linear projection. We add the time embedding
+
+T Et to the projected time series embeddings as the final input
+(n)
+(n)
+embedding IEt and IDt as follows:
+(n)
+
+IEt
+
+(n)
+
+= WE × Lt
+
++ T Et ,
+(n)
+(n)
+IDt = WD × St + T Et .
+
+(4)
+
+To maintain clarity while simplifying the discussion, we
+omit superscripts denoting variates and subscripts denoting
+(n)
+timestamps. Therefore, we substitute IE and ID for IEt
+(n)
+and IDt respectively in our subsequent explanations.
+Encoder. The encoder produces the representations based
+on the time series of long window size. The representations
+are generated based on the self-attention mechanisms applied
+in Transformer architecture. Specifically, the self-attention
+mechanisms perform the following operations:
+QK T
+Attention(Q, K, V ) = sof tmax( √
+)V.
+dm
+
+(5)
+
+where Q, K, and V represent the query, key, and value matrix
+respectively derived from a linear projection on the input
+embeddings.
+In our work, we adopt multi-head self-attention to model the
+embeddings of time series. Specifically, the input embeddings
+are projected into h sets of different queries, keys, and values
+to perform self-attention mechanism, which has been shown
+to achieve better performance. Given the input representations
+IE , the output representations of multi-head self-attention are
+produced as follows:
+M HA(Q, K, V ) = Concat(H1 , ..., Hh ) × WO
+Hi = Attention(Qi , Ki , Vi ),
+
+(6)
+
+where Qi , Ki , and Vi for i ∈ {1, . . . , h} are obtained by
+i
+passing input IE through projection matrices WQi , WK
+, WVi ∈
+Rdm ×dm /h for each head h, WO is learnable parameter matrix.
+
+We follow standard Transformer architecture to combine the
+residual connection and layer normalization with multi-head
+self-attention, which can be expressed as follows:
+ME = LayerN orm(IE + M HA(IE , IE , IE )),
+OE = LayerN orm(ME + F F N (ME )).
+
+(7)
+
+where LayerN orm denotes layer normalization operation,
+F F N represents the feed-forward neural networks, and OE ∈
+Rdm ×W is the final output representations derived from the
+encoder.
+Decoder. The objective of the decoder is to reconstruct
+the time series with a shorter window length. To achieve
+this, the decoder takes the embeddings ID , and the output
+representations OE of the encoder as contextual information
+to reconstruct the time series for each variate. Specifically, the
+decoder performs the following operations:
+MD = LayerN orm(ID + M HA(ID , ID , ID )),
+′
+
+OD = LayerN orm(MD + M HA(MD , OE , OE ))
+
+(8)
+
+The representations from the encoder are used as values and
+keys for the queries generated by shorter windows to capture
+temporal patterns within the long context.
+Finally, feedforward neural networks and sigmoid activation
+are employed to generate the normalized predictions of a
+variate:
+′
+OD = Sigmoid(F F N (OD )).
+(9)
+Output Layer. In the output layer, we concatenate the result
+OD ∈ R1×ω from each variate to produce a matrix, denoted
+as Yˆ1 ∈ RN ×ω , as a reconstructed multivariate time series:
+(1)
+(2)
+(N )
+Yˆ1 = Concat(OD , OD , . . . , OD ).
+
+(10)
+
+Subsequently, we calculate the initial reconstruction errors
+E ∈ RN ×ω as follows:
+E = Y − Yˆ1 .
+
+(11)
+
+By doing this, anomaly candidates are identified by relatively large errors, whereas normal patterns are characterized
+by smaller errors.
+D. Concurrent Noise Reconstruction
+The temporal reconstruction module is effective at detecting
+anomalies on a variate-wise basis. However, there is a high
+likelihood of concurrent noise being mistakenly classified as
+anomalies if the correlations among variates are not taken
+into account. In this module, we aim to refine this issue
+by filtering out concurrent noise from the identified anomaly
+candidates. Since concurrent noise tends to manifest large
+errors simultaneously across multiple variates, it can typically
+be distinguished through the modeling of variate correlations.
+As illustrated in Fig. 4(c), we further refine the anomaly detection process by reconstructing the errors obtained from the
+temporal reconstruction module. This is achieved by applying
+GNN enhanced with a window-wise graph structure learning
+technique detailed as follows.
+
+Window-wise Graph Structure Learning. Concurrent
+noise exhibits characteristics of spatial and temporal randomness, implying that it can appear on an unpredictable
+number of stars at any time period. Such characteristics
+render the application of existing static or dynamic GNN
+methods unsuitable. Static GNN methods rely on a static graph
+structure to represent stable dependencies among variates,
+while dynamic GNN methods operate under the assumption
+of predictable evolving patterns in variate correlations. To
+overcome the limitations, we propose a novel approach that
+involves constructing a graph structure specific to each sliding
+window. Specifically, we leverage the errors generated by the
+temporal reconstruction module, denoted as Et ∈ RN ×ω , as
+the embedding for the sliding window at timestamp t. Then
+we compute the similarity between variates m and n in Et as
+follows:
+(m)
+(n)
+(Et )T Et
+(12)
+simmn
+=
+t
+(n)
+(m)
+· Et
+Et
+Based on this, the graph structure corresponding to the
+window at timestamp t is determined by an adjacency matrix
+At , which indicates the pairwise similarity between variates:
+Amn
+= simmn
+t
+t
+
+(13)
+
+Reconstruction via GCN. After deriving the graph structure for each sliding window, variates exhibiting similar error
+patterns are assigned large weights within the graph. As
+illustrated in Fig. 1, variates affected by concurrent noise
+demonstrate simultaneous fluctuations, whereas true anomalies
+usually exhibit distinct temporal deviations. This principle is
+critical in distinguishing concurrent noise from true anomalies.
+In other words, if a variate is influenced by concurrent noise
+within a given window, it can be effectively reconstructed
+using the error patterns of other similarly affected variates.
+This principle, however, does not apply to true anomalies.
+Leveraging this insight, we employ a GNN to perform message
+passing among variates for concurrent noise reconstruction.
+The GNN is implemented as follows:
+Ŷ2 = σ((D̃−1 ÃYt )Wθ + bθ )
+
+(14)
+
+where Yt is the input with the short window sizeP
+in Eq. (2),
+Ã = A − I, D̃ is the degree matrix, and D̃mm = n Ãmn , σ
+is the activation function, and Wθ and bθ are learnable parameters. It is important to note that self-loops are intentionally
+removed in message passing to exclude the information of
+the target node itself. This design avoids the situations in
+which true anomalies are well reconstructed based on their
+own information.
+E. Offline Two-Stage Model Training
+To separately focus on modeling normal temporal patterns
+and concurrent noise, the training of two modules in AERO
+is sequentially arranged in two stages. The overall training
+process is described in Algorithm 1.
+Stage 1: Normal Temporal Pattern Reconstruction. In
+the first stage, we train the temporal reconstruction module
+
+After this stage, concurrent noise and true anomaly become
+prominent by large reconstruction errors. When the loss of the
+first module does not decrease over several patient epochs, we
+stop training the temporal reconstruction module and enter the
+second stage to handle concurrent noise. The loss function of
+the first stage is:
+lossrec = Y − Yˆ1
+(15)
+Stage 2: Concurrent Noise Reconstruction. In the second
+stage, we train the concurrent noise reconstruction module
+while freezing the parameters of the first module to maintain
+stable training. The loss function is defined as:
+lossnoise = Y − Yˆ1 − Yˆ2
+
+Input: X and Y split from T using sliding windows
+Require: Temporal Reconstruction Module M1 ,
+Concurrent Noise Reconstruction Module M2 ,
+epoch1 and epoch2 decided by early stop mechanism.
+Output: Trained M1 and M2
+1: for i = 0 to epoch1 do
+2:
+Yˆ1 ← M1 (X, Y )
+3:
+loss1 = Y − Yˆ1
+4:
+Update parameter of M1 by loss1 .
+5: end for
+6: for i = epoch1 to epoch2 do
+7:
+Yˆ2 ← M2 (Y − Yˆ1 , Y )
+8:
+loss2 = Y − Yˆ1 − Yˆ2
+9:
+Update parameter of M2 by loss2 .
+10: end for
+
+(16)
+Algorithm 2 Online Detection Process
+
+F. Online Detection and Diagnosis
+After the model training, we can perform online anomaly
+detection, which is summarized in Algorithm 2. During the inference phase, AERO operates in an online mode by following
+the patterns adopted in the training stage. This involves maintaining a sliding window with a stride 1. As new observations
+arrive, they are appended to the preceding window. Then the
+model determines whether the data points are anomalous or
+not based on the anomaly scores, which are defined as the
+combination of reconstruction errors in two modules:
+st = S(Y − Yˆ1 − Yˆ2 ).
+
+Algorithm 1 Model Training Process
+
+(17)
+
+where S() represents the indexing function that selects
+the last timestamp to produce st ∈ RN . Then for each
+(n)
+variate, a higher anomaly score st ∈ R indicates that the
+(n)
+corresponding input xt is hard to reconstruct, and thus more
+likely to be an anomaly.
+(n)
+Based on the anomaly scores for xt , we can derive point(n)
+wise anomaly labels for each variate. Specifically, if st is
+(n)
+larger than a threshold, the corresponding xt is marked as an
+anomaly. We utilize the widely adopted Peak Over Threshold
+(POT) method in previous studies [10], [12], [19], [37] to
+automatically determine the threshold. The final anomaly label
+is derived by:
+
+Input: X and Y split from test dataset using sliding windows
+Require: Trained M1 and M2 .
+Output: Predicted label matrix O.
+1: for t at each timestamp do
+2:
+Yˆ1 ← M1 (X, Y )
+3:
+Yˆ2 ← M2 (Y − Yˆ1 , Y )
+4:
+st = S(Y − Yˆ1 − Yˆ2 )
+5:
+for each variate n do
+(n)
+(n)
+6:
+Ot = 1(st ≥ P OT (s))
+7:
+end for
+8: end for
+
+RQ4: Can the learned graph structure in our method effectively represent the concurrent noise? How does each step
+of our method contribute to the anomaly scores?
+• RQ5: How do the hyperparameters and configurations influence our method performance?
+•
+
+A. Datasets
+
+where s utilized in the POT method is the collection of all
+(n)
+anomaly scores obtained from the training instances, and st
+denotes the anomaly score for variate n at the current time t.
+IV. E XPERIMENTS
+
+We utilize six datasets, including three synthetic datasets
+and three real-world datasets, to evaluate the performance of
+compared methods.
+Synthetic Datasets. Astronomical observations are unique
+in exhibiting characteristics of variate independence and concurrent noise, which usually do not exist in other data domains.
+To showcase the effectiveness of our method, we generate
+three synthetic datasets in which these properties are injected
+into time series. The construction of these datasets begins with
+the generation of basic signals. These signals either conform
+to a Gaussian distribution, X ∼ N (0, 0.22 ), to simulate the
+behavior of non-variable stars, or obey a sinusoidal function
+with added Gaussian noise, thereby imitating the behavior of
+variable stars. The employed sinusoidal function is as follows:
+
+In this section, we conduct experiments to answer the
+following research questions:
+• RQ1: Can our method outperform baselines for anomaly detection in astronomical observations by improving precision
+while guaranteeing recall?
+• RQ2: How do different components of our method benefit
+the performance?
+• RQ3: How does our method perform in terms of efficiency
+and scalability?
+
+2∗π
+∗ post )
+T
+where post is the absolute position of the current timestamp
+and T denotes the cycle value sampled from a range between
+100 and 300 simulating various variable stars.
+Then three types of concurrent noise are injected into the
+basic signals. The first type is data drift, which is simulated
+by increasing or decreasing the mean value in the basic
+signals. The second type represents the process of darkening
+
+(n)
+
+Ot
+
+= 1(st
+
+(n)
+
+≥ P OT (s))
+
+(18)
+
+f (t, T ) = 2 ∗ sin(
+
+TABLE I
+DATASET S TATISTICS .
+
+B. Baselines and Experimental Setup
+
+We compare the performance of our proposed AERO2 with
+#vari- Anomaly Noise
+#Anomaly #Noise ten methods for time series anomaly detection, including
+Dataset
+#train #test
+A/N
+ates
+(%)
+(%)
+Segments variates five univariate methods (i.e., Template Matching, SR, SPOT,
+FluxEV, and Donut) and six multivariate methods (i.e., OmSyntheticMiddle 4000 4000 24
+0.180 1.719 0.105
+5
+17/24
+SyntheticHigh 4000 4000 24
+0.359 1.719 0.209
+10
+17/24
+niAnomaly, AnomalyTransformer, TranAD, GDN, ESG, and
+SyntheticLow
+4000 4000 24
+0.180 3.438 0.052
+5
+17/24
+TimesNet). Details of these baselines are provided as follows:
+AstrosetsMiddle 5540 5387 54
+0.153 4.173 0.037
+2
+54/54
+• Template Matching (TM) [45]: it is a supervised method
+AstrosetsHigh 8000 6117 38
+0.117 2.405 0.049
+2
+38/38
+AstrosetsLow
+6255 2950 40
+0.190 8.419 0.023
+6
+40/40
+for celestial event discovery in astronomy. It employs pre*Anomaly(%) represents the proportion of anomalous data points.
+defined event templates to match newly arrived data. We
+*Noise(%) is the proportion of data points affected by concurrent noise.
+treat the templates as anomalies in the experiments.
+*A/N denotes the anomaly-to-noise ratio which measures the ratio of true
+• SR [12]: it is a univariate time series anomaly detection
+anomalies in the potential candidates.
+*#Noise variates is the number of variates affected by concurrent noise.
+method based on Spectral Residual [46]. Since SR does not
+require training, we directly apply it in online detection.
+•
+SPOT [10]: it applies Extreme Value Theory to detect
+followed by recovery, which is induced by occlusions such
+anomalies in univariate streaming data.
+as cloud cover. This effect is simulated by adding half a
+•
+FluxEV [11]: it augments SPOT with the capability of
+period of trigonometric function to the basic signals at specific
+identifying not only extreme values but also a range of
+timestamps. The third type represents the brightening effect,
+abnormal patterns.
+caused by the sunrise in the morning. This effect is simulated
+•
+Donut [15]: it utilizes a variational auto-encoder (VAE) as
+by adding exponential functions to the basic signals for a
+the backbone to serve as a reconstruction-based method for
+period of time.
+univariate time series anomaly detection.
+As for the injected true anomalies, we use two categories
+•
+OmniAnomaly (OA) [19]: it employs VAE to explicitly
+in astronomical classification datasets from kaggle1 and flare
+model the dependencies among variates in a stochastic
+function in [43]. Examples of true anomalies are shown in
+manner for multivariate time series anomaly detection.
+Fig. 5. We randomly inject the true anomalies to the basic
+• AnomalyTransformer (AT) [38]: it adapts the Transformer
+signals across various variates to create the SyntheticMiddle
+as a reconstruction-based anomaly detection model by incordataset with a moderate anomaly-to-noise ratio (A/N). Simiporating an anomaly-attention mechanism and an associalarly, we generate additional synthetic datasets with varying
+tion discrepancy analysis method. We transform the univariA/N ratios. Specifically, we either double the number of
+ate anomaly score into a multivariate result for comparison.
+anomalous data points, or the amount of concurrent noise
+• TranAD [37]: it incorporates score-based self-conditioning
+to create the SyntheticHigh and SyntheticLow datasets. The
+adversarial training into Transformer encoder-decoder archistatistics of the datasets are summarized in Table I.
+tecture for multivariate time series anomaly detection.
+• GDN [7]: it is a GNN-based method that explicitly learns
+a global static graph structure to indicate the correlations
+among variates through embedding techniques.
+• ESG [32]: it is a foresting model based on a dynamic GNN
+that learns a dynamic graph structure for variates. We adapt
+it for anomaly detection by employing single-step prediction
+errors.
+Fig. 5. Examples of Injected True Anomalies.
+• TimesNet [23]: it is the state-of-the-art foundation model
+for various tasks in time series analysis, including anomaly
+Real-world Datasets. Given the absence of public datasets
+detection tasks. It introduces a novel approach that applies
+for anomaly detection in astronomical observations, we have
+convolutions to time series by transforming them into 2D
+curated three real-world datasets, referred to as Astrosets.
+space.
+These datasets are processed from the astronomical observations conducted by the Ground-based Wide Angle Cameras
+For all the baselines in our experiments, we use the imple(GWAC) [44] at the National Astronomical Observatories of mentations provided by the authors or from well-established
+China. The three datasets are selected to contain a broad range repositories on GitHub. We set the length of the input sequence
+of statistical characteristics, as presented in Table I. Moreover, to be consistent with that used in AERO. The parameter
+different from other anomaly detection datasets, anomalies in settings for each baseline are set according to the specifications
+real astronomical observations are relatively rare. In light of detailed in their respective paper or adjusted to the optimum.
+this, we specifically annotate the number of segments where Given that different anomaly detection methods may adopt
+anomalies occur to illustrate the datasets.
+varying criteria for selecting anomaly thresholds, we implement the POT method across all the methods to ensure a fair
+1 https://www.kaggle.com/competitions/PLAsTiCC-2018/data
+
+2 Codes and datasets are available at: https://github.com/XinliHao/AERO
+
+comparison. In POT, we set the initial threshold level = 0.99
+and desired probability q = 0.001 uniformly for all methods
+on all datasets.
+For the model training, we use the Adam optimizer with
+an initial learning rate of 0.001. We set the length of the
+sliding window W as 200 and the short window size ω as
+60. We set the number of layers and the number of heads
+in the Transformer as 1 and 4, respectively. The maximum
+number of epochs for training is set to be 100 and determined
+by the early stop mechanism with patience = 5.
+C. Evaluation Metrics
+We use precision (Prec), recall, and F1-Score (F1) over
+the test datasets to evaluate the performance of all the comTP
+P
+pared methods: P rec = T PT+F
+P , Recall = T P +F N , F 1 =
+2×P rec×Recall
+P rec+Recall , where T P , T N , F P , and F N are the numbers
+of true positives, true negatives, false positives, and false
+negatives respectively.
+In line with the previous studies [15], [19], [37], we adopt
+a point-adjust strategy to calculate the performance of these
+metrics. This strategy is particularly applied in cases where
+alarms are preferred to be segment-level.
+D. Overall Performance (RQ1)
+1) Results for Synthetic Datasets: Table II presents the
+performance of precision, recall, and F1-score for all the
+compared methods on the three synthetic datasets. Based on
+the results, we can make several observations.
+First, it is observed that most methods designed for univariate time series anomaly detection, except for SR, show the
+most competitive performance on the SyntheticHigh dataset.
+However, these methods exhibit less effective results on the
+SyntheticLow dataset, apart from SPOT and TM. This trend
+is in contrast to the performance of AERO, primarily due
+to the limited capability of these methods in recognizing
+concurrent noise. Therefore, their performance is more susceptible to anomaly-to-noise ratio (A/N). Specifically, a higher
+A/N ratio, indicating less concurrent noise, corresponds to
+improved performance. Besides, among all the univariate time
+series methods, SR achieves the best precision and F1 score,
+while SPOT excels in recall. This is because SR tends to
+make conservative predictions regarding potential anomalies,
+in contrast to the more aggressive strategy applied in SPOT.
+Second, for methods designed for multivariate time series
+anomaly detection, their performance is heavily influenced
+by their capability to model the specific properties of astronomical observations. Specifically, TimesNet, which forms
+the foundation model for time series analysis, serves as the
+best-performing baseline model in terms of average F1 score
+due to its robust architecture suited for a wide range of time
+series data. GNN-based methodologies, particularly GDN and
+ESG, closely follow in performance. Their performance results
+from the capability to model explicit variate correlations. In
+contrast, OmniAnomaly, AnomalyTransFormer, and TranAD
+exhibit comparatively weak due to their limited ability to
+accurately model concurrent noise.
+
+TABLE II
+R ESULTS ON THE SYNTHETIC DATASETS IN TERMS OF P RECISION ,
+R ECALL , AND F1- SCORE (%).
+Method
+TM
+SR
+SPOT
+FluxEV
+Donut
+OA
+AT
+TranAD
+GDN
+ESG
+TimesNet
+AERO
+
+SyntheticMiddle
+
+SyntheticHigh
+
+SyntheticLow
+
+Prec
+
+Recall F1
+
+Prec
+
+Recall F1
+
+Prec
+
+Recall F1
+
+6.08
+73.92
+26.74
+57.40
+61.40
+20.37
+29.76
+31.03
+89.58
+79.55
+83.33
+90.79
+
+28.98
+79.71
+100.0
+55.07
+50.72
+34.78
+14.49
+100.0
+79.71
+71.01
+71.01
+100.0
+
+11.64
+84.23
+30.91
+81.36
+78.72
+26.86
+90.55
+54.16
+86.03
+85.80
+88.58
+90.67
+
+39.13
+67.39
+100.0
+84.78
+53.62
+28.26
+50.00
+100.0
+50.00
+63.04
+100.0
+100.0
+
+10.19
+72.18
+28.05
+61.16
+43.03
+44.54
+14.79
+35.68
+87.93
+69.02
+86.54
+92.68
+
+49.38
+50.62
+100.0
+49.38
+25.93
+38.27
+24.69
+100.0
+62.96
+50.62
+100.0
+100.0
+
+10.06
+76.71
+42.20
+56.21
+55.56
+25.70
+19.49
+47.36
+84.36
+75.04
+76.68
+95.17
+
+17.94
+74.88
+47.23
+83.04
+63.79
+27.54
+64.43
+70.26
+63.24
+72.68
+93.94
+95.10
+
+16.90
+59.51
+43.81
+54.64
+32.36
+41.17
+18.50
+52.60
+73.38
+58.40
+92.78
+96.20
+
+TABLE III
+R ESULTS ON THE REAL - WORLD DATASETS IN TERMS OF P RECISION ,
+R ECALL , AND F1- SCORE (%).
+Method
+TM
+SR
+SPOT
+FluxEV
+Donut
+OA
+AT
+TranAD
+GDN
+ESG
+TimesNet
+AERO
+
+AstrosetMiddle
+
+AstrosetHigh
+
+AstrosetLow
+
+Prec
+
+Recall F1
+
+Prec
+
+Recall F1
+
+Prec
+
+Recall F1
+
+8.03
+76.21
+38.43
+35.65
+35.27
+41.93
+68.97
+06.47
+79.72
+40.24
+41.15
+80.72
+
+22.22
+100.0
+100.0
+22.23
+22.23
+22.23
+77.78
+22.23
+100.0
+22.23
+22.23
+100.0
+
+62.06
+74.20
+28.11
+69.00
+70.23
+64.10
+55.89
+11.61
+64.94
+57.47
+68.09
+75.36
+
+55.56
+100.0
+100.0
+100.0
+100.0
+55.56
+44.44
+44.44
+55.56
+55.56
+55.56
+100.0
+
+14.05
+82.96
+29.18
+65.79
+81.08
+86.37
+55.76
+41.61
+69.20
+68.18
+85.54
+89.00
+
+50.00
+91.67
+100.0
+78.57
+66.18
+75.00
+25.00
+92.86
+33.33
+42.86
+91.67
+91.67
+
+11.79
+86.50
+55.52
+27.38
+27.27
+29.05
+73.11
+10.03
+88.71
+28.63
+28.86
+89.33
+
+58.63
+85.19
+43.89
+81.66
+82.51
+59.52
+49.51
+18.42
+59.88
+56.50
+61.19
+85.95
+
+21.94
+87.09
+45.18
+71.61
+72.87
+80.28
+34.52
+57.47
+44.99
+52.63
+88.50
+90.31
+
+Third, AERO exhibits enhanced performance with the decrease of anomaly-to-noise ratio (i.e., more concurrent noise
+present in the SyntheticLow dataset). This superior performance can be attributed to the design of AERO, which is
+specifically tailored to tackle concurrent noise and effectively
+reduce the number of false positives. As a result, the precision
+of AERO is greatly enhanced in scenarios of a larger ratio of
+concurrent noise, like the cases encountered in astronomical
+observations. As the level of concurrent noise diminishes,
+the relative advantage of AERO gradually diminishes. More
+importantly, AERO outperforms the baselines in terms of
+all metrics on all three simulation datasets. Besides, AERO
+achieves the highest average F1-score, with an improvement
+of up to 8.76% over the second-best performing baseline.
+2) Results for Real-world Datasets: Table III presents the
+performance of precision, recall, and F1-score for all the
+compared methods on the three real-world datasets. Based on
+the results, we can make several observations.
+Among all baselines, SR achieves the best overall performance. The adaptability of the spectral residual approach in
+SR makes it effective for different anomaly types in real-world
+datasets. Template Matching performs the worst due to the limitations of pre-defined and fixed templates. Consistent with its
+performance on synthetic datasets, SPOT achieves the highest
+
+recall but quite low precision. This observation again demonTABLE IV
+R ESULTS FOR A BLATION S TUDY ( AS %).
+strates its tendency to predict a higher number of anomalies,
+leading to numerous false alarms. FluxEV, an improvement of
+SyntheticMiddle
+AstrosetMiddle
+AstrosetLow
+SPOT, shows a more balanced precision and recall. Building
+Prec Recall F1
+Prec Recall F1
+Prec Recall F1
+on the VAE model, Dount and OmniAnomaly produce similar
+AERO 90.79 100.0 95.17 80.72 100.0 89.33 89.00 91.67 90.31
+results. However, their performance drops significantly on the
+1) i
+43.75 20.29 27.72 70.21 77.78 73.80 84.43 75.00 79.44
+AstrosetMiddle dataset, as these methods struggle to capture
+1) ii
+62.50 28.99 39.60 39.30 22.22 28.39 87.04 75.00 80.57
+anomalies consisting of long continuous segments. TranAD,
+1) iii 59.52 36.23 45.05 76.27 100.0 86.54 83.33 57.14 67.80
+facing similar constraints and being more sensitive to minor
+2) i
+88.69 100.0 94.00 77.12 100.0 87.08 29.59 08.33 13.00
+fluctuations, exhibits much worse performance compared to
+2) ii
+80.80 100.0 89.38 76.34 100.0 86.58 87.04 75.00 80.57
+2) iii 74.70 71.01 72.81 74.07 100.0 85.11 86.20 91.66 88.85
+AnomalyTransformer in real-world datasets, in contrast to the
+2) iv 83.54 100.0 91.03 73.49 100.0 84.79 39.99 58.33 47.45
+results on synthetic datasets. Moreover, GDN demonstrates
+capability in identifying anomalies of long segments on the
+AstrosetMiddle dataset. Conversely, TimesNet is effective at iii w/o short window: it removes the input from the short
+detecting anomalies of relatively short time spans on the
+window of length ω in the temporal reconstruction module.
+AstrosetLow dataset.
+2) Effect of Concurrent Noise Reconstruction Module
+AERO achieves the best result on the AstrosetsLow dataset
+and the worst result on the AstrosetsHigh dataset for its own i. w/o concurrent noise: it removes the concurrent noise
+reconstruction module while maintaining only the temporal
+performance. This pattern aligns with the trends observed in
+reconstruction module.
+the synthetic datasets, particularly in relation to the anomalyii.
+w/o concurrent noise & univariate input: it removes the
+to-noise ratio (A/N). Given AERO’s effectiveness in modeling
+concurrent noise reconstruction module and changes the inconcurrent noise, its strengths become more pronounced in
+put to the temporal reconstruction module as a multivariate
+scenarios where the A/N ratio is lower. Furthermore, In
+time series.
+comparison with the baselines, AERO surpasses them on all
+iii.
+w/o window-wise graph (static): it applies a static comthree real-world datasets in most metrics, except for the recall
+plete graph to model variate correlations rather than the
+metric on the AstrosetsLow dataset. The most notable strength
+window-wise graph structure learning technique.
+of AERO lies in its superior precision that exceeds all the
+iv.
+w/o window-wise graph (dynamic): it uses a dynamic
+baselines. It achieves an average improvement of 5.02% over
+graph structure rather than a window-wise graph structure
+the best baseline. This advantage in precision also contributes
+learning technique. The dynamic graph is learned based on
+to an enhancement in F1-score, with an improvement of
+ESG [32] to contain the output of its evolving graph layer.
+up to 2.63%. The experimental results indicate that AERO
+The results for different model variants are presented in
+is effective at dealing with complex real-world scenarios in
+Table IV. Based on the results, we can observe that the removal
+astronomical observations.
+of different components from the framework leads to the
+decline of all the metrics. This demonstrates the contributions
+E. Ablation Study (RQ2)
+of each component to the model performance. Notably, the
+To examine the contributions of various components within impact of specific components varies across different datasets.
+our method, we conduct experiments by selectively removing For example, the temporal reconstruction module serves as
+different components to observe the impact on the model the most influential factor in the performance of the Synthetperformance. Specifically, we implement seven variants of icMiddle dataset. For the AstrosetsMiddle and AstrosetsLow
+the original model to validate the effectiveness of these datasets, the pivotal roles shift to the univariate input and the
+components. These variants are divided into two categories: concurrent noise reconstruction module.
+three that modify the temporal reconstruction module, and
+On average, three model variants that either replace the
+four that modify the concurrent noise reconstruction module. univariate input with the multivariate one (w/o univariate
+Each model variant is tested on one synthetic dataset and two input), omit the temporal construction module (w/o temporeal-world datasets. We introduce the details of these model ral) or remove the concurrent noise reconstruction module
+variants below:
+(w/o concurrent noise), produce the most serious effects on
+1) Effect of Temporal Reconstruction Module
+descending order. Specifically, these modifications result in
+i w/o temporal: it removes the temporal reconstruction a substantial decrease in F1-score by 45.94%, 34.15%, and
+module, retaining only the concurrent noise reconstruction 29.38% respectively. It is interesting to observe cases where
+the performance completely collapses when these critical propmodule in the framework.
+ii w/o univariate input: the input to the temporal reconstruc- erties are not well tackled due to the above components. This
+tion module is changed from univariate time series directly finding highlights the importance of simultaneously addressing
+to multivariate time series. This adjustment is intended both variate independence and the concurrent noise properties,
+to demonstrate the effectiveness of modeling each variate which are unique and pivotal in the context of astronomical
+observations.
+independently in this module.
+
+We conduct further experiments to evaluate the model
+efficiency in terms of training and testing time for all the
+compared methods. Note that SR is excluded from the analysis
+since this method does not involve the learning process. The
+results on the SyntheticMiddle dataset are reported in Fig. 6,
+and similar trends can be observed on other datasets. For
+the training stage, it can be observed that OmniAnomaly
+requires the longest training time per epoch as it utilizes GRU
+which sequentially processes the data points at each step,
+whereas GDN is the most time-efficient due to the efficiency
+of the GNN model utilized in this method. The proposed
+AERO model, while not the fastest, demonstrated comparable
+efficiency to these models. Despite its calculation of a distinct
+graph structure for every sliding window, the number of
+parameters remains modest to be time-efficient for training.
+In the testing phase, the trends are similar to those of the
+training stage: GDN is still the most efficient. Notably, AERO
+demonstrates competitive efficiency in the testing phase as
+well. These results indicate that the efficiency of our proposed
+AERO is competitive in both the training and testing stages. In
+this case, AERO can be deployed in online anomaly detection
+to satisfy the real-time requirement at a relatively low training
+cost. In addition, AERO strikes a balance between runtime
+efficiency and anomaly detection performance, making it a
+practical choice for real-world applications requiring both
+speed and accuracy.
+To study the scalability of AERO, we first analyze its
+computational complexity. Given the size of long window
+W , the size of short window ω, the number of stars N ,
+the dimension of hidden state of Transformer dm , the time
+complexity is O(W 2 dm + N ω 2 ), which remains the same
+magnitude as compared to other methods.
+To evaluate its practical applicability, we generated a series
+of datasets with star numbers ranging from 24 to 960 and
+tested the GPU memory usage and inference time. Since in
+practical scenarios, the number of stars in observed images
+typically does not exceed several hundred (500), we excluded
+extreme cases such as numbers over 1000. The results for GPU
+memory usage and inference time are presented in Fig. 7.
+For GPU memory usage, we observe a linear increase in
+AERO, marked by a relatively modest growth rate compared to
+other baselines, whereas TranAD and ESG demand the highest
+usage. For inference time, ESG and SR exhibit a significant
+increase than AERO, while the increases for other baselines
+
+AERO
+TimesNet
+ESG
+GDN
+TranAD
+AT
+OA
+Donut
+Flux
+SPOT
+
+AERO
+TimesNet
+ESG
+GDN
+TranAD
+AT
+OA
+Donut
+Flux
+SPOT
+SR
+0
+
+10
+
+20
+
+30
+
+40
+
+50
+
+0
+
+20
+
+(a)Training Time(s/epoch)
+
+40
+
+60
+
+80
+
+100
+
+120
+
+(b)Inference Time(s)
+
+Fig. 6. Results for model efficiency
+AERO
+AT
+TranAD
+GDN
+ESG
+TimesNet
+
+10000
+8000
+6000
+4000
+2000
+0
+
+AERO
+AT
+TranAD
+GDN
+ESG
+TimesNet
+SR
+
+2000
+
+Inference Time(s)
+
+F. Model Efficiency and Scalability (RQ3)
+
+are not significant since they do not compute dynamic correlation matrices. Although AERO may not demonstrate the most
+superior scalability, it achieves comparable memory usage and
+inference time while exhibiting the highest effectiveness. Thus,
+AERO meets the requirements of practical applications in the
+project of scientific discovery.
+
+GPU memory usage(MiB)
+
+Moreover, compared to the proposed window-wise graph
+structure learning technique, the adoption of a static graph
+or the implementation of dynamic graph structures learning
+leads to a decrease in F1-score by 10.20% and 18.76%
+respectively. This result demonstrates that while all three
+methods aim to address concurrent noise, window-wise graph
+structure learning emerges as the most effective approach. The
+superior performance is attributed to its more reasonable prior
+assumption, which effectively models the characteristics of
+spatial and temporal randomness inherent in concurrent noise.
+
+1500
+1000
+500
+0
+
+0
+
+200
+
+400
+
+600
+
+800
+
+1000
+
+0
+
+200
+
+400
+
+600
+
+800
+
+Number of Stars
+
+Number of Stars
+
+(a)GPU Memory Usage
+
+(b)Inference Time(s)
+
+1000
+
+Fig. 7. Results for model scalability
+
+G. Model Analysis (RQ4)
+Visualization of the window-wise graph structure. To
+further validate the effectiveness of the window-wise graph
+structure learning technique in capturing concurrent noise, we
+perform qualitative analysis to visualize the learned graph
+structure and the ground truth graph constructed based on
+concurrent noise occurrences in Fig. 8. The yellow dots (i.e.,
+edge weights equal to 1) in Fig. 8(d) represent instances of
+concurrent noise that affects multiple stars. It is worth noting
+that these yellow dots include all instances of concurrent noise
+throughout the entire time series, with each part of noise
+not necessarily occurring simultaneously. Fig. 8(a)-(c) depict
+samples from the learned window-wise graphs, extracted at
+different timestamps and arranged in temporal order. We
+can observe that the module accurately captures instances of
+concurrent noise within specific time periods. For example,
+Fig. 8(a) highlights concurrent noise affecting stars 1–4 and
+6–9 during early timestamps. Fig. 8(b) captures concurrent
+noise affecting stars 15–17 and 21–23 as time progresses.
+Fig. 8(c) also aligns with concurrent noise patterns shown in
+Fig. 8(d). These results illustrate that the learned windowswise graph structures effectively capture the actual occurrences
+of concurrent noise across different timestamps. This ability
+to accurately capture the true dynamics of concurrent noise in
+the data validates that window-wise graph structure learning is
+effective at handling the property in astronomical observations.
+Visualization of reconstruction errors. To analyze how
+each module affects the final anomaly score, we visualize the
+reconstruction errors Y − Yˆ1 from the temporal reconstruction
+module, together with the final reconstruction error Y −Yˆ1 −Yˆ2
+
+15
+20
+
+0.4
+0.2
+0.0
+
+0
+
+5 10 15 20
+(a)
+
+0
+
+5 10 15 20
+(b)
+
+0
+
+5 10 15 20
+(c)
+
+0
+
+5 10 15 20
+(d)
+
+SyntheticHigh
+
+20
+
+40
+60
+80
+Short Window Size
+
+13
+12
+11
+10
+9
+8
+7
+6
+5
+4
+
+on several stars in Fig. 9. Among them, star0 and star2 display
+two true anomalies, while concurrent noise occurs on star1 and
+star3 at the same time.
+We can observe that although true anomalies can be successfully detected in the temporal reconstruction module,
+the segments of concurrent noise are mistakenly classified
+as anomalies (as indicated by the blue curves surpassing
+the anomaly threshold), thus leading to false positives. This
+observation suggests that the temporal reconstruction module,
+in isolation, is insufficient for addressing concurrent noise
+without considering the correlations among stars. However,
+with the incorporation of the concurrent noise reconstruction
+module, the errors corresponding to these segments are significantly reduced. Besides, this module is capable of enlarging the reconstruction errors associated with true anomalies.
+Therefore, the combination of these two modules proves to be
+both reasonable and effective for this task.
+
+Error
+
+Error
+
+Error
+
+Error
+
+Threshold
+
+True Anomaly
+Concurrent Noise
+
+Star0
+
+Star1
+
+Star2
+
+Star3
+
+Fig. 9. Visualization of reconstruction errors. star 0 and star 2 display
+true anomalies at different timestamps. Concurrent noise occurs on star 1
+and star 3 at the same time. Concurrent noise cannot be captured by the
+temporal reconstruction module but can be filtered out by the concurrent noise
+reconstruction module.
+
+H. Parameter Sensitivity Analysis (RQ5)
+We study how the value of short window size influences the
+efficiency and effectiveness of AERO on the six datasets. The
+results are presented in the upper part of Fig. 10. Regarding
+model efficiency, a general observation is that an increase in
+short window size corresponds to longer training and testing
+times (Fig. 10(a) and (b)). Regarding model effectiveness,
+while the trends are not uniformly consistent, it is noted
+
+AstrosetHigh
+
+0.6
+0.4
+0.2
+0.0
+
+40
+
+60
+
+80
+
+20
+
+100
+
+1.0
+
+0.8
+
+0.8
+
+0.8
+
+0.6
+0.4
+
+0.2
+
+0.2
+
+0.0
+
+0.0
+0 1 2 3 4 5 6 7 8 9
+Attention Head Number
+
+(d) Attention Head Number
+
+60
+
+80
+
+100
+
+(c) F1 score
+
+(b)Testing Time
+1.0
+
+0.4
+
+40
+
+Short Window Size
+
+1.0
+
+0.6
+
+AstrosetLow
+
+0.8
+
+Short Window Size
+
+F1score
+
+F1socre
+
+AstrosetMiddle
+
+1.0
+
+20
+
+100
+
+(a)Training Time
+
+Fig. 8. Visualization of graph structure. (a)-(c) are a series of window-wise
+graphs from AERO before removing self-loops. They are arranged in temporal
+order. (d) is the ground truth instances of concurrent noise within the entire
+time series.
+
+SyntheticLow
+
+F1score
+
+0.6
+
+SyntheticMiddle
+
+F1score
+
+10
+
+24
+22
+20
+18
+16
+14
+12
+10
+8
+6
+4
+
+Testing Time(s)
+
+1.0
+0.8
+
+Training Time(s/epoch)
+
+0
+5
+
+0.6
+0.4
+0.2
+0.0
+
+1.0 1.5 2.0 2.5 3.0 3.5 4.0
+Encoder Layer Number
+
+(e) Encoder layer Number
+
+100
+
+150
+
+200
+
+250
+
+300
+
+Long Window Size
+
+(f) Long Window Size
+
+Fig. 10. Parameter sensitivity analysis in AERO.
+
+that the optimal F1 scores across all datasets are achieved
+with a short window size of 60 (Fig. 10(c)). We infer this
+phenomenon can be attributed to the limitations of both
+excessively short and long windows: shorter windows may fail
+to detect smaller anomalies, whereas longer windows might
+not adequately represent local contextual information. Based
+on the results, a short window size of 60 achieves a good
+balance between achieving a high F1 score and maintaining
+reasonable training and testing time. Consequently, this short
+window size is selected in our experiments. We further study
+the sensitivity of the other 3 parameters: the head numbers,
+the number of encoder layers, and the long window size, as
+depicted in Fig. 10(d), (e) and (f), respectively. For the head
+numbers, the performance is relatively steady under different
+head numbers. The optimal performance is achieved at 4 in
+most cases, so we use it in other experiments considering
+both performance and model complexity. For the number of
+encoder layers, it can be seen that AERO achieves the best
+performance with a single encoder layer across all datasets.
+Therefore, we use only one layer of the encoder, which also
+makes our model parameter-efficient. For the long window
+size, the model achieves the best performance at 200 for all
+datasets, and we set it as the default configuration.
+V. C ONCLUSION
+We propose a two-stage anomaly detection model AERO
+for tackling unique characteristics of variate independence
+and concurrent noise, in astronomical observations. AERO
+consists of two modules: the temporal reconstruction module
+and the concurrent noise reconstruction module. First, AERO
+uses a Transformer-based module to learn the normal temporal
+patterns on each variate in consonance with the characteristic
+of variate independence. Moreover, it devises a novel windowwise graph learning mechanism to equip GNN with the
+capacity to model random concurrent noise. The extensive
+experiments on both synthetic datasets and real-world datasets
+demonstrate the superiority of our method. In the future, we
+plan to utilize more scalable and efficient Transformer and
+GNN variants to model time-series data in more domains.
+
+ACKNOWLEDGEMENT
+This work is supported by the National Natural Science
+Foundation of China (Grant No: 62172423, U1931133), and
+the SVOM project, a mission in the Strategic Priority Program
+on Space Science of CAS.
+R EFERENCES
+[1] C. Yang, Z. Du, X. Meng, X. Zhang, X. Hao, and D. A. Bader, “Anomaly
+detection in catalog streams,” IEEE Transactions on Big Data, vol. 9,
+no. 1, pp. 294–311, 2023.
+[2] S. Han and S. S. Woo, “Learning sparse latent graph representations
+for anomaly detection in multivariate time series,” in Proceedings of
+the 28th ACM SIGKDD Conference on Knowledge Discovery and Data
+Mining, ser. KDD ’22, 2022, p. 2977–2986.
+[3] Z. Li, Y. Zhao, J. Han, Y. Su, R. Jiao, X. Wen, and D. Pei, “Multivariate
+time series anomaly detection and interpretation using hierarchical intermetric and temporal embedding,” in Proceedings of the 27th ACM
+SIGKDD Conference on Knowledge Discovery & Data Mining, ser.
+KDD ’21, 2021, p. 3220–3230.
+[4] P. Boniol, J. Paparizzos, and T. Palpanas, “New trends in time series
+anomaly detection,” in International Conference on Extending Database
+Technology, 2023.
+[5] Z. Chen, D. Chen, X. Zhang, Z. Yuan, and X. Cheng, “Learning
+graph structures with transformer for multivariate time-series anomaly
+detection in iot,” IEEE Internet of Things Journal, vol. 9, no. 12, pp.
+9179–9189, 2022.
+[6] C. Zhang, D. Song, Y. Chen, X. Feng, C. Lumezanu, W. Cheng, J. Ni,
+B. Zong, H. Chen, and N. V. Chawla, “A deep neural network for
+unsupervised anomaly detection and diagnosis in multivariate time series
+data,” in Proceedings of the Thirty-Third AAAI Conference on Artificial
+Intelligence, ser. AAAI’19, 2019.
+[7] A. Deng and B. Hooi, “Graph neural network-based anomaly detection
+in multivariate time series,” in Proceedings of the AAAI conference on
+artificial intelligence, vol. 35, no. 5, 2021, pp. 4027–4035.
+[8] Y. Cui, K. Zheng, D. Cui, J. Xie, L. Deng, F. Huang, and X. Zhou,
+“Metro: A generic graph neural network framework for multivariate time
+series forecasting,” Proc. VLDB Endow., vol. 15, no. 2, p. 224–236, oct
+2021.
+[9] Y. Wu, M. Gu, L. Wang, Y. Lin, F. Wang, and H. Yang, “Event2graph:
+Event-driven bipartite graph for multivariate time-series anomaly
+detection,” ArXiv preprint, vol. abs/2108.06783, 2021. [Online].
+Available: https://arxiv.org/abs/2108.06783
+[10] A. Siffer, P.-A. Fouque, A. Termier, and C. Largouet, “Anomaly detection in streams with extreme value theory,” in Proceedings of the 23rd
+ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining, ser. KDD ’17, 2017, p. 1067–1075.
+[11] J. Li, S. Di, Y. Shen, and L. Chen, “Fluxev: A fast and effective unsupervised framework for time-series anomaly detection,” in Proceedings
+of the 14th ACM International Conference on Web Search and Data
+Mining, ser. WSDM ’21, 2021, p. 824–832.
+[12] H. Ren, B. Xu, Y. Wang, C. Yi, C. Huang, X. Kou, T. Xing, M. Yang,
+J. Tong, and Q. Zhang, “Time-series anomaly detection service at
+microsoft,” in Proceedings of the 25th ACM SIGKDD International
+Conference on Knowledge Discovery & Data Mining, ser. KDD ’19,
+2019, p. 3009–3017.
+[13] P. Malhotra, L. Vig, G. Shroff, P. Agarwal et al., “Long short term
+memory networks for anomaly detection in time series.” in Esann, vol.
+2015, 2015, p. 89.
+[14] S. Hochreiter and J. Schmidhuber, “Long short-term memory,” Neural
+Computation, vol. 9, no. 8, pp. 1735–1780, 1997.
+[15] H. Xu, W. Chen, N. Zhao, Z. Li, J. Bu, Z. Li, Y. Liu, Y. Zhao,
+D. Pei, Y. Feng, J. Chen, Z. Wang, and H. Qiao, “Unsupervised
+anomaly detection via variational auto-encoder for seasonal kpis in web
+applications,” in Proceedings of the 2018 World Wide Web Conference,
+ser. WWW ’18, 2018, p. 187–196.
+[16] J. An and S. Cho, “Variational autoencoder based anomaly detection
+using reconstruction probability,” Special lecture on IE, vol. 2, no. 1,
+pp. 1–18, 2015.
+[17] S. Lin, R. Clark, R. Birke, S. Schönborn, N. Trigoni, and S. Roberts,
+“Anomaly detection for time series using vae-lstm hybrid model,” in
+ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+Speech and Signal Processing (ICASSP), 2020, pp. 4322–4326.
+
+[18] K. Hundman, V. Constantinou, C. Laporte, I. Colwell, and T. Soderstrom, “Detecting spacecraft anomalies using lstms and nonparametric
+dynamic thresholding,” in Proceedings of the 24th ACM SIGKDD
+International Conference on Knowledge Discovery & Data Mining, ser.
+KDD ’18, 2018, p. 387–395.
+[19] Y. Su, Y. Zhao, C. Niu, R. Liu, W. Sun, and D. Pei, “Robust anomaly
+detection for multivariate time series through stochastic recurrent neural
+network,” in Proceedings of the 25th ACM SIGKDD International
+Conference on Knowledge Discovery & Data Mining, ser. KDD ’19,
+2019, p. 2828–2837.
+[20] T. Kieu, B. Yang, C. Guo, R.-G. Cirstea, Y. Zhao, Y. Song, and C. S.
+Jensen, “Anomaly detection in time series with robust variational quasirecurrent autoencoders,” in 2022 IEEE 38th International Conference
+on Data Engineering (ICDE), 2022, pp. 1342–1354.
+[21] D. Li, D. Chen, B. Jin, L. Shi, J. Goh, and S.-K. Ng, “Mad-gan:
+Multivariate anomaly detection for time series data with generative adversarial networks,” in Artificial Neural Networks and Machine Learning
+– ICANN 2019: Text and Time Series: 28th International Conference on
+Artificial Neural Networks, Munich, Germany, September 17–19, 2019,
+Proceedings, Part IV, 2019, p. 703–716.
+[22] X. Chen, L. Deng, F. Huang, C. Zhang, Z. Zhang, Y. Zhao, and
+K. Zheng, “Daemon: Unsupervised anomaly detection and interpretation
+for multivariate time series,” in 2021 IEEE 37th International Conference on Data Engineering (ICDE), 2021, pp. 2225–2230.
+[23] H. Wu, T. Hu, Y. Liu, H. Zhou, J. Wang, and M. Long, “Timesnet:
+Temporal 2d-variation modeling for general time series analysis,” arXiv
+preprint arXiv:2210.02186, 2022.
+[24] F. Scarselli, M. Gori, A. C. Tsoi, M. Hagenbuchner, and G. Monfardini,
+“The graph neural network model,” IEEE Transactions on Neural
+Networks, vol. 20, no. 1, pp. 61–80, 2009.
+[25] Y. Wu, H.-N. Dai, and H. Tang, “Graph neural networks for anomaly
+detection in industrial internet of things,” IEEE Internet of Things
+Journal, vol. 9, no. 12, pp. 9214–9231, 2022.
+[26] H. Zhao, Y. Wang, J. Duan, C. Huang, D. Cao, Y. Tong, B. Xu, J. Bai,
+J. Tong, and Q. Zhang, “Multivariate time-series anomaly detection via
+graph attention network,” in 2020 IEEE International Conference on
+Data Mining (ICDM), 2020, pp. 841–850.
+[27] J. Zhan, S. Wang, X. Ma, C. Wu, C. Yang, D. Zeng, and S. Wang, “Stgatmad : Spatial-temporal graph attention network for multivariate time
+series anomaly detection,” in ICASSP 2022 - 2022 IEEE International
+Conference on Acoustics, Speech and Signal Processing (ICASSP), 2022,
+pp. 3568–3572.
+[28] Z. Wu, S. Pan, G. Long, J. Jiang, X. Chang, and C. Zhang, “Connecting the dots: Multivariate time series forecasting with graph neural
+networks,” in Proceedings of the 26th ACM SIGKDD International
+Conference on Knowledge Discovery & Data Mining, ser. KDD ’20,
+2020, p. 753–763.
+[29] H. Yu, T. Li, W. Yu, J. Li, Y. Huang, L. Wang, and A. Liu, “Regularized
+graph structure learning with semantic knowledge for multi-variates
+time-series forecasting,” arXiv preprint arXiv:2210.06126, 2022.
+[30] X. Chen, Q. Qiu, C. Li, and K. Xie, “Graphad: A graph neural
+network for entity-wise multivariate time-series anomaly detection,”
+in Proceedings of the 45th International ACM SIGIR Conference on
+Research and Development in Information Retrieval, ser. SIGIR ’22,
+2022, p. 2297–2302.
+[31] J. Chen, Y. Yang, T. Yu, Y. Fan, X. Mo, and C. Yang, “Brainnet: Epileptic
+wave detection from seeg with hierarchical graph diffusion learning,”
+in Proceedings of the 28th ACM SIGKDD Conference on Knowledge
+Discovery and Data Mining, ser. KDD ’22, 2022, p. 2741–2751.
+[32] J. Ye, Z. Liu, B. Du, L. Sun, W. Li, Y. Fu, and H. Xiong, “Learning the
+evolutionary and multi-scale graph structure for multivariate time series
+forecasting,” in Proceedings of the 28th ACM SIGKDD Conference
+on Knowledge Discovery and Data Mining, ser. KDD ’22, 2022, p.
+2296–2306.
+[33] W. T. Ng, K. Siu, A. C. Cheung, and M. K. Ng, “Expressing multivariate
+time series as graphs with time series attention transformer,” arXiv
+preprint arXiv:2208.09300, 2022.
+[34] Y. Fang, K. Ren, C. Shan, Y. Shen, Y. Li, W. Zhang, Y. Yu, and
+D. Li, “Learning decomposed spatial relations for multi-variate timeseries modeling,” in Proceedings of the Thirty-Seventh AAAI Conference
+on Artificial Intelligence, ser. AAAI’23, 2023.
+[35] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez,
+L. Kaiser, and I. Polosukhin, “Attention is all you need,” in Proceedings
+of the 31st International Conference on Neural Information Processing
+Systems, ser. NIPS’17, 2017, p. 6000–6010.
+
+[36] Q. Wen, T. Zhou, C. Zhang, W. Chen, Z. Ma, J. Yan, and L. Sun, “Transformers in time series: A survey,” arXiv preprint arXiv:2202.07125,
+2022.
+[37] S. Tuli, G. Casale, and N. R. Jennings, “Tranad: Deep transformer
+networks for anomaly detection in multivariate time series data,” Proc.
+VLDB Endow., vol. 15, no. 6, p. 1201–1214, feb 2022.
+[38] J. Xu, H. Wu, J. Wang, and M. Long, “Anomaly transformer: Time
+series anomaly detection with association discrepancy,” arXiv preprint
+arXiv:2110.02642, 2021.
+[39] J. D. M.-W. C. Kenton and L. K. Toutanova, “Bert: Pre-training of deep
+bidirectional transformers for language understanding,” in Proceedings
+of naacL-HLT, vol. 1, 2019, p. 2.
+[40] L. Dong, S. Xu, and B. Xu, “Speech-transformer: A no-recurrence
+sequence-to-sequence model for speech recognition,” in 2018 IEEE
+International Conference on Acoustics, Speech and Signal Processing
+(ICASSP), 2018, pp. 5884–5888.
+[41] X. Hu, L.-X. Zhang, L. Gao, W. Dai, X. Han, Y.-K. Lai, and Y. Chen,
+“Glim-net: Chronic glaucoma forecast transformer for irregularly sampled sequential fundus images,” IEEE Transactions on Medical Imaging,
+
+vol. 42, no. 6, pp. 1875–1884, 2023.
+[42] S. N. Shukla and B. M. Marlin, “Multi-time attention networks for
+irregularly sampled time series,” arXiv preprint arXiv:2101.10318, 2021.
+[43] J. R. Davenport, S. L. Hawley, L. Hebb, J. P. Wisniewski, A. F. Kowalski,
+E. C. Johnson, M. Malatesta, J. Peraza, M. Keil, S. M. Silverberg et al.,
+“Kepler flares. ii. the temporal morphology of white-light flares on gj
+1243,” The Astrophysical Journal, vol. 797, no. 2, p. 122, 2014.
+[44] G.-W. Li, C. Wu, G.-P. Zhou, C. Yang, H.-L. Li, J. Chen, L.-P. Xin,
+J. Wang, H. Haerken, C.-H. Ma et al., “Magnetic activity and parameters
+of 43 flare stars in the gwac archive,” Research in Astronomy and
+Astrophysics, vol. 23, no. 1, p. 015016, 2023.
+[45] Z. Duan, C. Yang, X. Meng, Y. Du, J. Qiu, X. Ma, Z. Du, X. Zhang,
+B. Niu, and C. Wu, “Scidetector: Scientific event discovery by tracking variable source data streaming,” in 2019 IEEE 35th International
+Conference on Data Engineering (ICDE), 2019, pp. 2040–2043.
+[46] X. Hou and L. Zhang, “Saliency detection: A spectral residual approach,”
+in 2007 IEEE Conference on Computer Vision and Pattern Recognition,
+2007, pp. 1–8.
+
+

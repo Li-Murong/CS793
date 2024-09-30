@@ -1,0 +1,1505 @@
+An Improved Relaxation for Oracle-Efficient
+Adversarial Contextual Bandits
+Kiarash Banihashem
+University of Maryland, College Park
+kiarash@umd.edu
+
+MohammadTaghi Hajiaghayi
+University of Maryland, College Park
+hajiagha@umd.edu
+
+Suho Shin
+University of Maryland, College Park
+suhoshin@umd.edu
+
+Max Springer
+University of Maryland, College Park
+mss423@umd.edu
+
+Abstract
+We present an oracle-efficient relaxation for the adversarial contextual bandits
+problem, where the contexts are sequentially drawn i.i.d from a known distribution
+and the cost sequence is chosen by an online adversary. Our algorithm has a regret
+2
+1
+bound of O(T 3 (K log(|Π|)) 3 ) and makes at most O(K) calls per round to an
+offline optimization oracle, where K denotes the number of actions, T denotes
+the number of rounds and Π denotes the set of policies. This is the first result to
+2
+1
+improve the prior best bound of O((T K) 3 (log(|Π|)) 3 ) as obtained by Syrgkanis
+et al. at NeurIPS 2016, and the first to match the original bound of Langford and
+Zhang at NeurIPS 2007 which was obtained for the stochastic case.
+
+1
+
+Introduction
+
+One of the most important problems in the study of online learning algorithms is the contextual
+bandits problem. As a framework for studying decision making in the presence of side information,
+the problem generalizes the classical multi-armed bandits problem and has numerous practical
+applications spanning across clinical research, personalized medical care and online advertising, with
+substantial emphasis placed on modern recommender systems.
+In the classical multi-armed bandits problem, a decision maker is presented with K actions (or arms)
+which it needs to choose from over a sequence of T rounds. In each round, the decision maker makes
+its (possibly random) choice and observes the cost of its chosen action. Depending on the setting,
+this cost is generally assumed to be either stochastic or adversarial. In the stochastic setting, the cost
+of each action is sampled i.i.d. from a fixed, but a priori unknown, distribution. In the more general
+adversarial setting, no such assumption is made and the costs in each round can be controlled by an
+online adversary. The goal of the learner is to minimize its regret, defined as the absolute difference
+between its total cost and the total cost of the best fixed action in hindsight.
+The contextual bandits problem generalizes this by assuming that in each round, the learner first
+sees some side information, referred to as a context, x ∈ X and chooses its action based on this
+information. As in prior work (Rakhlin and Sridharan, 2016; Syrgkanis et al., 2016b), we assume that
+the x are sampled i.i.d. from a fixed distribution D, and that the learner can generate samples from D
+as needed. In addition, the learner has access to a set of policies, Π, where a policy is defined as a
+mapping from contexts to actions. As before, the goal of the learner is to minimize its regret, which
+we here define as the absolute difference between its total cost and the total cost of the best policy of
+Π in hindsight.
+37th Conference on Neural Information Processing Systems (NeurIPS 2023).
+
+It is well-known that by viewing each policy as an expert, the problem can be reduced to the bandits
+with experts problem where, even in thep
+adversarial setting, the E XP4 (Auer et al., 1995) algorithm
+achieves the optimal regret bound of O( T K log(|Π|)). Computationally however, the reduction is
+inefficient as the algorithm’s running time would be linear in |Π|. Since the size of the policy set, Π,
+can be very large (potentially exponential), the utility of this algorithm is restricted in practice.
+Given the computational challenge, there has been a surge of interest in oracle-efficient algorithms.
+In this setting, the learner is given access to an Empirical Risk Minimization (ERM) optimization
+oracle which, for any sequence of pairs of contexts and loss vectors, returns the best fixed policy in Π.
+This effectively reduces the online problem to an offline learning problem, where many algorithms
+(e.g., SVM) are known to work well both in theory and practice. This approach was initiated by the
+seminal work of Langford and Zhang (2007), who obtained a regret rate of O(T 2/3 (K log |Π|)1/3 )
+for stochastic rewards, using
+p an -greedy algorithm. This was later improved to the informationtheoretically optimal O( T K log |Π|) (Dudik et al., 2011). Subsequent works have focused on
+improving the running time of these algorithms (Beygelzimer et al., 2011; Agarwal et al., 2014;
+Simchi-Levi and Xu, 2022), and extending them to a variety of problem settings such as auction
+design (Dudík et al., 2020), minimizing dynamic regret (Luo et al., 2018; Chen et al., 2019), bandits with knapsacks (Agrawal et al., 2016), semi-bandits (Krishnamurthy et al., 2016), corralling
+bandits (Agarwal et al., 2017), smoothed analysis (Haghtalab et al., 2022; Block et al., 2022), and
+reinforcement learning (Foster et al., 2021).
+Despite the extensive body of work, progress for adversarial rewards has been slow. Intuitively,
+approaches for the stochastic setting do not generalize to adversarial rewards because they try to
+“learn the environment” and in the adversarial setting, there is no environment to be learnt. This
+issue can be seen in the original multi-armed bandits problem as well. While the regret bounds
+for the adversarial setting and the stochastic setting are the same, the standard approaches are very
+different. 1 In the stochastic setting, the most standard approach is the UCB1 algorithm (Auer et al.,
+2002), which is intuitive and has a relatively simple analysis. In the adversarial setting however, the
+standard approach is considerably more complex: the problem is first solved in the “full feedback”
+setting, where the learner observes all of the rewards in each iteration, using the Hedge algorithm.
+This is then used as a black box to obtain an algorithm for the partial (or bandit) feedback setting
+by constructing unbiased estimates for the rewards vector. The analysis is also much more involved
+compared to UCB1; a standard analysis of the√
+black box reduction leads to the suboptimal bound of
+T 3/4 K 1/2 , and further obtaining the optimal T K bound requires a more refined second moment
+analysis (see Chapter 6 of Slivkins (2019) for a more detailed overview).
+As a result, oracle-efficient algorithms for the adversarial setting were first proposed by the independent works of Rakhlin and Sridharan (2016) and Syrgkanis et al. (2016a) in ICML 2016, who
+obtained a regret bound of O(T 3/4 K 1/2 log(|Π|)1/4 ) and left obtaining improvements as an open
+problem. This was subsequently improved to O((T K)2/3 log(|Π|)1/3 ) by Syrgkanis et al. (2016b) at
+NeurIPS 2016.
+1.1
+
+Our contribution and techniques
+
+In this work, we design an oracle-efficient algorithm with a regret bound of O(T 2/3 (K log |Π|)1/3 ).
+Our result is the first improvement after that of Syrgkanis et al. (2016b), and maintains the best
+regret upper bound to the extent of our knowledge. This is also the first result to match the bound
+of Langford and Zhang (2007), the original baseline algorithm for the stochastic version of the
+problem. We state the informal version of our main result (Theorem 7) in the following.
+Theorem 1 (Informal). For large enough T ,2 there exists an algorithm (Algorithm 1) that achieves
+expected regret on the order of O(T 2/3 (K log |Π|)1/3 ) for the adversarial contextual bandits problem
+using at most O(K) calls per round to an ERM oracle.
+In order to compare this result with prior work, it is useful to consider the regime of K = T α for
+a constant α > 0. In this regime, our work leads to a sublinear regret bound for any α < 1, while
+1
+We note that any approach for the adversarial setting works for the stochastic setting as well. However, both
+in theory and practice, specialised approaches are more commonly used.
+2
+When T is small, our improvement compared to prior work is more significant; we focus on the large T
+setting to obtain a fair comparison.
+
+2
+
+prior work (Rakhlin and Sridharan, 2016; Syrgkanis et al., 2016b) can only obtain sublinear regret
+for α < 1/2.
+Our improved dependence on K is important practically since, for many real-world implementations
+such as recommender systems, the number of possible actions is very large. Additionally, many
+bandits algorithms consider “fake" actions as part of a reduction. For example, a large number of
+actions may be considered as part of a discretization scheme for simulating a continuous action space
+(Slivkins, 2009). In such cases, the improved dependence on K could potentially imply an overall
+improvement with respect to T , as the parameters in the algorithm are often chosen in such a way
+that optimizes their trade-off.
+From a technical standpoint, our result builds on the existing works based on the relax-and-randomize
+framework of Rakhlin et al. (2012). Rakhlin and Sridharan (2015) used this framework, together with
+the “random playout” method, to study online prediction problems with evolving constraints under
+the assumption of a full feedback model. Rakhlin and Sridharan (2016) extended these techniques
+to the partial (bandit) feedback model, and developed the BISTRO algorithm which achieves a
+O(T 3/4 K 1/2 log(|Π|)1/4 ) regret bound for the adversarial contextual bandits problem. Subsequently,
+Syrgkanis et al. (2016b) used a novel distribution of hallucinated rewards as well as a sharper second
+moment analysis to obtain a regret bound of O((T K)2/3 log(|Π|)1/3 ). We further improve the regret
+rate to O(T 2/3 (K log(|Π|))1/3 ) by reducing the support of the hallucinated rewards vector to a single
+random entry. We note the previous approaches of Rakhlin and Sridharan (2016); Syrgkanis et al.
+(2016b), as well as the closely related work of Rakhlin and Sridharan (2015), set all of the entries of
+the hallucinated cost to i.i.d Rademacher random variables.
+We show that our novel relaxation preserves the main properties required for obtaining a regret bound,
+specifically, it is admissible. We then prove that the Rademacher averages term that arises from our
+new relaxation improves by a factor of K, which consequently leads to a better regret bound. We
+further refer to Section 3 for a more detailed description of our algorithm, and to Section 4 for the
+careful analysis.
+
+1.2
+
+Related work
+
+Contextual bandits. There are three prominent problem setups broadly studied in the contextual
+bandits literature: Lipschitz contextual bandits, linear contextual bandits, and contextual bandits
+with policy class. Lipschitz contextual bandits (Lu et al., 2009; Cutkosky and Boahen, 2017) and
+linear contextual bandits (Chu et al., 2011) assume a structured payoff based on a Lipschitz or
+linear realizability assumption, respectively. The strong structural assumptions made by these works
+however make them impractical for many settings.
+To circumvent this problem, many works consider contextual bandits with policy classes where the
+problem is made tractable by making assumptions on the benchmark of regret. In these works, the
+learner is given access to a policy class Π and competes against the best policy in Π. This approach
+also draws connections to offline machine learning models that in recent years have had a huge
+impact on many applications. In order for an algorithm to be useful in practice however, it needs to
+be computationally tractable, thus motivating the main focus of this work.
+Online learning with adversarial rewards. Closely related to our work is the online learning with
+experts problem where, in each round, the learner observes a set of N experts making recommendations for which action to take, and decides which action to choose based on these recommendations.
+The goal of the learner is to minimize its regret with respect to the best expert in hindsight. In the full
+feedback setting, where the learner observes the cost of all actions, the well-known Hedge (CesaBianchi et al., 1997) algorithm based√on a randomized weighted majority selection rule achieves
+the best possible regret bound of O( T ln N ). Correspondingly, in the partial feedback setting,
+E XP4 (Auer et al., 1995) exploits Hedge by constructing unbiased “hallucinated” costs
+√ based on the
+inverse propensity score technique, and achieves the optimal regret bound of O( KT ln N ). By
+considering an expert for each policy, the contextual bandits problem can be reduced to this problem.
+This reduction suffers from computational intractability however due to the linear dependence on |Π|
+in the running time. Since the number of policies can be very large in practice, this poses a major
+bottleneck in many cases. We alleviate this intractability issue through a computationally feasible
+oracle-based algorithm with improved regret bound.
+3
+
+Oracle efficient online learning. Stemming from the seminal work of Kalai and Vempala (2005),
+there has been a long line of work investigating the computational barriers and benefits of online
+learning in a variety of paradigms. Broadly speaking, the bulk of online algorithms are designed
+on the basis of two popular frameworks in this literature: follow-the-perturbed-leader (Kalai and
+Vempala, 2005; Suggala and Netrapalli, 2020; Dudík et al., 2020; Haghtalab et al., 2022) and relaxand-randomize (Rakhlin et al., 2012). Both frameworks aim to inject random noise into the input
+set before calling an oracle to construct a more robust sequence of actions to be played against
+an adversary, but differ in how they introduce such noise to the system. Our algorithm builds on
+the relax-and-randomize technique and improves upon the previous best result of Syrgkanis et al.
+(2016b).
+Despite their computational advantages, it is known that oracle efficient algorithms have fundamental
+limits and, in some settings, they may not achieve optimal regret rates (Hazan and Koren, 2016).
+Whether this is the case for the adversarial contextual bandits problem remains an open problem.
+
+2
+
+Preliminaries
+
+In this section, we explain the notation and problem setup, and review the notion of relaxation based
+algorithms in accordance with prior work (Rakhlin and Sridharan, 2016; Syrgkanis et al., 2016b).
+2.1
+
+Notation and problem setup
+
+Given an integer K, we use [K] to denote the set { 1, . . . , K } and a1:K to denote { a1 , . . . , ak }. We
+similarly use (a, b, c)1:K to denote the set of tuples { (a1 , b1 , c1 ), . . . , (aK , bK , cK ) }. The vector of
+zeros is denoted as 0, and similarly, the vector of ones is denoted 1.
+We consider the contextual bandits problem with [T ] rounds. In each round t ∈ [T ], a context xt is
+shown to the learner, who chooses an action ŷt ∈ [K], and incurs a loss of ct (ŷt ), where ct ∈ [0, 1]k
+denotes the cost vector. The choice of the action ŷt can be randomized and we assume that the learner
+samples ŷt from some distribution qt . The cost vector is chosen by an adversary who knows the cost
+vector xt and the distribution qt but, crucially, does not know the value of ŷt .
+As in prior work (Rakhlin and Sridharan, 2016; Syrgkanis et al., 2016b), we operate in the hybrid
+i.i.d-adversarial model where xt is sampled from some fixed distribution D, and the learner has
+sampling access to the distribution D. We additionally assume that the feedback to the learner is
+partial, i.e., the learner only observes ct (ŷt ) and not the full cost vector ct .
+The learner’s goal is to minimize its total cost compared to a set of policies Π, where a policy is
+defined as a mapping from contexts to actions. Formally, the learner aims to minimize its regret,
+which we define as
+R EG :=
+
+T
+X
+
+hqt , ct i − inf
+
+π∈Π
+
+t=1
+
+T
+X
+
+ct (π(xt )),
+
+t=1
+
+where hqt , ct i denotes the dot product of qt and ct , and inf denotes the infimum.
+We assume that the learner has access to a value-of-ERM optimization oracle that takes as input a
+sequence of contexts and cost vectors (x, c)1:t , and outputs the minimum cost obtainable by a policy
+Pt
+in Π, i.e., inf π∈Π τ =1 cτ (π(xτ )).
+2.2
+
+Relaxation Based Algorithms
+
+In each round t ∈ [T ] after selecting an action and observing the adversarial cost, the learner obtains
+an information tuple, which we denote by It (xt , qt , ŷt , ct (ŷt ), St ). Here, ŷ ∼ qt is the action chosen
+from the learner’s distribution, and St is the internal randomness of our algorithm, which can also be
+used in the subsequent rounds.
+Given the above definition, the notions of admissible relaxation and admissible strategy are defined
+as follows.
+Definition 2. A partial information relaxation R EL(·) is a mapping from the information sequence
+(I1 , ..., It ) to a real value for any t ∈ [T ]. Moreover, a partial-information relaxation is deemed
+4
+
+admissible if for any such t, and for all I1 , ..., It−1 :
+
+
+Ext ∼D inf qt supct Eŷt ∼qt ,St [ct (ŷt ) + R EL(I1:t )] ≤ R EL(I1:t−1 ),
+
+(1)
+
+and for all x1:T , c1:T and q1:T :
+Eŷ1:T ∼qt ,S1:T [R EL(I1:T )] ≥ − inf
+π
+
+T
+X
+
+ct (π(xt )).
+
+(2)
+
+t=1
+
+A randomized strategy q1:T is admissible if it certifies the admissibility conditions (1) and (2).
+Intuitively, relaxation functions allow us to decompose the regret across time steps, and bound each
+step separately using Equation (1). The following lemma formalizes this idea.
+Lemma 3 (Rakhlin and Sridharan (2016)). Let R EL be an admissible relaxation and q1:T be a
+corresponding admissible strategy. Then, for any c1:T , we have the bound
+E [R EG] ≤ R EL(∅).
+
+3
+
+Contextual Bandits Algorithm
+
+We here define an admissible strategy in correspondence with the relaxation notion from the prior
+section, and use it to outline our contextual bandits algorithm. As mentioned in Section 1.1, our
+algorithm is based on the BISTRO+ algorithm of Syrgkanis et al. (2016b), and our improvement
+is obtained by defining a new relaxation function, which we discuss below. We discuss how this
+improves the regret bound in Section 4.
+Unbiased cost vectors. In order to handle the partial feedback nature of the problem, we use the
+standard technique of forming an unbiased cost vector from the observed entry, together with the
+discretization scheme of Syrgkanis et al. (2016b). Let γ < 1 be a parameter to be specified later.
+Using the information It collected on round t, we set our estimator to be the random vector whose
+elements are defined by a Bernoulli random variable
+(
+ct (ŷt )
+Kγ −1 · 1 [i = ŷt ] with probability γ · Kq
+t (ŷt ) .
+ĉt (i) =
+(3)
+0
+otherwise
+We note that this is only defined for mini qt (i) ≥ γ/K, thus imposing a constraint that must be
+ensured by our algorithm. It is easy to verify that this vector is indeed an unbiased estimator:
+Eŷt ∼qt [ĉt (i)] = qt (i) · γ
+
+ct (i)
+· Kγ −1 = ct (i).
+Kqt (i)
+
+Relaxation function. We first construct a one-hot Rademacher random vector by randomly sampling
+an action i ∈ [K] and setting εt (j) = 0 for i 6= j and εt (i) to a Rademacher random variable in
+{−1, 1}. We additionally define Zt ∈ {0, Kγ −1 } that takes value Kγ −1 with probability γ and 0
+otherwise. Using the notation ρt for the random variable tuple (x, ε, Z)t+1:T , we define our relaxation
+R EL as
+R EL(I1:t ) = Eρt [R((x, ĉt )1:t , ρt )] ,
+(4)
+where R((x, ĉt )1:t , ρt ) is defined to be
+!
+t
+T
+X
+X
+γ(T − t) − inf
+ĉ(π(xτ )) +
+2Zτ ετ (π(xτ )) .
+π
+
+τ =1
+
+τ =t+1
+
+We note the contrast between the above definition and the relaxation frameworks used in prior
+work (Rakhlin and Sridharan, 2015, 2016; Syrgkanis et al., 2016b): These works all set every entry
+in εt to a Rademacher random variables, while we set only a single (randomly chosen) entry to a
+Rademacher random variable and set the rest of the entries to zero.
+The changes in the relaxtion function are motivated by the algorithm analysis (see Section 4).
+Specifically, in order to ensure admissibility, the symmetrization step of the Relax and randomize
+framework applies only to a single (random) action. Applying noise to all the entries, as is done in
+5
+
+prior work, leads to valid upper bound but is not tight. As we show in Lemma 9, applying noise to a
+single entry is sufficient, as long as this entry is chosen uniformly at random. The reduced noise leads
+to an improved Rademacher averages term (see Theorem 6), which in turn leads to a better regret
+bound.
+Randomized strategy. As in prior work (Rakhlin and Sridharan, 2015, 2016; Syrgkanis et al., 2016b),
+we use the “random playout” technique to define our strategy. We use hallucinated future cost vectors,
+together with unbiased estimates of the past cost, to choose a strategy that minimizes the total cost
+across T rounds.
+Define D := {Kγ −1 · ei : i ∈ [K]} ∪ {0}, where ei is the i-th standard basis vector in K dimensions.
+We further define ∆D , the set of distributions over D, and ∆0D ⊆ ∆D to be the set
+γ
+{p ∈ ∆D : max p(i) ≤ }.
+(5)
+K
+i∈[K]
+Recall that ρt denotes the random variable tuple (x, ε, Z)t+1:T . We sample ρt and define qt∗ (ρt ) as:
+qt∗ (ρt ) := min sup Eĉt ∼pt [hq, ĉt i + R((x, ĉ)1:t , ρt )] .
+q∈∆K pt ∈∆0
+
+(6)
+
+D
+
+We than sample the action ŷt from the distribution qt (ρt ) defined as
+γ
+qt (ρt ) := (1 − γ)qt∗ (ρt ) +
+· 1.
+K
+
+(7)
+
+In order to calculate qt (ρt ), we use a water-filling argument similar to Rakhlin and Sridharan (2016)
+and Syrgkanis et al. (2016b). Formally, we will use the following lemma, the proof of which is in
+Appendix B.
+Lemma 4. There exists a water-filling algorithm that computes the value qt∗ (ρt ) for any given ρt in
+time O(K) with only K + 1 accesses to a value-of-ERM oracle in every round.
+A full pseudocode of our approach is provided in Algorithm 1.
+Algorithm 1: Contextual Bandits Algorithm
+for t = 1, 2, . . . , T do
+Observe context xt
+Draw random variable tuple ρt = (x, ε, Z)t+1:T
+Compute qt (ρt ) via Equation 7
+Draw action ŷt ∼ qt (ρt ) and observe ct (ŷt )
+Estimate cost vector ĉt via Equation 3
+end
+
+4
+
+Analysis
+
+In this section, we provide the formal statement of our theoretical guarantees and discuss their proofs.
+Due to space constraints, some of the proofs are deferred to the supplementary material.
+As mentioned in the introduction, our main novelty is the use of a new relaxation function, which
+we discussed in Section 3, that uses less variance in the hallucinated cost vectors. Our initial result
+verifies that the our novel relaxation is indeed admissible and, as a result, we can leverage the prior
+work demonstrating the expected regret of these algorithms.
+Theorem 5. The relaxation function defined in (4), and the corresponding strategy (7) are admissible
+(Definition 2).
+Theorem 5 contrasts with existing admissible relaxations in that it only uses a single Rademacher
+variable for each time step, while prior work – Lemma 2 in Rakhlin and Sridharan (2015), Theorem 2
+in Rakhlin and Sridharan (2016) and Theorem 3 in Syrgkanis et al. (2016b) – all use k independent
+Rademacher variables. To our knowledge, this is the first work in which the number of Rademacher
+variables used in the relaxation does not grow with the number of arms. As we discuss below, this
+6
+
+allows us to reduce the variance of the hallucinated costs, leading to a better regret bound. The proof
+of Theorem 5 is provided in Section 4.1, and is based on a novel symmetrization step (Lemma 9),
+which may be of independent interest.
+As highlighted in Section 2.2, admissible relaxations are a powerful framework for upper bounding
+the expected regret in online learning through Lemma 3 and the value of R EL(∅). Formally, Lemma
+3 implies
+"
+!#
+T
+X
+E [R EG] ≤ R EL(∅) = γT + Eρ0 sup
+2Zτ ετ (π(xτ ))
+.
+(8)
+π∈Π
+
+τ =1
+
+In order to bound the regret of our algorithm, it suffices to bound the Rademacher averages term
+above, which we formally do in the following Theorem.
+Theorem 6. For any γ > K
+T log(|Π|)/2, the following holds:
+s
+"
+#
+T
+X
+KT log |Π|
+E(Z,ε)1:T sup
+.
+Zt εt (π(xt )) ≤ 2
+γ
+π∈Π i=1
+The above theorem can be thought of as an improved version of Lemma 2 from Syrgkanis et al.
+(2016b), where we improve by a factor of K. Our improvement comes from the use of the new
+Rademacher vectors that only contain a single non-zero coordinate, together with a more refined
+analysis. We refer to Section 4.2 for a formal proof of the result.
+Combining Lemma 4, Equation (8), and Theorem 6, we obtain the main result of our paper which we
+state here.
+Theorem 7. The contextual bandits algorithm implemented in Algorithm 1 has expected regret upper
+bounded by
+s
+T K log(|Π|)
++ γT,
+4
+γ
+|Π|
+for any K log
+< γ ≤ 1, which implies the regret order of O((K log |Π|)1/3 T 2/3 ) when T >
+2T
+4K log(|Π|). Furthermore, the Algorithm makes at most K + 1 calls to a value-of-ERM oracle in
+each round.
+
+We refer to Appendix A for the proof of this result.
+4.1
+
+Proof of Theorem 5
+
+In order to prove Theorem 5, we need to verify the final step condition (2), and show that the qt
+defined in Equation (7) certifies the condition (1), i.e.,
+
+
+Ext sup Eŷt ,St [ct (ŷt ) + R EL(I1:t )] ≤ R EL(I1:t−1 ),
+(9)
+ct
+
+where ŷt is sampled from qt and I1:t denotes (I1:t−1 , It (xt , qt , ŷt , ct , St )). Verifying condition (2) is
+standard and we do this in Appendix D. It remains to prove Equation (9). Since most admissibility
+proofs in the literature (Rakhlin et al., 2012; Rakhlin and Sridharan, 2015, 2016; Syrgkanis et al.,
+2016b) follow the framework of the original derivation of Rakhlin et al. (2012), in order to emphasize
+our novelty, we divide the proof into two parts. The first part (Lemma 8) is based on existing
+techniques (in particular, the proof of Theorem 3 in Syrgkanis et al. (2016b)) and its proof is provided
+in Appendic C. The second part (Lemma 9) uses new techniques and we present its proof here.
+Lemma 8. For any t ∈ [T ], define Aπ,t and Ct as
+Aπ,t := −
+
+t−1
+X
+τ =1
+
+ĉτ (π(xτ )) −
+
+T
+X
+
+2Zτ ετ (π(xτ )),
+
+Ct := γ(T − t + 1).
+
+τ =t+1
+
+Letting δ denote a Rademacher random variable independent of ρt and ĉt , the following holds for
+any value of xt :
+"
+
+#
+sup Eŷt ,St [ct (ŷt ) + R EL(I1:t )] ≤ Eρt sup Eĉt ∼pt ,δ sup (2δĉt (π(xt )) + Aπ,t ) + Ct .
+ct
+
+pt ∈∆0D
+
+7
+
+π∈Π
+
+Lemma 9. Defining Aπ,t as in Lemma 8, the following bound holds for any t ∈ [T ]:
+
+
+
+
+sup Eĉt ∼pt ,δ sup (2δĉt (π(xt )) + Aπ,t ) ≤ Eεt ,Zt sup (2Zt · εt (π(xt )) + Aπ,t ) .
+
+pt ∈∆0D
+
+π∈Π
+
+(10)
+
+π∈Π
+
+Combining the above lemmas we obtain Equation (9) by definition of R EL:
+"
+
+#
+
+
+Ext sup Eŷt ,St [ct (ŷt ) + R EL(I1:t )] ≤ Ext ,ρt sup Eĉt ,δ sup (2δĉt (π(xt )) + Aπ,t ) + Ct
+pt ∈∆0D
+
+ct
+
+π∈Π
+
+
+
+
+≤ Ext ,εt ,Zt ,ρt sup (2Zt · εt (π(xt )) + Aπ,t ) + Ct
+π∈Π
+
+
+≤ Eρt−1 sup (2Zt · εt (π(xt )) + Aπ,t ) + Ct
+π∈Π
+
+≤ R EL(I1:t−1 ).
+
+Proof of Lemma 9. For any distribution pt ∈ ∆0D , the distribution of the each coordinate of ĉt has
+−1
+support
+on {0, γ −1 K}
+
+ and is equal to γ K with probability at most γ/K. Using pt (i) to denote
+−1
+P ĉt (i) = γ K · ei we can rewrite the LHS (left hand side) of Equation (10) as
+
+sup Eĉt ∼pt ,δ
+
+pt ∈∆0D
+
+
+sup (2δĉt (π(xt )) + Aπ,t )
+
+π∈Π
+
+!
+
+2Kδ
+1 [π(xt ) = i]
+= sup (1 −
+pt (i)) sup Aπ,t +
+pt (i)Eδ sup Aπ,t +
+γ
+π
+π
+pt ∈∆0D
+i
+i
+!
+
+X
+X
+2Kδ
+=
+sup
+(1 −
+pt (i)) sup Aπ,t +
+pt (i)Eδ sup Aπ,t +
+1 [π(xt ) = i] ,
+γ
+π
+π
+0≤pt (i)≤γ/K
+i
+i
+X
+
+X
+
+where the first equality follows from expanding the expectation with respect to ĉt , and the second
+equality follows from the definition of ∆0D . We argue that this value is maximized when each pt (i)
+takes on its maximum value, i.e., γ/K. It suffices to observe that
+
+
+
+
+
+2Kδ
+2Kδ
+Eδ sup Aπ,t +
+1 [π(xt ) = i] ≥ sup Aπ,t + Eδ
+1 [π(xt ) = i]
+= sup Aπ,t ,
+γ
+γ
+π
+π
+π
+where the inequality follows from the fact that supremum of expectation is less than expectation
+of supremum, and the equality uses the fact that E [δ] = 0. Therefore, we maximize the LHS of
+γ
+Equation (10) via selecting pt that satisfies pt (i) = K
+for i ≥ 1. It follows that
+
+
+sup Eĉt ∼pt ,δ sup (2δĉt (π(xt )) + Aπ,t )
+
+pt ∈∆0D
+
+π∈Π
+
+
+!
+2Kδ
+≤ (1 − γ) sup Aπ,t +
+Eδ sup Aπ,t +
+1 [π(xt ) = i]
+K
+γ
+π
+π
+i
+
+
+= Eεt ,Zt sup (2Zt · εt (π(xt )) + Aπ,t ) ,
+X γ
+
+π∈Π
+
+finishing the proof.
+8
+
+4.2
+
+Proof of Theorem 6
+
+We start with the following standard inequalities for handling the supremum using the moment
+generating function.
+"
+#
+
+ 
+
+T
+X
+PT
+1
+E(Z,ε)1:T sup
+Zt εt (π(xt )) = EZ1:T
+· Eε1:T log sup eλ t=1 Zt εt (π(xt ))
+λ
+π∈Π i=1
+π∈Π
+"
+!##
+"
+X PT
+1
+λ t=1 Zt εt (π(xt ))
+e
+· Eε1:T log
+≤ EZ1:T
+λ
+π∈Π
+"
+"
+#!#
+X PT
+(i)
+1
+≤ EZ1:T
+· log Eε1:T
+eλ t=1 Zt εt (π(xt ))
+λ
+π∈Π
+!#
+"
+T
+i
+h
+X
+Y
+1
+(ii)
+λZt εt (π(xt ))
+· log
+Eεt e
+.
+= EZ1:T
+λ
+t=1
+π∈Π
+
+Inequality (i) holds due to the concavity of log and√(ii) follows from the independence of εt . We will
+additionally assume that λ is upper bounded by γ 2/K in the remaining analysis.
+By our construction of the random variable εt , for any fixed π, εt (π(xt )) takes the value 0 with
+1
+1
+probability 1 − K
+and the values −1 and 1 each with probability 2K
+. We therefore have that
+
+
+h
+i
+1
+1
+1
++
+· eλZt +
+· e−λZt
+Eεt eλZt εt (π(xt )) = 1 −
+K
+2K
+2K
+2 2
+1
+1
+≤1−
++
+· eλ Zt /2
+K
+K
+1
+
+≤ e K (e
+
+λ2 Zt2 /2
+
+−1)
+
+.
+
+2
+
+The first inequality above uses ex + e−x ≤ 2ex /2 while the second inequality uses ex ≥ 1 + x for
+x ∈ R. This further yields
+!#
+!#
+"
+"
+T
+T
+h
+i
+λ2 Zt2 /2
+Y
+XY
+e
+−1
+1
+1
+λZt εt (π(xt ))
+K
+e
+· log
+Eεt e
+· log |Π| ·
+EZ1:T
+≤ EZ1:T
+λ
+λ
+t=1
+π∈Π t=1
+#
+"
+2 2
+T
+X
+eλ Zt /2 − 1
+1
+log(|Π|) +
+= EZ1:T
+λ
+λK
+t=1
+=
+
+T
+h 2 2
+i
+log(|Π|)
+1 X
++
+EZ1:T eλ Zt /2 − 1 .
+λ
+λK t=1
+
+Recall that Zt takes the values 0 and K
+γ with probabilities 1 − γ and γ respectively. It follows that
+ 2 2
+
+h 2 2
+i
+λ K
+λ2 K 2
+λ Zt /2
+2
+2γ
+EZ1:T e
+−1 =γ e
+−1 ≤γ 2 ,
+γ
+where √
+the inequality follows from the fact that ex − 1 ≤ 2x for x ∈ (0, 1) and the assumption
+λ ≤ γ 2/K. Therefore,
+"
+!#
+T
+h
+i
+XY
+1
+log(|Π|) T Kλ
+λZt εt (π(xt ))
+EZ1:T
+· log
+Eεt e
+≤
++
+.
+λ
+λ
+γ
+t=1
+π∈Π
+
+By taking derivative with respect to λ we obtain
+− log(|Π|)
++ T K/γ = 0,
+λ2
+9
+
+q
+and compute that the equation above is minimized at λ = γ log(|Π|)
+. We note that λ satisfies the
+TK
+√
+log(|Π|)
+γ
+assumption λ ≤ γ 2/K because this is equivalent to 2T < K , which holds by the assumption
+of the lemma. Plugging this again yields
+s
+r
+p
+T K γ log(|Π|)
+TK
+log(|Π|)
++
+= 2 T K log(|Π|)/γ,
+γ log(|Π|)
+γ
+TK
+which is the desired bound.
+
+5
+
+Conclusion
+
+In this paper, we presented a novel efficient relaxation for the adversarial contextual bandits problem
+and proved that its regret is upper bounded by O(T 2/3 (K log |Π|)1/3 ). This provides a marked
+improvement with respect to the parameter K as compared to the prior best result and matches
+the original baseline of Langford and Zhang (2007) for the stochastic version
+p of the problem. As
+mentioned earlier, non-efficient algorithms can obtain a regret bound of O( T K log(|Π|)), which
+is information theoretically optimal. While oracle-efficient algorithms can obtain the optimal regret
+bound in the stochastic setting (Dudik et al., 2011), they do not always achieve optimal regret
+rates (Hazan and Koren, 2016). Whether or not optimal regret can be obtained in our setting using
+efficient algorithms remains an open problem and improving both the upper and lower bounds are
+interesting directions for future work. Additionally, while our work operates in the same setting as
+prior work (Rakhlin and Sridharan, 2016; Syrgkanis et al., 2016b), it would be interesting to relax
+some of the assumptions in the setting, most notably the sampling access to the context distribution.
+
+6
+
+Acknowledgements
+
+This work is partially supported by DARPA QuICC NSF AF:Small #2218678, and NSF AF:Small
+#2114269. We thank Alex Slivkins for pointing us to the problem and initial fruitful discussions.
+
+References
+Alekh Agarwal, Daniel Hsu, Satyen Kale, John Langford, Lihong Li, and Robert Schapire. 2014.
+Taming the monster: A fast and simple algorithm for contextual bandits. In International Conference
+on Machine Learning. PMLR, 1638–1646.
+Alekh Agarwal, Haipeng Luo, Behnam Neyshabur, and Robert E Schapire. 2017. Corralling a band
+of bandit algorithms. In Conference on Learning Theory. PMLR, 12–38.
+Shipra Agrawal, Nikhil R Devanur, and Lihong Li. 2016. An efficient algorithm for contextual
+bandits with knapsacks, and an extension to concave objectives. In Conference on Learning Theory.
+PMLR, 4–18.
+Peter Auer, Nicolo Cesa-Bianchi, and Paul Fischer. 2002. Finite-time analysis of the multiarmed
+bandit problem. Machine learning 47 (2002), 235–256.
+Peter Auer, Nicolo Cesa-Bianchi, Yoav Freund, and Robert E Schapire. 1995. Gambling in a
+rigged casino: The adversarial multi-armed bandit problem. In Proceedings of IEEE 36th annual
+foundations of computer science. IEEE, 322–331.
+Alina Beygelzimer, John Langford, Lihong Li, Lev Reyzin, and Robert Schapire. 2011. Contextual
+bandit algorithms with supervised learning guarantees. In Proceedings of the Fourteenth International Conference on Artificial Intelligence and Statistics. JMLR Workshop and Conference
+Proceedings, 19–26.
+Adam Block, Yuval Dagan, Noah Golowich, and Alexander Rakhlin. 2022. Smoothed online learning
+is as easy as statistical learning. arXiv preprint arXiv:2202.04690 (2022).
+Nicolo Cesa-Bianchi, Yoav Freund, David Haussler, David P Helmbold, Robert E Schapire, and
+Manfred K Warmuth. 1997. How to use expert advice. Journal of the ACM (JACM) 44, 3 (1997),
+427–485.
+10
+
+Yifang Chen, Chung-Wei Lee, Haipeng Luo, and Chen-Yu Wei. 2019. A new algorithm for nonstationary contextual bandits: Efficient, optimal and parameter-free. In Conference on Learning
+Theory. PMLR, 696–726.
+Wei Chu, Lihong Li, Lev Reyzin, and Robert Schapire. 2011. Contextual bandits with linear payoff
+functions. In Proceedings of the Fourteenth International Conference on Artificial Intelligence and
+Statistics. JMLR Workshop and Conference Proceedings, 208–214.
+Ashok Cutkosky and Kwabena Boahen. 2017. Online learning without prior information. In Conference on Learning Theory. PMLR, 643–677.
+Miroslav Dudík, Nika Haghtalab, Haipeng Luo, Robert E Schapire, Vasilis Syrgkanis, and Jennifer Wortman Vaughan. 2020. Oracle-efficient online learning and auction design. Journal of the
+ACM (JACM) 67, 5 (2020), 1–57.
+Miroslav Dudik, Daniel Hsu, Satyen Kale, Nikos Karampatziakis, John Langford, Lev Reyzin,
+and Tong Zhang. 2011. Efficient optimal learning for contextual bandits. arXiv preprint
+arXiv:1106.2369 (2011).
+Dylan J Foster, Sham M Kakade, Jian Qian, and Alexander Rakhlin. 2021. The statistical complexity
+of interactive decision making. arXiv preprint arXiv:2112.13487 (2021).
+Nika Haghtalab, Yanjun Han, Abhishek Shetty, and Kunhe Yang. 2022. Oracle-Efficient Online
+Learning for Beyond Worst-Case Adversaries. arXiv preprint arXiv:2202.08549 (2022).
+Elad Hazan and Tomer Koren. 2016. The computational power of optimization in online learning. In
+Proceedings of the forty-eighth annual ACM symposium on Theory of Computing. 128–141.
+Adam Kalai and Santosh Vempala. 2005. Efficient algorithms for online decision problems. J.
+Comput. System Sci. 71, 3 (2005), 291–307.
+Akshay Krishnamurthy, Alekh Agarwal, and Miro Dudik. 2016. Contextual semibandits via supervised learning oracles. Advances In Neural Information Processing Systems 29 (2016).
+John Langford and Tong Zhang. 2007. The epoch-greedy algorithm for contextual multi-armed
+bandits. Advances in neural information processing systems 20, 1 (2007), 96–1.
+Tyler Lu, Dávid Pál, and Martin Pál. 2009. Showing relevant ads via context multi-armed bandits. In
+Proceedings of AISTATS.
+Haipeng Luo, Chen-Yu Wei, Alekh Agarwal, and John Langford. 2018. Efficient contextual bandits
+in non-stationary worlds. In Conference On Learning Theory. PMLR, 1739–1776.
+Alexander Rakhlin and Karthik Sridharan. 2015. Hierarchies of relaxations for online prediction
+problems with evolving constraints. In Conference on Learning Theory. PMLR, 1457–1479.
+Alexander Rakhlin and Karthik Sridharan. 2016. Bistro: An efficient relaxation-based method for
+contextual bandits. In International Conference on Machine Learning. PMLR, 1977–1985.
+Sasha Rakhlin, Ohad Shamir, and Karthik Sridharan. 2012. Relax and randomize: From value to
+algorithms. Advances in Neural Information Processing Systems 25 (2012).
+David Simchi-Levi and Yunzong Xu. 2022. Bypassing the monster: A faster and simpler optimal
+algorithm for contextual bandits under realizability. Mathematics of Operations Research 47, 3
+(2022), 1904–1931.
+Aleksandrs Slivkins. 2009. Contextual Bandits with Similarity Information. CoRR abs/0907.3986
+(2009). arXiv:0907.3986 http://arxiv.org/abs/0907.3986
+Aleksandrs Slivkins. 2019. Introduction to multi-armed bandits. Foundations and Trends® in
+Machine Learning 12, 1-2 (2019), 1–286.
+Arun Suggala and Praneeth Netrapalli. 2020. Follow the perturbed leader: Optimism and fast parallel
+algorithms for smooth minimax games. Advances in Neural Information Processing Systems 33
+(2020), 22316–22326.
+11
+
+Vasilis Syrgkanis, Akshay Krishnamurthy, and Robert Schapire. 2016a. Efficient algorithms for
+adversarial contextual learning. In International Conference on Machine Learning. PMLR, 2159–
+2168.
+Vasilis Syrgkanis, Haipeng Luo, Akshay Krishnamurthy, and Robert E Schapire. 2016b. Improved
+regret bounds for oracle-based adversarial contextual bandits. Advances in Neural Information
+Processing Systems 29 (2016).
+
+12
+
+A
+
+Proof of Theorem 7
+
+Combining Equation 8 and Theorem 6 we obtain
+s
+T K log(|Π|)
++ γT.
+R EGT ≤ 4
+γ
+Setting the derivative with respect to γ of RHS to zero, we obtain
+p
+T − 2 T K log |Π|γ −3/2 = 0,
+
+1/3
+4K log |Π|
+which is equivalent to γ =
+. Note however that γ needs to satisfy γ >
+T
+KT −1 log(|Π|)/2 and γ ≤ 1. To verify the first condition, we should have T > K log(|Π|)/(2γ).
+Putting our designated γ implies that T should satisfy
+T > K log(|Π|) · (
+
+T
+T
+)1/3 · 1/2 ⇐⇒ T 3 > K 3 log3 (|Π|)
+· 1/8
+4K log(|Π|)
+4K log(|Π|)
+⇐⇒ T 2 >
+
+K 2 log2 |Π|
+K log |Π|
+√
+,
+⇐⇒ T >
+32
+4 2
+
+which holds by assumption. To verify the second condition of γ ≤ 1, we need to have T >
+4K log(|Π|), which again holds by assumption.
+Plugging γ to the regret bound, we have
+O(T 2/3 (K log |Π|)1/3 ),
+completing the proof.
+
+B
+
+Proof of Lemma 4
+
+The proof is based on Lemma 4 in Syrgkanis et al. (2016b) and is provided for completeness. The
+pseudocode of our algorithm is provided in Algorithm 2.
+Algorithm 2: Compute qt∗
+Input: value-of-ERM oracle, (x, ĉ)1:t−1 , xt and ρt
+Output: qt∗ (ρt ) as in Equation 6
+Compute for all i ∈ [K], ψi = inf π∈Π of
+t−1
+X
+
+ĉτ (π(xτ )) +
+
+τ =1
+
+T
+X
+K
+ei (π(xt )) +
+2Zτ ετ (π(xτ ))
+γ
+τ =t+1
+
+using the value-of-ERM oracle
+Compute ηi = γ(ψiK−ψ0 ) for all i ∈ [K]
+Set m = 1, q = 0
+for k = 1, 2, . . . , K do
+q(i) ← min{(ηi )+ , m}, m ← m − q(i)
+end
+If m > 0, distribute remaining m uniformly across coordinates of q
+
+Proof. We prove the result by rewriting the minimizer equation to be composed of only calls to our
+value-of-ERM oracle. For i ∈ [K], we define ψi to be
+!
+t−1
+T
+X
+X
+−1
+inf
+ĉτ (π(xτ )) + γ Kei (π(xt )) +
+2Zτ ετ (π(xτ ))
+π∈Π
+
+τ =1
+
+τ =t+1
+
+where e0 = 0. We can thus write the definition of qt∗ (ρt ) as
+arg inf
+
+sup
+
+K
+X
+
+q∈∆K pt ∈∆0
+
+
+pt (i)
+
+D i=1
+
+Kq(i)
+− ψi
+γ
+
+
+− p(0) · ψ0
+
+and note that the values of ψi can be computed via a single call to the value-of-ERM oracle, and
+moreover we require K + 1 calls to compute all the ψi .
+Now to compute the minimizer of the above, we first let zi = Kq(i)
+− ψi and z0 = −ψ0 and rewrite
+γ
+the minimax value as
+arg inf sup
+
+K
+X
+
+q∈∆D pt ∈∆0D i=1
+
+pt (i) · zi + pt (0) · z0 .
+
+We reiterate that each pt (i) ≤ γ/K for i > 0 and thus we must distribute maximal probability
+across the zi coordinates of largest value, i.e. we will put as much probability weight as permitted
+on arg maxi∈[K] zi , and proceed to do the same for the second largest value, repeating the process
+until we exhaust the probability distribution or reach the terminal z0 . At this point, we can put the
+remainder of the probability weight on this final coordinate to ensure summation to 1.
+To proceed in analyzing the above water-filling argument, sort the coordinates zi such that z(1) ≥
+z(2) ≥ ... ≥ z(K) for i > 0 and further define index µ to be the smallest index such that z(µ) ≥ z0 .
+By the probability weight distribution argument above, we can reduce the supremum over pt to be
+µ
+X
+γ
+i=1
+
+z(i) + (1 −
+
+K
+
+µ
+X
+γ
+γ
+µ)z0 =
+(z(i) − z0 ) + z0 .
+K
+K
+i=1
+
+since we maximize p(i) for the z(i) in order and set p(i) = 0 for terms less than z0 , which would
+otherwise yield an addition of negative terms in the above summation. Thus, by definition of µ, we
+have for i > µ
+µ
+X
+γ
+
+K
+i=1
+
+(z(i) − z0 ) + z0 =
+
+K
+X
+γ
+
+K
+i=1
+
+(z(i) − z0 )+ + z0 .
+
+where the + superscript denotes the R E LU operator, (x)+ = max{x, 0}. Therefore, the minimax
+expression is reformulated as
+arg inf
+
+K
+X
+γ
+
+q∈∆D
+
+K
+i=1
+
+(z(i) − z0 )+ + z0 .
+
+which is equivalent to minimizing the R E LU term
+arg inf
+
+q∈∆D
+
+K
+X
+γ
+i=1
+
+K
+
+(z(i) − z0 )+ = arg inf
+
+q∈∆D
+
+K 
+X
+
+q(i) −
+
+i=1
+
++
+γ
+· (ψi − ψ0 ) .
+K
+
+Simplify notation by setting ηi = γ(ψiK−ψ0 ) so that the expression becomes
+arg inf
+
+q∈∆D
+
+K
+X
+
+(q(i) − ηi )+ .
+
+i=1
+
+We argue the minimization procedure as follows: select i ∈ [K] such that ηi ≤ 0. Any positive
+probability weight on q(i) will yield an increase in the expression, whereas for ηi > 0 we experience
+no increase in the P
+objective until the value of ηi surpasses q(i). Thus, the minimizer will weight the
+actions with min{ i:ηi >0 ηi , 1} on the coordinates with ηi > 0 and distribute the remaining weight
+(if nonzero) arbitrarily among [K]. This is more precisely outlined in the pseudocode of Algorithm
+2.
+14
+
+C
+
+Proof of Lemma 8
+
+Proof of Lemma 8. Denote by qt∗ = Eρt [qt∗ (ρt )]. We note that since we are drawing from ρt , calculating qt∗ (ρt ), and then drawing from qt∗ (ρt ), our algorithm is effectively sampling from qt∗ , even
+though we do not calculate qt∗ explicitly. Now note that
+
+
+1
+∗
+Eŷt ∼qt [ct (ŷt )] = hqt , ct i ≤ hqt , ct i + γ
+, ct ≤ Eŷt ,ĉt [hqt∗ , ĉt i] + γ.
+K
+holds by definition of qt (ρt ) and the assumed bounds on ct . Thus, it further holds that
+Eŷt ,ĉt [ct (ŷt ) + R EL(I1:t )] ≤ γ +
+
+sup
+ct ∈[0,1]K
+
+sup
+ct ∈[0,1]K
+
+Eŷt ,ĉt [hqt∗ , ĉt i + R EL(I1:t )] .
+
+By expansion of the second term on the right hand side, we rewrite the relation as
+sup
+ct ∈[0,1]K
+
+=
+
+Eŷt ,ĉt [hqt∗ , ĉt i + R EL(I1:t )]
+
+sup
+ct ∈[0,1]K
+
+=
+
+sup
+ct ∈[0,1]K
+
+=
+
+sup
+ct ∈[0,1]K
+
+Eŷt ,ĉt [hqt∗ , ĉt i + Eρt [R((x, ĉ)1:t , ρt )]]
+
+
+
+∗
+Eŷt ,ĉt hqt , ĉt i + Eρt sup (−ĉt (π(xt )) + Aπ,t ) + γ(T − t)
+π∈Π
+
+
+
+
+Eŷt ,ĉt Eρt hqt∗ (ρt ), ĉt i + sup (−ĉt (π(xt )) + Aπ,t ) + γ(T − t).
+π∈Π
+
+Furthermore, the symmetric construction of ĉt implies that ĉt takes the value Kei /γ with probability
+at most γ/K. Therefore, we know that ĉt is sampled from a pt ∈ ∆0D where ∆0D is defined as in
+Equation (5). Taking the maximum over all possible pt , we bound the supremum term above with
+
+
+
+sup Eŷt ,ĉt Eρt hqt∗ (ρt ), ĉt i + sup (−ĉt (π(xt )) + Aπ,t )
+π∈Π
+
+ct ∈[0,1]K
+
+
+
+
+∗
+≤ sup Eĉt ∼pt Eρt hqt (ρt ), ĉt i + sup (−ĉt (π(xt )) + Aπ,t )
+pt ∈∆0D
+
+"
+≤ Eρt
+
+π∈Π
+
+
+#
+∗
+sup Eĉt ∼pt hqt (ρt ), ĉt i + sup (−ĉt (π(xt )) + Aπ,t ) .
+
+pt ∈∆0D
+
+π∈Π
+
+where the second inequality is an application of Jensen’s inequality. We first replace the optimized qt∗
+by the corresponding infimum operator over qt , thus the term inside the expectation is equivalent to
+
+
+inf sup Eĉt ∼pt hq, ĉt i + sup (−ĉt (π(xt )) + Aπ,t ) .
+q∈∆K pt ∈∆0
+
+π∈Π
+
+D
+
+conditioned on ρt . By the minimax theorem, we can interchange the infimum and supremum operators
+without decreasing the quantity, and this is further upper bounded as
+
+
+inf sup Eĉt ∼pt hq, ĉt i + sup (−ĉt (π(xt )) + Aπ,t )
+q∈∆K pt ∈∆0
+
+D
+
+= sup
+
+π∈Π
+
+
+
+inf Eĉt ∼pt hq, ĉt i + sup (−ĉt (π(xt )) + Aπ,t ) .
+
+pt ∈∆0D q∈∆K
+
+π∈Π
+
+and moreover, since the objective is linear with respect to qt we can instead work with
+
+
+sup min Eĉt ∼pt ĉt (i) + sup (−ĉt (π(xt )) + Aπ,t ) .
+pt ∈∆0D i∈[K]
+
+π∈Π
+
+15
+
+Symmmetrization permits us to rewrite the above as
+
+
+sup min Eĉt ∼pt ĉt (i) + sup (−ĉt (π(xt )) + Aπ,t )
+pt ∈∆0D i∈[K]
+
+π∈Π
+
+
+
+
+
+= sup Eĉt ∼pt sup
+pt ∈∆0D
+
+π∈Π
+
+min Eĉ0t ∼pt [ĉ0t (i)] − ĉt (π(xt )) + Aπ,t
+i∈[K]
+
+
+
+≤ sup Eĉt ∼pt sup Eĉ0t ∼pt [ĉ0t (π(xt ))] − ĉt (π(xt )) + Aπ,t
+pt ∈∆0D
+
+
+
+
+
+
+π∈Π
+
+
+
+≤ sup Eĉt ,ĉ0t ∼pt sup (ĉ0t (π(xt )) − ĉt (π(xt )) + Aπ,t ) .
+pt ∈∆0D
+
+π∈Π
+
+where the last inequality is an additional application of Jensen’s inequality. Since ĉt , ĉ0t are sampled
+from the same distribution, this can be rewritten as
+
+
+0
+0
+sup Eĉt ,ĉt ∼pt sup (ĉt (π(xt )) − ĉt (π(xt )) + Aπ,t )
+pt ∈∆0D
+
+π∈Π
+
+
+
+= sup Eĉt ,ĉ0t ∼pt ,δ sup (δ(ĉ0t (π(xt )) − ĉt (π(xt ))) + Aπ,t )
+pt ∈∆0D
+
+π∈Π
+
+
+= sup Eĉt ,ĉ0t ∼pt ,δ
+pt ∈∆0D
+
+
+
+sup (δĉ0t (π(xt )) − δĉt (π(xt )) + Aπ,t )
+π∈Π
+
+.
+
+and further split the term within the inner supremum to obtain
+
+
+0
+sup Eĉt ,ĉ0t ∼pt ,δ sup (δĉt (π(xt )) − δĉt (π(xt )) + Aπ,t )
+pt ∈∆0D
+
+π∈Π
+
+
+
+
+Aπ,t
+Aπ,t
+− δĉt (π(xt )) +
+= sup Eĉt ,ĉ0t ∼pt ,δ sup δĉ0t (π(xt )) +
+2
+2
+π∈Π
+pt ∈∆0D
+
+
+
+
+
+Aπ,t
+Aπ,t
+≤ sup Eĉt ,ĉ0t ∼pt ,δ sup δĉ0t (π(xt )) +
++ sup −δĉt (π(xt )) +
+2
+2
+π∈Π
+π∈Π
+pt ∈∆0D
+
+
+= sup Eĉt ∼pt ,δ sup (2δĉt (π(xt )) + Aπ,t ) .
+pt ∈∆0D
+
+D
+
+π∈Π
+
+Proof of the final step condition
+
+Lemma 10. The relaxation function (4) satisfies the final step condition (2).
+Proof. By setting t = T in our relaxation R EL(I1:T ) and definition of our unbiased estimator ĉt of
+ct ,
+"
+#
+T
+X
+Eŷ1:T [R EL(I1:T )] = Eŷ1:T − sup
+ĉτ (π(xτ ))
+π∈Π τ =1
+
+≥ sup −Eŷ1:T
+π∈Π
+
+= sup −
+π∈Π
+
+16
+
+" T
+X
+
+#
+ĉτ (π(xτ ))
+
+τ =1
+T
+X
+τ =1
+
+cτ (π(xτ )).
+
+
