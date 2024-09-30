@@ -158,14 +158,14 @@ def get_file_choice(files):
 
 
 categories = {
-    "Finance": '../finance',
-    "Neural Network": '../NN',
-    "Aero Physics": '../physics',
-    "President Inaugural Address": '../speech',
-    "Wikipedia": '../Wiki',
-    "Adventure Novels": '../novel',
-    "NeurIPS 2022": '../NeurIPS2022',
-    "NeurIPS 2023": '../NeurIPS2023'
+    "Finance": '../Resources/finance',
+    "Neural Network": '../Resources/NN',
+    "Aero Physics": '../Resources/physics',
+    "President Inaugural Address": '../Resources/speech',
+    "Wikipedia": '../Resources/Wiki',
+    "Adventure Novels": '../Resources/novel',
+    "NeurIPS 2022": '../Resources/NeurIPS2022',
+    "NeurIPS 2023": '../Resources/NeurIPS2023'
 }
 
 all_frequencies = []

@@ -1,3863 +1,0 @@
-Disentangling the sources of cyb er risk premia
-Loc Marechal
-*
-and Nathan Monnet
-—
-Septemb er 16, 2024
-Abstract
-We use a metho dology based on a machine learning algorithm to quantify rms'
-cyb er risks based on their disclosures and a dedicated c yb er corpus. The mo del can
-identify paragraphs related to determined cyb er-threat typ es and accordingly attribute
-several related cyb er s cores to the rm. The cyb er scores are unrelated to other rms'
-characteristics. Sto cks with high cyb er scores signicantly outp erform other s to cks.
-The long-short cyb er risk factors have p ositive risk premia, are robust to all factors'
-b enchmarks, and help price returns. Furthermore, we s ugge st the market do es not
-distinguish b etween dierent typ es of cyb er risks but instead views them as a single,
-aggregate cyb er risk.
-Keywords
-: clustering, machine learning, natural language pro cessing, trends analysis, cy-
-b ersecurity.
-*
-HEC Lausanne, University of Lausanne. loic.marechal@unil.ch
-—
-Swiss Finance Institute,
-
-Ecole Polytechnique Federale de Lausanne - Cyb er-Defence Campus, armasu-
-isse S+T. nathan.monnet@armasuisse.ch
-This do cument results from a research pro ject funded by the Cyb er-Defence Campus, armasuiss e
-Science and Technology, and was initially written as Nathan Monnet's Master thesis. We appreciate
-helpful comments from seminar participants at the Cyb er Alp Retreat 2024. We also thank Julien
-Hugonnier and Michel Dub ois for their invaluable comments. Corresp onding author: Loc Marechal e-mail:
-loic.marechal@unil.ch
-arXiv:2409.08728v1  [q-fin.PM]  13 Sep 2024
-1. Intro duction
-Cyb er-insurance contracts and cyb ersecurity solutions have b ecome crucial for private
-and public organizations in the widespread and costly context of cyb er incidents. These
-countermeasures, however, have costs that are challenging to estimate. This pap er aims to
-overcome this challenge us ing natural language pro cessing, clustering metho ds, and state-of-
-the-art asset pricing techniques to disentangle and quantify the risk premia of various cyb er
-threats.
-The main fo cus of this pap er is to disentangle the dierent cyb er ris ks faced by rms
-and the eects on exp ected returns through risk premia channels. To do this, we collect
-nancial llings, monthly returns, and other rm characteristics for over 7000 rms listed on
-US sto ck markets b etween January 2007 and Decemb er 2023. We use a neural network called
-\Paragraph Vector" in combination with the MITRE ATT&CK cyb ersecurity knowledgebase
-and clustering techniques to score each rm's ling based on its various typ es of cyb er risk.
-We identify four typ es of cyb er attacks that emerge from the textual cluster structures of
-MITRE ATT&CK. We establish scores to quantify the similarity b etween the annual state-
-ments of rms, the 10-Ks, and the identied typ es of cyb er attacks from the knowledgebase
-MITRE ATT&CK. We nd that the four cyb er scores present no correlation with standard
-rms' characteristics known to help price sto ck returns and weak correlations with textual
-non-semantic variables of the annual statement (the highest, 0
-:
-36, correlates with the length
-of section 1.A., in the 10-Ks). As previously observed in Celeny and Marechal (2023), who
-use the same neural network, the resulting aggregation of the various cyb er scores shows
-increasing trends, with scores increasing by 0
-:
-04 from 2007 to 2023. Also, sp ecic industries
-from the Fama-French 12-industries classication display higher cyb er scores, with Business
-Equipment and Telephone and Televis ion Transmission b eing the highest.
-Sorting rms into cyb er scores-based p ortfolios, we observe monotonically increasing
-average excess returns along the sorts. All average excess returns of all p ortfolios are sta-
-tistically signicant at the 1% level, and investing in a p ortfolio that enters a long (short)
-p osition in the top (b ottom) cyb er scores rm is statistically signicant at the 5% level.
-After controlling for common risk factors, the aforementioned results remain valid at the 5%
-and 10% levels in the top p ortfolios.
-The risk premia asso ciated with the dierent typ es of cyb er risk are also manifest at the
-1
-5% level in the cross-section with Fama and MacBeth (1973) regressions. Using additional
-pricing factors related to cyb er-based p ortfolios improves pricing ability. We demonstrate
-that joint alphas of various assets tend to decrease in Gibb ons, Ross, and Shanken (1989)
-tests. Using the Bayesian approach of Barillas and Shanken (2018), we also show that the
-optimal subset of factors pricing sto ck returns invariably includes the cyb er-based factors.
-Additional tests reveal that, although various typ es of cyb er risk exist, the market do es
-not dierentiate b etween them and p erceives them as a s ingle aggregate cyb er risk. Finally,
-we conduct an event study to evaluate the p erformance of a cyb er-based p ortfolio during
-the massive SolarWinds cyb er attack in Decemb er 2020. Contrary to previous studies , in
-particular, Florackis, Louca, Michaely, and Web er (2023), no signicant conclusions can
-b e drawn from this event regarding the p erformance of our cyb er-based p ortfolios around
-cyb erattacks.
-The remainder of this work pro ceeds as follows. Section 2 intro duces the related literature
-and develops hyp othes es . Section 3 details the data and the metho dology, Section 5 the
-results, and Section 6 concludes.
-2. Literature review
-2.1. Sentiment analysis and text classication
-This s tudy connects to several strands of the literature on s entiment analysis and its
-application to nancial markets. First, it relates to the growing b o dy of research that uses
-textual data to extract economic insights from corp orate lings and other nancial disclo-
-sures (
-e.g.
-, Antweiler and Frank, 2004; Garcia, 2013; Arslan-Ayaydin, Boudt, and Thewissen,
-2016). Early studies, such as Feldman, Govindara j, Livnat, and Segal (2010), examine the
-Management Discussion and Analysis (MD&A) sections of 10-Q and 10-K lings and demon-
-strated that changes in the tone of non-nancial information|measured by the frequency
-of p ositive and negative words|correlate with b oth short-term market returns and longer-
-term excess returns. This study highlighted the imp ortance of textual sentiment in SEC
-lings, laying the groundwork for more nuanced measures of market sentiment. Similarly,
-Jegadeesh and Wu (2013) intro duce a return-based term weighting scheme for measuring
-do cument tone in 10-K lings. They demonstrate that the tone of thes e do cuments, es-
-2
-p ecially when weighted using p ositive and negative dictionaries, eectively predicts market
-reactions around ling dates. Their metho d also generalizes well to other nancial do cu-
-ments, such as IPO prosp ectuses, further expanding the applicability of sentiment analysis
-in nancial contexts.
-Building on these foundational studies, Antweiler and Frank (2004) apply sentiment anal-
-ysis to online forums, showing how sentiment derived from nancial discussions could predict
-market returns and trading volumes. Garcia (2013) extend the scop e of sentiment analysis
-to nancial news, revealing that the predictive p ower of sentiment on sto ck returns is partic-
-ularly pronounced during recessions. These studies collectively show that textual sentiment,
-whether derived from nancial disclosures or public discourse, is critical in anticipating mar-
-ket b ehavior. Furthermore, Bo dnaruk, Loughran, and McDonald (2015) advance textual
-analysis by developing a linguis tic measure of rm-level nancial constraints based on 10-K
-disclosures. Their approach, which identies constraining words such as \required" or \obli-
-gations", proved more eective than traditional nancial constraint indexes in predicting
-liquidity events, oering an innovative way to assess nancial health through text.
-This study contributes to the literature on textual analysis to assess sp ecic risks. Hassan,
-Hollander,
-v an
-Lent, and Tahoun (2019) and Sautner,
-v an
-Lent, Vilkov, and Zhang (2023)
-apply sentiment analysis to earnings conference calls to measure rm-level p olitical risk and
-climate risk, resp ectively. Hassan et al. (2019) use p olitical language to measure p olitical risk,
-showing that p olitical discussions during earnings calls signicantly inuence rm b ehavior
-and sto ck volatility. In contrast, Sautner et al. (2023) fo cus on climate-related language,
-using a keyword discovery algorithm to assess the extent of rms' climate risk exp osure.
-These studies demonstrate how sentiment analysis can b e tailored to identify sp ecic typ es
-of risks b eyond traditional nancial metrics, thus expanding the scop e of risk analysis to
-include so cio-p olitical and environmental factors.
-Further extending the application of sentiment analysis, Calomiris and Mamaysky (2019)
-incorp orate advanced text-pro cessing techniques, such as word ow measures, to predict
-market returns and risks across b oth develop ed and emerging markets. Analyzing sentiment,
-frequency, and entropy, they demonstrate that textual data could capture latent market risks
-more eectively than traditional metho ds. This approach complements the earlier work of
-Jegadeesh and Wu (2013) and Bo dnaruk et al. (2015) by showing how textual measures
-can b e ne-tuned to assess not just sentiment but also nancial constraints and sp ecic risk
-3
-factors, such as market volatility or liquidity challenges.
-This study ties into the broader literature on how textual sentiment inuences rm and
-market b ehavior. Antweiler and Frank (2004) show that sentiment derived from public
-discussions could aect sto ck prices and trading volumes. Arslan-Ayaydin et al. (2016)
-demonstrate how managerial incentives shap e the tone of earnings press releases, inuencing
-market reactions.
-2.1.1. Vector representation of paragraphs and topics clustering
-Our study also connects to several key advancements in the application of vector rep-
-resentations and topic clustering for analyzing textual data. First, it relates to developing
-distributed representations of paragraphs, most notably the Paragraph Vector (do c2vec)
-mo del intro duced by Le and Mikolov (2014). do c2vec extends the word vector framework
-to sentences, paragraphs, and entire do cuments by capturing semantic meanings in xed-
-length vectors through neural network training. This technique allows for a richer, more
-context-aware text representation, outp erforming traditional bag-of-words mo dels. How-
-ever, its p erformance is highly sensitive to various hyp erparameters and data congurations,
-as shown by Lau and Baldwin (2016). Their empirical evaluation of do c2vec provides critical
-insights into optimizing the mo del for eective real-world use, emphasizing the imp ortance
-of careful tuning when applying this metho d to dierent datasets.
-Adosoglou, Lombardo, and Pardalos (2021) use do c2vec to analyze a vast corpus of
-10-K lings from 1998 to 2018. They compare do c2vec with traditional dictionary-based
-approaches and found that vector representations captured subtle semantic shifts in nancial
-disclosures that were predictive of future abnormal returns. Sp ecically, they develop the
-Semantic Similarity Portfolio (SSP) strategy, which identied rms with minimal year-on-
-year semantic changes in their lings|particularly those with high cosine similarity scores
-(
->
-0
-:
-95) as strong candidates for achieving signicant future risk-adjusted returns, up to
-10% annually. While their approach showcased the p otential of do c2vec in nancial text
-analysis, it also underscored limitations, such as the computational cost of training mo dels
-and the need to account for executive turnover that might inuence do cument language.
-Regarding topic clustering, recent studies have extended the utility of vector-based repre-
-sentations. Calomiris and Mamaysky (2019) apply unsup ervised clustering techniques, such
-as the Louvain metho d, to group do cuments by topics and assess their relevance in predicting
-4
-market outcomes. They create a network of do cument similarities by constructing vectors of
-word o ccurrences for each do cument and calculating s imilarity scores. The Louvain metho d
-was then employed to detect sub-networks or clusters, which they dened as topics. This
-clustering approach allowed them to identify signicant thematic structures in large corp ora
-of news articles. Such clustered topics could provide valuable insights into future market
-b ehavior, esp ecially in capturing collective sentiment shifts.
-Further reinforcing the b enets of vector-based metho ds, Curiskis , Drake, Osb orn, and
-Kennedy (2020) compare various do cument clustering and topic mo deling techniques using
-so cial media text data. Their ndings underscored the eectiveness of do cument and word
-emb eddings, particularly do c2vec, for do cument clustering tasks. By outp erforming tradi-
-tional \tf-idf " based approaches and other topic mo deling techniques, do c2vec emb eddings,
-combined with k-means clustering, yielded sup erior results across dierent datasets. They
-observe that do c2vec emb eddings p erformed consistently well regardless of do cument length,
-although optimal training ep o ch requirements varied with do cument size. These results sug-
-gest that do c2vec is a robust and adaptable to ol for clustering tasks across various text
-lengths and typ es.
-2.2. Cyber risk and expected stock returns
-Finally, our study builds on a growing b o dy of literature that examines the intersection of
-cyb ersecurity risk and asset pricing. Jamilov, Rey, and Tahoun (2023) develop a dictionary-
-based measure of cyb er risk exp osure using quarterly earnings calls from over 13,000 rms
-in 85 countries from 2002 to 2021. Their dictionary of cyb er-related terms was validated
-by demonstrating predictability for future cyb erattacks and correlations with sto ck market
-outcomes and realized volatility. Imp ortantly, the study shows that cyb er risk measures can
-forecast cyb erattacks in subsequent quarters and do cument geographical patterns in cyb er
-risk exp osure. The ndings are signicant for global investors, as U.S. equity holdings in
-foreign countries predict the destination countries' cyb er exp osure. Additionally, the authors
-explore the pricing of cyb er risk in the options market, showing that rms with higher cyb er
-risk exp osure face higher costs for market-based protection against price and variance risks.
-These results s uggest that cyb er risk has real economic implications and is increasingly
-integrated into sto ck market exp ectations.
-5
-Florackis et al. (2023) present a cyb ersecurity risk measure based on textual analysis of
-the \Item 1. A. Risk Factors" section of 10-K lings from 2007 to 2018. By comparing these
-risk factors acros s rms using cosine similarity measures, they eectively identify companies
-with signicant cyb ersecurity risk exp osure. The measure correlates with various rm char-
-acteristics, such as size, growth opp ortunities , and R&D exp enditures, and predicts future
-cyb erattacks. Furthermore, the authors show that p ortfolios comp os ed of rms with high
-cyb ersecurity risk scores earn a signicant return premium of up to 8.3% annually. This risk
-premium is robust across dierent sp ecications, conrming that investors require comp en-
-sation for holding sto cks exp osed to cyb ersecurity risks. The study als o demonstrates that
-the cyb ersecurity-based p ortfolio underp erforms during p erio ds of heightened investor at-
-tention to cyb ersecurity but delivers high returns during other times, suggesting an element
-of market underreaction to latent cyb er risks.
-Taking a dierent approach, Celeny and Marechal (2023) intro duce a metho d for esti-
-mating cyb er risk using do c2vec trained on the MITRE ATT&CK cyb ersecurity knowledge
-base and applied it to 10-K statements. Unlike the dictionary-based approaches, their mo del
-captures broader contextual information from the entire do cument, resulting in a more com-
-prehensive and accurate cyb er risk score. They show that p ortfolios sorted by their cyb er
-risk score achieve substantial excess returns|up to 18.72% annually with a signicant risk
-premium of 6.93% on a long-short p ortfolio. Their analysis highlights the critical role of cy-
-b er risk in the cross-section of sto ck returns, and their do c2vec-based approach outp erforms
-traditional dictionary-based metho ds, such as the one develop ed by Florackis et al. (2023).
-The study's robustness tests further validate the metho d, showing that the cyb er risk factor
-remains consistent over time and is not inuenced by the exclusion of cyb ersecurity rms,
-oering a more accurate measure of latent cyb er risk exp osure.
-Additionally, Liu, Marsh, and Xiao (2022) explore how rms' sensitivity to cyb ercrime
-impacts the pricing of individual sto cks and equity p ortfolios. Using a news-based cyb ercrime
-index and corrob orating their ndings with Go ogle search trends, the authors demonstrate a
-signicant negative correlation b etween cyb ercrime exp osure and subsequent s to ck returns.
-Their study shows that rms with higher sensitivity to cyb ercrime tend to underp erform
-in the market, and they further highlight how corp orate governance, IT investments , and
-industry dynamics shap e rms' vulnerability to cyb er threats. Moreover, they nd that high
-cyb ercrime b eta sto cks consistently outp erform their low-b eta counterparts, particularly fol-
-6
-lowing signicant cyb er incidents. These ndings emphasize the imp ortance of incorp orating
-cyb ercrime exp osure into asset pricing mo dels. Jiang, Khanna, Yang, and Zhou (2023) use a
-cyb er dictionary from NIST to count the numb er of cyb er-related words in Item 1. A. Com-
-bining it with rm characteristics, they p erform a logit ridge regression where the dep endent
-variable is the probability for a rm to exp erience a cyb erattack in the future.
-Lastly, Gomes, Mihet, and Risbabh (2023) examine how cyb er risk drives rm-level
-innovation, esp ecially in rms that develop cyb ersecurity measures internally. Using the
-cyb er risk score from Florackis et al. (2023) alongside patent data shows that rms heavily
-exp osed to cyb er risk are incentivized to innovate in cyb ersecurity solutions, which can
-contribute to long-term growth.
-3. Data and metho dology
-3.1. Market data
-We download public equity data from Wharton Research Data Services
-1
-(WRDS), and their
-API. The data originated from the Center for Research in Security Prices
-2
-(CRSP) and S&P
-Global Market Intelligence's Compustat database
-3
-. We rep ort the lis t of variables in Table
-A1 and Table 1 rep ort their statistics after cleaning.
-We use a pre-existing Python script that retrieves all available data from WRDS ab out
-various rms and lters out those that have not led 10-K forms with the SEC. We extract
-monthly sto ck returns and nancial ratios for 7,079 rms b etween January 2007 and De-
-cemb er 2023. We depict the industry distribution of these rms using the Fama-French 12
-industry distribution in Figure 1.
-We also download the one-month Treasury bill rate and returns on the market, b o ok-
-to-market (HML), size (SMB), momentum (UMD), investment (CMA), and op erating prof-
-itability (RMW) factors from the Kenneth French data rep ository
-4
-.
-[Insert Table 1 here]
-1
-https://wrds-www.wharton.up enn.edu/
-2
-https://crsp.org/
-3
-https://www.marketplace.spglobal.com/e n/datase ts/compustat-nancials-(8)
-4
-http://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data
-library.html
-7
-[Insert Figure 1 here]
-3.2. 10-K statements
-10-K statements are nancial lings publicly traded companies submit annually to the U.S.
-Securities and Exchange Commis sion (SEC). They contain information such as companies'
-nancial statements, risk factors, and executive comp ensation. 10-K statements will later b e
-used to build a cyb ersecurity risk measure. The index les from the SEC's Edgar archives
-5
-are used to download and structure the 10-K. These index les contain information ab out all
-the do cuments led by all rms for a sp ecic quarter. Each line of the index le corresp onds
-to a 10-K and is structured as follows:
-CIK|Company Name|Form Typ e|Date Filed|Filename
-Where Filename is the U RL under which an HTML version of the do cument is available.
-Their Central Index Key (CIK) is used to identify rms. The CIK consists of a numb er
-used by the SEC to identify corp orations and individuals who have led disclosures. We
-use a Python script that go es through these index les and identies URLs corresp onding
-to 10-K statements using the Form Typ e entry. These U RLs are matched to one of the
-7,079 rms using the CIK entry. 64,988 10-K statements are identied, corresp onding to
-2.73 statements p er rm on average. The evolution of the numb er of 10-K lled annually is
-rep orted in Figure 2.
-[Insert Figure 2 here]
-3.3. MITRE ATT&CK description
-The MITRE ATT&CK
-6
-cyb ersecurity knowledge base is used as a reference for cyb er
-attack descriptions. This knowledge base was created in 2013 to do cument cyb er attack tac-
-tics, techniques, and pro cedures. It is structured by tactics, techniques, and sub-techniques
-as depicted in Figure 3. There are 14 tactics: reconnaissance, resource development, initial
-5
-https://www.sec.gov/Archives/edgar/full-index/
-6
-https://attack.mitre.org/
-8
-access, execution, p ersistence, privilege escalation, defense evasion, credential access, discov-
-ery, lateral movement, collection, command and control, exltration, and impact. There are
-785 sub-techniques across all tactics. Two examples of sub-techniques are given in Table 2.
-[Insert Figure 3 here]
-[Insert Table 2 here]
-Figure 3 and Table 2 are taken from Celeny and Marechal (2023). The Data section closely
-follows their approach, and much of their co de has b een repurp osed to suit our requirements.
-The additional data primarily originates from 2023.
-3.4. Cyber score
-To compute the cyb er scores of interest, We start with the 14 individual MITRE ATT&CK
-tactics: Reconnaissance, Resource, Development, Initial Access Execution, Persistence, Priv-
-ilege Escalation, Defense Evasion, Credential, Access, Discovery, Lateral Movement, Col-
-lection, Command and Control, Exltration, Impact. To reduce this dimensionality, We
-aggregate them with clustering metho ds (see 3.4.4) that yield the following \sup ertactics":
-Command and data manipulation, Credential movement, Persistence and evasion, Prepa-
-ration and reconnaissance. For comparison, we also add the overall score, aggregating all
-14 categories into one, corresp onding to the score obtained in Celeny and Marechal (2023).
-Finally, We add a variation of the overall score that relates b etter to the risk notion: the
-cyb er sentiment score.
-3.4.1. Preprocessing
-Everything related to text pro cessing and its use is done exactly as des crib ed in Celeny
-and Marechal (2023). We download 10-K statements from the SEC Archives as HTML les.
-Then, we use the library BeautifulSoup to extract usable texts from HTML.
-7
-We remove
-punctuation and numb ers and set all letters to lowercase. Finally, we apply the Python
-script of Celeny and Marechal (2023) that uses the \wordfreq" and NLTK libraries to divide
-7
-https://www.crummy.com/software/BeautifulSoup/
-9
-the text into sentences, remove stop-words such as \the", \is", \and", . . . ) and remove the
-most common words.
-8 9
-After pre-pro cessing, the average length of the MITRE ATT&CK sub-technique descrip-
-tions is 39.7 words. We use a Python algorithm to merge consecutive s entences from 10-K
-statements into paragraphs with an average length of close to 40 words after pre-pro cessing.
-This results in an average of 640 paragraphs p er 10-K statement with 46 words p er para-
-graph. The standard deviation is 2.8 words p er paragraph and 309 paragraphs p er 10-K
-statement.
-3.4.2. Paragraph Vector algorithm (doc2vec)
-As in Celeny and Marechal (2023), we us e the paragraph to vector mo del prop osed
-by Le and Mikolov (2014), which is an extension of the word2vec mo del (Mikolov, Chen,
-Corrado, and Dean, 2013). There are various advantages to working with this NLP approach
-compared to others, such as the dictionary approach. First, the comprehension of the metho d
-is semantical, meaning that it is not limited to a count of word frequencies. The word
-order impacts the resulting vector, and paragraphs with similar or synonym words will have
-close vector representations. Second, training the mo del with sp ecic text that involves a
-particular vo cabulary allows the incorp oration of relatively unknown words. Finally, the
-resulting vectors have a dimension usually much smaller than vectors resulting from the
-dictionary approach.
-Two mo del versions exist: the distributed memory mo del (DM) and the distributed bag-
-of-words mo del (DBOW). In the DM, a neural network is trained as follows. First, a word is
-removed in a paragraph. Then, inputting the paragraph vector representation and context
-words (also in vector representation) surrounding the missing word, the neural network is
-optimized by trying to guess the missing word. In the DBOW, the neural network is trained
-to predict a series of words sampled from a paragraph using only the vector representation
-of the paragraph as input. Figure 4 illustrates the training pro cess of the two mo dels.
-[Insert Figure 4 here]
-8
-https://pypi.org/pro ject/wordfreq/
-9
-https://www.nltk.org/
-10
-The training data and details, the hyp erparameters and their validation, and the nal
-mo del choice are extensively covered in Celeny and Marechal (2023). This work uses their
-saved do c2vec mo del.
-10
-3.4.3. Cosine similarity
-Using the do c2vec metho d previously describ ed, all paragraphs of interest can b e emb ed-
-ded into vectors. A common way to attribute a similarity score to two paragraph vectors is
-to take the cosine of the angle they form. Other ways exist, but only measuring the angle
-was proven more eective than considering the vectors' magnitude (see Adosoglou et al.,
-2021). This is b ecause the latter is more aected by the random initialization of weights
-during training in the neural network that outputs the vectors.
-3.4.4. Cyber tactics clustering
-We disentangle the overall cyb er s core obtained in Celeny and Marechal (2023). The idea
-is that the risk coming from dierent areas of cyb er security might not b e similarly priced
-and, therefore, should not b e aggregated into a single score but rather b e separated into sub-
-cyb er scores. A natural way of splitting the overall score into dierent categories comes from
-the written structure of MI TRE ATT&CK, with 14 categories already mentioned in chapter
-4.1. However, it is b elieved that splitting the overall score to such an extent might result in a
-loss of explanatory p ower and highly correlated sub-cyb er scores. Therefore, aggregating the
-14 tactics into a few sup er tactics might mitigate the negative eect of splitting the overall
-score.
-On the other hand, with the do c2vec metho d and the similarity score, we can transform
-every 785 sub-techniques (paragraphs) of MITRE ATT&CK into vectors and compare their
-similarity. This pro cess results in a similarity matrix of dimension 785 by 785, onto which
-clustering metho ds can b e applied. Indeed, the similarity matrix can b e understo o d as the
-representation of a network where every 785 no des (paragraphs) are connected by edge values
-weighted by their similarity. In this context, we present three classical clustering metho ds.
-The rst and most simplistic clustering metho d is K-Means. Note that since the input
-similarity matrix is based on cosine similarity, it is rather designated as spherical K-Means,
-10
-https://github.com/technometrics- lab/17- Cyber- risk_and_the_cross- section_of_stock_
-returns
-11
-where the distance b etween each p oint to class into K categories is understo o d as the angle
-b etween the vectors dened by those p oints rather than the Euclidian distance b etween those
-p oints. Either version of K-Means works as follows : It b egins by randomly setting initial
-cluster centroids, then iteratively assigns each data p oint (paragraphs) to the nearest centroid
-and up dates the centroids by recalculating their mean p ositions among their asso ciated
-data p oints. The pro cess is rep eated until convergence. Note that although the K-Means
-algorithm always converges, it is relatively dep endent on the initial centroid guess. The user
-must cho ose the numb er of clusters K without prior knowledge. The algorithm generally
-pro duces rough results but often reveals an initial simple structure in the similarity of the
-provided data.
-The second metho d is much more p owerful as it requires no prior hyp erparameters;
-thus, the numb er of clusters is an output of the metho d. The Louvain metho d, explained
-in Blondel, Guillaume, Lambiotte, and Lefebvre (2008), provides a straightforward way
-to identify clusters (groups of no des within a graph that are more dens ely connected) in a
-network. To explain the Louvain metho d, we rst need to intro duce the notion of mo dularity.
-It is dened as a value in the [
-
-1
-=
-2
-;
-1] range that measures the density of links within
-communities compared to b etween. For a weighted graph, the mo dularity is dened as:
-Q
-=
-1
-2
-m
-N
-X
-i
-=1
-N
-X
-j
-=1
-
-S
-ij
-
-k
-i
-k
-j
-2
-m
-
-
-(
-c
-i
-; c
-j
-)
-;
-where
-S
-ij
-represents the edge weight b etween no des
-i
-and
-j
-, in this case, this is the
-similarity matrix.
-k
-i
-and
-k
-j
-are the sum of the weights of the edges attached to no des
-i
-and
-j
-, resp ectively.
-m
-is the sum of all the graph's edge weights.
-N
-is the total numb er of no des
-in the graph.
-c
-i
-and
-c
-j
-are the communities to which the no des
-i
-and
-j
-b elong and
-
-is the
-Kronecker delta function. The Louvain metho d works as follows. Initially, each no de is as-
-signed to its own community. Then, the metho d iterates through two phases: the rst phase
-optimizes mo dularity lo cally by moving individual no des b etween communities to maximize
-the increase in mo dularity. The second phase aggregates the no des in each community in
-the rst phase into single no des and builds a new network, where the communities found
-in the rst phase are treated as no des. Phases one and two are rep eated until no further
-improvement in mo dularity is p ossible. The nal partitioning of no des into communities is
-returned as a result.
-12
-The third clustering metho d is spherical K-means on a dimens ionally reduced similarity
-matrix. The sp ectral clustering metho d works as follows. First, the degree matrix
-D
-is
-constructed. it consists in a diagonal matrix where each entry
-D
-ii
-represents the sum of
-similarities for no de
-i
-and is computed as
-D
-ii
-=
-P
-j
-S
-ij
-. The Laplacian matrix
-L
-is dened
-as
-L
-=
-D
-
-S
-. The sp ectral clustering algorithm computes the eigenvectors and eigenvalues
-of the Laplacian matrix
-L
-. Let
-
-1
-; 
-2
-; :::; 
-N
-b e the eigenvalues and
-v
-1
-; v
-2
-; :::; v
-N
-b e the
-corresp onding eigenvectors. After obtaining the eigenvectors, we select the
-K
-eigenvectors
-corresp onding to the
-K
-smallest eigenvalues (excluding the smallest eigenvalue, typically
-zero). We arrange these eigenvectors as columns in a matrix
-V
-of dimension K by N.
-Finally, we clus ter the rows of the matrix
-V
-using the k-means clustering metho d. The
-p ower of this approach is that we can cho ose the numb er of features necessary to p erform a
-satisfying clustering (reducing from N=785 to K<20, for example, can radically improve the
-clustering by getting rid of sup eruous dimensions).
-Finally, scoring is needed to nd the b est clustering output pro duced by the wide range
-of hyp erparameters and metho d choices. We prop ose a rather simple but ecient approach
-that requires initial lab elalization of each no de. Each paragraph (no de) is a sub-technique
-b elonging to one of the 14 tactics of MITRE ATT&CK. Thus, they naturally already b e-
-long exclusively to 14 sub-clusters. The discrimination of clustering metho ds works on the
-following two requirements .
-First, we want the paragraphs b elonging to one tactic (sub-cluster) to b elong to the
-same sup er-tactic,
-i.e.
-, the same cluster found by the metho d. Indeed, the paragraphs are
-initially classed by the creator of MITRE ATT&CK together b ecause they share common
-characteristics. It would not b e very sensible to spread them across dierent sup er-tactics
-(clusters) once the clustering metho d is applied. Thus, a measure of sub-cluster heterogeneity
-among clusters is needed. We use Shannon entropy, dened as follows:
-H
-sub
-j
-=
-
-nb:cl uster s
-X
-i
-=1
-P
-(
-sub
-j
-)
-i
-log
-P
-(
-sub
-j
-)
-i
-(1)
-Where
-P
-(
-sub
-j
-)
-i
-is the prop ortion of paragraphs of sub-cluster (tactic) j b elonging to cluster
-(sup er tactic)
-i
-. Intuitively, if we are in an ideal case and the paragraphs of a sub-cluster
-j
-are
-entirely contained in cluster 1 we would have
-P
-(
-sub
-j
-)
-1
-= 1 and
-P
-(
-sub
-j
-)
-i
-= 0 for
-i
-6
-= 1, thus
-leading to
-H
-sub
-j
-= 0 b eing minimal (mind the minus sign in the equation and the logarithm
-13
-on numb er lower than 1). If we start to spread the paragraph of the sub-cluster among
-other clusters, the
-P
-(
-sub
-j
-)
-i
-b ecomes dierent from 0 and 1, and
-H
-sub
-j
-gradually increases.
-To reduce the 14
-H
-sub
-j
-to one score of discrimination, we sum them all, thus obtaining the
-Entropy sum, the sub-cluster heterogeneity measure among clusters. The heterogeneity is
-high when the Entropy sum is low.
-Second, we need a score to counter the following extreme case. All sub-clusters, but one
-may b e classed into one cluster and the last sub-cluster into a second cluster. This would
-lead to a minimum Entropy sum of 0 but would have no value for our application. We want
-the sub-cluster to b e reasonably spread out among the clusters. To translate this idea into
-a meaningful score, we create a Balanced score, dened as the standard deviation of the
-lab el counts. In other words, the clustering metho d pro duced an ordered list of 785 values
-corresp onding to the lab el of the cluster each paragraph b elongs to. For each lab el, we
-count the numb er of o ccurrences on the list. If the paragraphs are relatively well spread out
-across the cluster, then taking the standard deviation of all the count of the lab els should
-b e low since each cluster would contain approximately the same numb er of paragraphs. The
-last case to worry ab out is that the balanced score could b e low, but the paragraph would
-b e randomly spread across the cluster, thus not reecting the initial structure of MITRE
-ATT&CK tactics (sub-clusters). To counter that, it is sucient to consider the Entropy
-sum.
-Considering the metho d that outputs the lowest Entropy sum and the lowest balanced
-score, we discriminate the dierent clustering metho ds' outputs. Note that there is no
-guideline regarding the optimal trade-o b etween the two scores,
-i.e.
-what additional amount
-is optimal to forfeit to the Entropy sum to lower the Balanced score and inversely.
-Finally, the whole clustering pro cess describ ed here must b e seen more as a guideline
-to ol. Indeed, after cho osing the b est metho d, we class each paragraph in the cluster where
-most of its sub-cluster b elongs, regardless of the metho d's output for the misplaced para-
-graphs. The s tructure of MITRE ATT&CK is probably more coherent than the output of
-any unsup ervised clustering metho d. However, it is still advantageous to consider the new
-clustering structure output since it is based on the cosine similarity matrix, and it could
-maximize the likeliho o d of reducing the correlation b etween the dierent sub-cyb er scores
-that will also b e based on cosine similarities.
-14
-3.4.5. Setting the cyber score
-At this p oint, each paragraph of a 10-K can b e transformed into a vector, and the same
-can b e done with the 785 paragraphs of MITRE ATT&CK. Then, each paragraph of the 10-
-K can b e compared to each paragraph of MITRE ATT&CK. This leads to each paragraph of
-the 10-K b eing asso ciated with 785 cosine similarities. Celeny and Marechal (2023) computes
-the cyb er score of a 10-K by asso ciating the maximum out of the 785 cosine similarities to
-each paragraph and then taking the average of the top 99% of these maxima.
-Similarly, we dene a sub-cyb er score by asso ciating to each paragraph the cosine s imi-
-larities of a subset of paragraphs of MITRE ATT&CK . For example, each paragraph would
-b e asso ciated with 120 cosine similarities (instead of 785), where 120 would corresp ond to
-the 120 paragraphs of MITRE ATT&CK that b elong to the same category (cluster or sub-
-cluster/ sup er tactic or tactic). Then, nding the sub-cyb er score asso ciated with a sup er
-tactic or tactic would b e the same as describ ed in the previous paragraph; we take the max-
-imum out of the 120 cosine similarities for each paragraph and then compute the average of
-the top 99% of these maxima.
-3.4.6. Sentiment analysis
-To establish a cyb er sentiment score, we opt for a straightforward approach. We dene
-the cyb er score as it was done in Celeny and Marechal (2023), but instead of taking the
-maximum, we take 0 if the paragraph do es not contain a word from a sp ecic list and the
-maximum as usual if it do es contain a word from the sp ecic lis t.
-The sp ecic list is dened in Hassan et al. (2019) and is rep orted in the annex. It
-contains words relative to \risk" or \uncertainty" and was created using the Oxford English
-Dictionary.
-3.5. Asset pricing tests
-3.5.1. Univariate sorts
-Five p ortfolios are constructed based on a cyb er score of interest. Firms are classied
-each quarter based on their most recent known cyb er score from the previous quarter. These
-rms are then divided into ve categories corresp onding to the quintiles of their cyb er scores.
-15
-Consequently, the rms in the top 20% of cyb er scores are placed in Portfolio 5 (P5). After
-that, each rm is weighted within its p ortfolio according to its market capitalization known
-from the end of the previous quarter. The cyb er-based p ortfolios are up dated quarterly.
-A rst quantitative test consists of observing whether the average returns of each p ortfolio
-change monotonically with the increasing cyb er score. The idea is to see if returns are aected
-by this cyb er classication, thus hinting at a p otential cyb er-related risk structure.
-Next, we assess p ortfolios' returns, controlling for pricing factors , by using pricing factors
-recognized in the literature (factors included in the CAPM, in Fama and French, 1992 (FFC)
-and in Fama and French, 2015 (FF5)), we observe if their linear combinations are sucient
-to explain the returns of the p ortfolio or if statistically signicant alpha (intercept) app ear,
-meaning that the protability of the p ortfolios based on cyb er score can not b e entirely
-explained by common pricing factor and new ones are needed.
-3.5.2. Double sorts
-The interest in the double sorting metho d is the same as in univariate sorting. We want
-to see if returns are aected by the cyb er classication. However, the cyb er score may
-b e a proxy
-i.e.
-something that mimics another rm characteristic, such as the size, the
-b o ok-to-market ratio, or market b eta. To avoid that, we sort the rms according to one
-of the three characteristics mentioned. These rms are then divided into ve categories
-corresp onding to the quintiles of their characteristic. Consequently, the rms in the top 20%
-of the characteristic of interest (for example, rms with the highest b o ok-to-market ratio)
-are placed in category 5 (Q5). Then, for the rm of each category Q1 to Q5, we construct a
-p ortfolio based on a cyb er score as describ ed previously to obtain 25 p ortfolios, ve for each
-category.
-3.5.3. Cross-sectional tests
-Fama and MacBeth (1973) prop oses the following metho d. First, estimate b etas using
-time series regressions with 2-year rolling windows (24 months ). This corresp onds to the
-following regression for each asset i with
-t
-2
-[
-T
-
-24
-; T
-]:
-R
-i;t
-=
-
-i;t
-+
-X
-k
-
-k
-i;T
-F
-k ;t
-+
-
-i;t
-;
-8
-i
-(2)
-16
-Each asset return
-R
-i
-is regressed on non-rm-sp ecic pricing factors
-F
-k
-. Conversely, the
-cyb erscore. Consequently, we obtain time series of b etas sp ecic to b oth asset and factor:
-f
-
-k
-i
-g
-T
-=01
-=
-2009
-;:::;
-12
-=
-2023
-(ranging from January 2009 to Decemb er 2023, in this example). Then,
-we build twenty p ortfolios based on the cyb er score analogously to the ve cyb er score-based
-p ortfolios describ ed earlier. Knowing the weight
-x
-i;p;T
-of each asset inside each p ortfolio
-through time, we compute the factor exp osures of the p ortfolios:
-
-k
-p;T
-=
-20
-X
-i
-=1
-x
-i;p;T
-
-
-k
-i;T
-(3)
-After that, the risk premia (gamma) are computed for each time t with
-p
-= 1
-; : : : ;
-20:
-R
-p;t
-=
-
-0
-t
-+
-X
-k
-
-k
-t
-
-k
-p;t
-
-1
-+
-X
-j
-c
-j
-t
-
-j
-p;t
-
-1
-+
-
-
-p;t
-;
-8
-t
-(4)
-Consequently, to determine each
-f
-
-k
-t
-g
-t
-=01
-=
-2009
-;:::;
-12
-=
-2023
-, 20 p ortfolio returns are used each
-time in the linear regression. The additional terms are aggregated rm-sp ecic factors. In
-our case, we only have one such factor (so
-j
-is omitted in the following expression), the cyb er
-score:
-
-p;t
-=
-20
-X
-i
-=1
-x
-i;p;t
-
-
-i;t
-(5)
-The remaining co ecient
-f
-c
-t
-g
-t
-=01
-=
-2009
-;:::;
-12
-=
-2023
-is determined alongside
-f
-
-k
-t
-g
-t
-=01
-=
-2009
-;:::;
-12
-=
-2023
-during the linear regression. Finally, a t-test is applied on each time series
-f
-
-k
-t
-; c
-t
-g
-t
-=01
-=
-2009
-;:::;
-12
-=
-2023
-to assess the statistical signicance of each risk premia.
-3.6. Time-series tests
-Gibb ons et al. (1989) intro duces a statistical test to assess p ortfolio pricing eciency:
-R
-i;t
-=
-
-i
-+
-X
-p
-
-i;p
-R
-p;t
-+
-
-i;t
-;
-8
-i;
-(6)
-where
-R
-i;t
-and
-R
-p;t
-are assets and p ortfolio returns, resp ectively. If the p ortfolios were
-carefully selected, they could correctly predict the asset returns, thus suppressing the need
-for alphas (intercepts that contain contributions to their as set returns not taken into account
-17
-by the explanatory p ortfolios). GRS provides a statistical test for this null hyp othesis:
-H
-0
-:
-
-i
-= 0
-8
-i
-. Co chrane (2005) generalize this idea by including traded factors
-F
-k
-instead as
-explanatory variables and p ortfolio excess returns as the endogenous one:
-R
-e
-p;t
-=
-
-p
-+
-X
-k
-
-p;k
-F
-k ;t
-+
-
-p;t
-(7)
-In that case, the GRS score that tests jointly the zero alphas follows a F-distribution:
-(
-T
-
-N
-
-K
-)
-N
-^
-
-0
-^
-
-
-1
-^
-
-1 + ^
-
-0
-^
-
-
-
-1
-^
-
-˘
-F
-N ;T
-
-N
-
-K
-;
-(8)
-where
-T
-is the numb er of time p erio ds,
-N
-is the numb er of p ortfolios,
-K
-is the numb er
-of factors,
-^
- is the residual covariance matrix, ^
-
-is the vector of alphas, ^
-
-is the vector of
-average factor returns and
-^
-
- is the covariance matrix of factors. Note that b oth
-^
- and
-^
-
-
-must b e estimated with the maximum likeliho o d estimator (biased version). The tests will
-b e p erformed four times on four series of 20 p ortfolios constructed according to the cyb er
-score, the size, the b o ok-to-market ratio, and the market b eta of involved rms.
-3.6.1. Bayesian approach
-Barillas and Shanken (2018) intro duces three metho ds to test pricing factors. The rst
-metho d is close to the GRS and commonly tests zero alpha for pricing factors and p ortfolio
-returns. The second metho d tests, for a given set of factors, if a subset of those factors is
-sucient to price p ortfolio returns. The third metho d, on which we fo cus here, allows us to
-nd which subset of factors, among a large given set of factors, are the b est pricing factors.
-It is a \relative" metho d, meaning that no returns are required for the test. To pro duce the
-test, they rst intro duce the marginal likeliho o d asso ciated with a given subset of factors:
-ML = M L
-U
-(
-f
-j
-M k t
-)
-
-ML
-R
-(
-f
-
-j
-M k t; f
-)
-
-ML
-R
-(
-r
-j
-M k t; f ; f
-
-) (9)
-Where
-f
-are the factors of the subset,
-f
-
-are the factors excluded from the subs et (but in
-the general set), and
-M k t
-is the market excess returns. Note that the third term can b e
-ignored; it will later b e canceled out since it is common to any subset of factors. ML
-U
-(
-Y
-j
-X
-)
-and ML
-R
-(
-Y
-j
-X
-) are based on the equations
-Y
-t;n
-=
-
-n
-+
-X
-t
-
-n
-+
-
-t;n
-and
-Y
-t;n
-=
-X
-t
-
-n
-+
-
-t;n
-.
-18
-They can b e computed as follows:
-11
-ML
-U
-(
-Y
-j
-X
-) =
-j
-X
-0
-X
-j
-
-N
-2
-j
-S
-j
-
-T
-
-K
-2
-Q
-(10)
-ML
-R
-(
-Y
-j
-X
-) =
-j
-X
-0
-X
-j
-
-N
-2
-j
-S
-R
-j
-
-T
-
-K
-2
-(11)
-where
-j
-S
-j
-=
-j
-
-0
-
-j
-and
-j
-S
-R
-j
-=
-j
-
-0
-
-j
-are the determinants of the N
-Ö
-N cross-pro duct matrices
-of asso ciated OLS residuals (
-R
-stand for restricted since
-
-n
-= 0 is imp osed on the second
-linear equation),
-T
-is the numb er of p erio ds,
-K
-the numb er of factors in the regression
-(numb er of columns in X), and N the numb er of endogenous variable on the RHS of the linear
-equations (numb er of columns in Y). For example, ML
-U
-(
-f
-
-j
-M k t; f
-) could b e asso ciated with
-[
-f
-
-1
-;t
-; f
-
-2
-;t
-] = [
-
-1
-; 
-2
-] + [
-M k t
-t
-; f
-3
-;t
-; f
-4
-;t
-]
-
-+ [
-
-
-1
-;t
-; 
-
-2
-;t
-] with
-N
-= 2,
-K
-= 3 and
-
-a 3
-
-2 matrix
-and the general s et containing four factors [
-f
-1
-; f
-2
-; f
-3
-; f
-4
-] (two included, two excluded marked
-by
-
-in this example). The scalar
-Q
-is given by:
-Q
-=
-
-1 +
-a
-a
-+
-k
-
-W
-T
-
-
-T
-
-K
-2
-
-1 +
-k
-a
-
-
-N
-2
-(12)
-a
-=
-1 + ^
-
-0
-^
-
-
-
-1
-^
-
-T
-(13)
-k
-=
-^
-
-0
-^
-
-
-
-1
-^
-
-N
-(1
-
-prior
-2
-) (14)
-W
-=
-T
-^
-
-0
-^
-
-
-1
-^
-
-1 + ^
-
-0
-^
-
-
-
-1
-^
-
-;
-(15)
-where
-^
- is the residual covariance matrix, ^
-
-is the vector of alphas, ^
-
-is the vector of
-average
-X
-factor, and
-^
-
- is the covariance matrix of
-X
-factors. Note that b oth
-^
- and
-^
-
-
-must b e estimated with the maximum likeliho o d estimator (biased version). Finally, the
-prior is an arbitrary numb er. Barillas and Shanken (2018) use 1
-:
-25, 1
-:
-5, 2, and 3 in their
-empirical test. Intuitively, the prior help to set
-k
-, the exp ected increment to the squared
-Sharp e ratio
-S h
-(
-X
-)
-2
-= ^
-
-0
-^
-
-
-
-1
-^
-
-from the addition of one more factor. Once the relevant
-marginal likeliho o ds are computed, the probability
-p
-j
-asso ciated with a subset of factors
-M
-j
-11
-(
-T
-
-N
-)
-Y
-=
-(1
-
-N
-)
-
-+
-(
-T
-
-K
-)
-X
-(
-K
-
-N
-)
-
-+
-(
-T
-
-N
-)
-
-, note that
-
-has not the correct dimension here, it is to reect
-the fact that
-
-is constant across t for a give n n.
-19
-b eing b etter pricing factors than other subsets is given by:
-p
-j
-=
-ML
-j
-
-P
-(
-M
-j
-)
-P
-i
-ML
-i
-
-P
-(
-M
-i
-)
-;
-(16)
-where ML
-j
-is the marginal likeliho o d asso ciated with the subset
-M
-j
-and
-P
-(
-M
-j
-) is the
-prior probability of the subset
-M
-j
-. In general, Barillas and Shanken (2018) advise all prior
-probabilities to b e constant and equal since there is no particular reason to favor a sp ecic
-subset of factors. Note that the third term in Eq. 9 cancels at this last s tep.
-Following this metho dology in Barillas and Shanken (2018),
-p
-j
-can b e computed with
-subsets, including the cyb er score as a factor and others without, to compare its pricing
-ability.
-4. Results
-4.1. Clustering of MITRE ATT&CK
-We apply the clustering metho ds on the cosine similarity matrix created from MITRE
-ATT&CK paragraphs vector emb eddings. This allows for identifying the relevant sub-cyb er
-score tied to previously mentioned sup er tactics (command and data manipulation, credential
-movement, p ersistence and evasion, and preparation and reconnaissance). We rep ort the
-results of various attempts with dierent clustering metho ds in Figures 5, 6, and 7. The
-K-means metho ds provide a coherent but crude initial structure that we rep ort in Figure 5.
-Indeed, the paragraphs tend to b e well spread across the sup er tactics (clusters) but at the
-cost of heterogeneity, with the exclusivity of a tactic in a sup er tactic b eing inexistent. This
-results in a low balanced score at the cost of entropy, as depicted in Figure 8.
-Figure 6 shows the p erformance of the Louvain metho d. This metho d greatly improves
-the heterogeneity, esp ecially with tactics 5 and 12 (resource development and reconnaissance)
-exclusive to cluster 1 (the s up er tactic: preparation and reconnais sance). However, not
-putting a threshold on the inputted similarity matrix comp onent induces the Louvain metho d
-to create two sup eruous clusters. Hence, we include those restrictions. Indeed, when
-comparing two paragraphs of MITRE ATT&CK, it is not uncommon to encounter sentences
-with s imilar structures for dierent semantic content. Thus, we tone down the similarity
-20
-of a highly to o similar paragraph with a higher threshold. Conversely, we dene a lower
-threshold such that similarities that are to o low and, therefore, most likely noise that reects
-no similarity are set to zero.
-The last metho d can b e seen as a safeguard for the output of the Louvain metho d.
-Applying the sp ectral clustering metho d, we retrieve the structure previously encountered
-with higher heterogeneity than with K-means. If the hyp erparameters are correctly tuned,
-the output is similar to the Louvain metho d's, particularly for
-n
-= 4 and
-eg n
-= 6. We
-rep ort the results in Figure 7. Including more dimensions (higher
-eg n
-value) adds noise and
-decreases the clustering quality.
-Finally, we select the output of the Louvain metho d as a baseline to group the tactics
-without splitting them across sup er tactics. Although Figure 8 shows that outputs of other
-metho ds may b e slightly b etter, we favor the Louvain metho d since no additional hyp erpa-
-rameters tuning is required.
-[Insert Figure 5 here]
-[Insert Figure 6 here]
-[Insert Figure 7 here]
-[Insert Figure 8 here]
-This yields the following cluster/sup er tactics. we name each of them after their content:
-Preparation and Reconnaissance
-: This sup er tactic encompasses adversaries' tactics
-to prepare and gather information b efore launching an attack.
-Impact
-involves actions
-that disrupt, destroy, or manipulate systems and data to achieve the attacker's ob jectives.
-Initial Access
-includes techniques adversaries use to gain an initial fo othold within a net-
-work, such as exploiting vulnerabilities or sp ear phishing.
-Resource Development
-entails
-the acquisition of resources like infrastructure, to ols, and credentials necessary to supp ort
-op erations.
-Reconnaissance
-involves gathering information ab out the target environment
-to identify p otential entry p oints and vulnerabilities.
-Discovery
-refers to techniques used
-to explore and map the target environment, such as network scanning and enumeration.
-21
-Persistence and Evasion
-: Once inside a target network, adversaries employ these
-tactics to maintain their fo othold and avoid detection.
-Persistence
-ensures the attacker
-can maintain access even if the system is reb o oted or credentials are changed by installing
-malware or creating rogue accounts.
-Privilege Escalation
-involves gaining higher-level
-p ermissions to access more sensitive information and critical systems.
-Execution
-refers
-to running malicious co de on a victim system, often necessary to carry out the attacker's
-ob jectives.
-Defense Evasion
-includes a variety of metho ds to avoid detection and thwart
-defensive measures, such as disabling security software, obfuscating co de, or using leless
-malware.
-Credential Movement
-: This group fo cuses on techniques used to s teal and use cre-
-dentials to move within a network.
-Credential Access
-involves obtaining account names,
-passwords, and other secrets that allow attackers to authenticate themselves as legitimate
-users. Techniques include keylogging, credential dumping, and brute force attacks.
-Lat-
-eral Movement
-is moving through a network to nd and access additional targets or more
-valuable data. This can b e done using remote services, exploiting trust relationships, or
-leveraging legitimate credentials to access other systems and resources.
-Command and Data Manipulation
-: In this phase, adversaries exert control over com-
-promised systems and manipulate data to achieve their goals.
-Command and Control
-involves establishing a communication channel with the compromised environment to issue
-commands and control malware. This can b e achieved through web trac, DNS, or custom
-communication proto cols with command servers.
-Collection
-refers to gathering sensitive
-information from compromised systems, such as capturing screenshots, logging keystrokes, or
-accessing stored les.
-Exltration
-involves transferring the collected data from the target
-network to an external lo cation controlled by the adversary, often using encrypted channels
-or covert metho ds to avoid detection.
-22
-4.2. Cyber scores statistical descriptions
-From the identied sup er tactics, we construct the cyb er scores from the 10-Ks of each
-rm through the years. Table 3 presents the statistics related to each cyb er score (the 14
-tactics of MITRE ATT&CK, the four sup er tactics, the overall score, and the cyb er sentiment
-score). Although their distribution app ears similar, several facts must b e considered. First,
-the statistics are for the whole sample, but the distribution is time-varying as Figures 9,
-10, 11, and 12 suggest. This means that cyb er scores evolving at dierent rates could b e
-misrepresented. Second, the cosine similarity implies, in theory, a distribution ranging from
-
-1 to 1, whereas the s cores are much more narrowly distributed empirically. Thus, the slight
-variation observed in Table 3 is more meaningful than simple noise.
-Two additional asp ects must also b e rep orted. First, some tactics lose relevance in the 10-
-Ks over time, and evidence of the cyb er scores reecting cyb er risk has yet to b e presented.
-However, this rst feature is encouraging since the cyb er scores are evolving dierently,
-showcasing a shift of cyb er-related information in the 10-Ks. Second, the cyb er sentiment
-score has a higher 99 p ercentile than the other score, implying that taking out non-risk-
-related scores eectively removes p oints previously b elonging to the top one p ercentile.
-[Insert Table 3 here]
-[Insert Figure 9 here]
-[Insert Figure 10 here]
-[Insert Figure 11 here]
-[Insert Figure 12 here]
-[Insert Figure 13 here]
-We present the correlation b etween cyb er scores at the rm level (non-aggregated) in
-Figure 13. Unsurprisingly, the correlations b etween all scores are high, except for the senti-
-ment score, which diers in its construction. This is exp ected since all scores come from the
-same do c2vec neural network output.
-23
-4.3. Cyber scores and nancial characteristics
-To ensure that the cyb er scores are innovative and not the combination of other existent
-characteristics of the rm, we present the linear regression of the cyb er scores of interest in
-Tables 4, 5, 6, 7, 8, and 9. Compared to Celeny and Marechal (2023), we add the following
-variables: readability, secret, risk length table, volume p er capital, and humans p er capital.
-we describ e all variables in Table A1. The rst three variables were part of the tested
-explanatory variables in Florackis et al. (2023). Including the risk length table shows the
-critical improvement made with the cyb er score of this pap er. Indeed, Florackis et al. (2023)
-rep ort t-statistics of 40
-:
-80 and 20
-:
-59 for mo dels 1 and 2, resp ectively. Those t-statistics are
-signicantly lower, improving our score's indep endence with non-semantic variables.
-We include a new explanatory variable in the mo dels with the following underlying idea:
-If a limited numb er of employees are in a rm with highly valuable assets, those assets are
-more likely to b e technological and could b e cyb er risky. This risk would then b e rep orted in
-the 10-Ks and thus b e reected in the cyb er score. This choice proves relevant as the Tables
-rep ort t-statistics close to 10 for all cyb er scores. The co ecient negative sign supp orts the
-view that the lower the human capital ratio, the higher it should b e reected on the cyb er
-score.
-12
-The statistical signicance of other co ecients do es not depart to o much from the pre-
-vious studies, with most of the variables b eing statistically non-signicant or with the same
-sign as in Celeny and Marechal (2023), esp ecially at the rm level. Note that, despite adding
-new variables with higher t-statistics, the
-R
-2
-within is still low. It shows that additional
-variables cannot fully explain the dierent cyb er scores. Furthermore, dierent t-statistics
-are obtained for each cyb er score for the same co ecient. This suggests that each score
-could proxy for an intrinsically dierent risk for the rm.
-Figure 14 displays the correlation of all cyb er scores with the mentioned variables. As
-exp ected, variables with generally higher t-statistics tend to correlate more to the cyb er
-scores. However, The correlation with \secret" must b e taken cautiously s ince it is a dummy
-variable and the cyb er score is close to 0.5; the correlation may b e spurious or, at b est, not
-informative.
-12
-Additionally, we compute the covariance and correlation of each cyb er score with the idiosyncratic
-volatility of rms. The results are presented in App endix A2. We thank Prof. Julien Hugonnier for this
-comment.
-24
-Figure 15 shows the average cyb er scores across industries. The overall score is always
-higher than other scores when controlling for industry. This was already the case in Table 3.
-The cyb er sentiment score displays much fewer dierences across industries when compared
-to other scores. This suggests that the score do es not contain additional information or
-even destroy some of it at the industry level. As mentioned in Celeny and Marechal (2023),
-industries that rely more heavily on technology, like Business Equipment or Telephone and
-Television Transmission, p otentially rep ort their cyb er risk and thus have higher cyb er scores.
-One can also observe that the dierent cyb er scores vary dierently across the industry,
-further highlighting the p otential changes in the source of cyb er risk disclosed in the 10-Ks.
-[Insert Table 4 here]
-[Insert Table 5 here]
-[Insert Table 6 here]
-[Insert Table 7 here]
-[Insert Table 8 here]
-[Insert Table 9 here]
-[Insert Figure 14 here]
-[Insert Figure 15 here]
-4.4. Univariate sorts
-This section answers the following questions: Do es a p ortfolio sorted according to a given
-cyb er score display a structure in its returns? Are the pricing factors usually found in the
-literature enough to fully explain (not generate alphas on) the return of the cyb er-based
-p ortfolios?
-Tables 10, 12, 13, 14, and 15 all display increasing average excess returns, along with the
-asso ciated cyb er score, with P5 b eing the p ortfolio of rms with the highest cyb er score. If
-a given cyb er score is an adequate proxy for the asso ciated cyb er risk, it implies that taking
-25
-additional cyb er risk grants additional returns. This idea is further explored in the next
-section.
-In Table 11, we rep ort the average returns of p ortfolios sorted on the cyb er sentiment
-score. Despite all returns b eing statistically signicant at the 1% level, we cannot observe a
-monotonic increase in average returns across the scores, and P3 displays the highest average
-excess returns in P3. This could indicate that the score do es not reect any risk or that
-investors are unaware of the typ e of risk it reects. We provide additional insight in the
-following section.
-Second, Tables 10, 12, 13, 14, and 15, show that the linear regression us ing the pricing
-factors resp ectively contained in the CAPM, FFC, and FF5 mo dels all grant a statistically
-signicant alpha for P5 only (with statistical signicance at the 5% level for CAPM and 1%
-level otherwise). Alphas are increasing monotonically across the p ortfolios after controlling
-for other sources of risk asso ciated with the pricing factors involved. With this evidence in
-mind, the alphas could partly reect the cyb er risk of each p ortfolio. This is, however, not
-the case for the cyb er sentiment score in Table 11 since there is no overall strong statistical
-signicance or increasing trends when p ortfolios are sorted across this variable.
-[Insert Table 10 here]
-[Insert Table 11 here]
-[Insert Table 12 here]
-[Insert Table 13 here]
-[Insert Table 14 here]
-[Insert Table 15 here]
-26
-4.5. Double sorts
-We aim to determine if organizing quarterly p ortfolios rst based on sp ecic characteris-
-tics and then based on the cyb er score results in a structure in their average excess returns.
-The idea is that controlling for additional characteristics rejects the hyp othesis that the cy-
-b er scores are a proxy for another rm variable. Thus, the cyb er score would capture the
-cyb er risk exp osure and the asso ciated additional returns. In other words, the increasing
-cyb er score, which should reect the increasing cyb er risk, still displays increasing related
-returns even if the set of rms to analyze is already organized and structured according to
-another characteristic unrelated to cyb er risk.
-Table 16 displays the average returns of various double-sorted p ortfolios. Notably, there
-is a clear increasing trend in average returns as the overall cyb er score quintile increases,
-which contrasts with the ndings of Celeny and Marechal (2023), where the trend was less
-pronounced. In this analysis, only the rst quintile of the b o ok-to-market ratio do es not
-consistently show an increase. Note that Q3 of market b eta and Q5 of the size have a
-dierence problem of 0.01% at Q3. However, this quantitatively marginal result may b e
-spurious.
-For the cyb er sentiment score, as previously observed in Table 11, there are no additional
-returns for an increase in the score, so the cyb er sentiment score certainly do es not reect
-any risk.
-The returns obtained with other cyb er scores display an interesting asp ect. Command
-and data manipulation, credential movement, and p ersistence and evasion strongly suggest a
-monotonic increasing trend and, therefore, cyb er risks premia, except for the lower quintile,
-where the conclusion might seem slightly less evident. However, this is not the cas e for
-preparation and reconnaissance, for which the trend is nonmonotonic almost everywhere.
-This could suggest two things. It could b e that investors do not acknowledge the risk this
-cyb er score reects. Or, it could b e that preparation and reconnaissance do not reect any
-risk.
-[Insert Table 16 here]
-27
-4.6. Cross-sectional tests
-We test whether a cyb er score increase drives a return increase in cyb er-based p ortfolios,
-controlling for other well-known pricing factors using the regression metho d describ ed in
-Fama and MacBeth (1973). Table 17, 18, 19, 20, 21, and 22 displays the results for each
-cyb er score using a dierent pricing mo del that include the cyb er score.
-The cyb er sentiment score probably reects no meaningful reality regarding the rms;
-therefore, constructing p ortfolios based on it reveals no particular structure, as observed in
-Table 18. No risk premia is observed for any of the involved pricing factors (including the
-cyb er sentiment score), and no statistically s ignicant alpha exists.
-The overall cyb er s core on Table 17 displays p ositive additional returns for an increased
-cyb er score that is statistically signicant at the 10% level when included as the only ex-
-planatory variable or with the market factor and at the 5% level when included with the
-pricing factors from Fama and French (1992). However, a collinearity problem app ears for
-the fth mo del using additional factors from Fama and French (2015). The cyb er score
-aggregated for all the rms of the cyb er-based p ortfolios constructs a factor that might b e
-colinear to CMA . Therefore, the statistical signicance of the cyb er score is aected and
-strongly reduced. When compared to Celeny and Marechal (2023), they app ear to not suer
-from collinearity and have a less high adjusted
-R
-2
-.
-The command and data manipulation score on Table 19 grants similar results, also suf-
-fering from collinearity. On the contrary, the remaining score in Tables 20, 21 and 22 do
-not display collinearity and their resp ective cyb er score app ear statistically s ignicant at the
-5% level. Note that on all Tables (except for the cyb er sentiment score), the co ecients of
-the cyb er score app ear p ositive, further p ointing toward cyb er scores that eectively reect
-cyb er risks rewarded on the market. A standard deviation of the overall cyb er score (0
-:
-03
-in Table 3) generates an additional return of 0
-:
-03
-
-0
-:
-04 = 0
-:
-12% compared to Celeny and
-Marechal (2023) with 0
-:
-18%.
-[Insert Table 17 here]
-[Insert Table 18 here]
-[Insert Table 19 here]
-[Insert Table 20 here]
-28
-[Insert Table 21 here]
-[Insert Table 22 here]
-4.7. Time series tests
-We use the GRS test to examine whether adding the long-short p ortfolio
-P
-5
-
-P
-1 as a
-pricing factor enhances the explanatory p ower of the ve-factor mo del of Fama and French
-(2015). We want to test if we can globally reduce the unexplained part of returns close to
-zero. We conduct four GRS tests on 20 p ortfolios sorted quarterly, on rms' cyb er score,
-size, market b eta, and b o ok-to-market, resp ectively.
-Tables 23, 24, 25, 26, 27 and 28 display the four GRS tests for each cyb er score of interest.
-All tables give similar results, with the probability of alphas b eing commonly zero increasing
-as we add the cyb er factor P5-P1 and the average
-R
-2
-increasing. There is an exception
-when p ortfolios are s orted on size. Their asso ciated probabilities seem to decrease, but it is
-imp ortant to note that the probability is already high b efore adding the cyb er factor. It is
-hard to quantify if the alphas are closer to zero when they are already commonly near zero.
-Also, note that the dierence of probabilities in the case of market b eta is p ositive but small
-compared to the improvement provided by the cyb er factor when explaining the return of
-p ortfolios sorted on the cyb er score or the b o ok to market.
-[Insert Table 23 here]
-[Insert Table 24 here]
-[Insert Table 25 here]
-[Insert Table 26 here]
-[Insert Table 27 here]
-[Insert Table 28 here]
-29
-4.8. Bayesian asset pricing tests
-We conduct an additional test to evaluate the cyb er factor P5-P1 as a reliable pricing
-factor. Using the Bayesian GRS (BGRS) test describ ed earlier, we can retrieve the b est
-subset of pricing factors among a large set of pricing factors. Figures 16, 17, 18, 19, 20 and
-21 presents the BGRS test for each cyb er score of interest. Keeping only the subsets with
-the higher probabilities at the end of the time range, one can notice that the top ve subsets
-always include the cyb er factor (except for the cyb er sentiment score case, where one of
-the top ve subsets do es not include the cyb er factor). When considering the cumulative
-probabilities asso ciated with each pricing factor, one can see that the cyb er factors have
-always presented a growing trend over the years, meaning that the cyb er factors have b ecome
-more relevant as a pricing factor over time.
-[Insert Figure 16 here]
-[Insert Figure 17 here]
-[Insert Figure 18 here]
-[Insert Figure 19 here]
-[Insert Figure 20 here]
-[Insert Figure 21 here]
-4.9. Additional tests
-In this section, we conduct further tests to expand the range and depth of understanding
-of the cyb er scores we develop ed. These additional tests aim to identify any p otential
-limitations and verify the scores' b ehavior in a real case.
-[Insert Table 29 here]
-In Table 29, we display the probabilities asso ciated with the dierences in mean returns
-b etween the overall and other cyb er-based p ortfolios. Although we give evidence that the
-cyb er scores reect dierent realities related to the cyb er sub ject in the 10-Ks, when p ortfolios
-30
-are constructed from these scores, their returns do not display any statistically signicant
-variation across dierent scores. In the context of market p erception of risk, the results
-suggest there is no distinction b etween the various domains of cyb er risk, and the market
-p erceives a single aggregated risk related to cyb ersecurity.
-In Decemb er 2020, a signicant cyb er attack on SolarWinds, a ma jor IT management
-company, was uncovered, marking one of the most extensive and sophisticated cyb er es-
-pionage op erations. The attackers, b elieved to b e state-sp ons ored, inltrated SolarWinds'
-Orion software, which was used by numerous high-prole clients, including Fortune 500 com-
-panies and various U.S. government agencies. The attackers gained unprecedented access to
-sensitive data across multiple networks by emb edding malicious co de in a routine software
-up date. This breach highlighted vulnerabilities within supply chain s ecurity and under-
-scored the broader implications for rms at risk of cyb er attacks . The incident serves as a
-case study for analyzing the nancial impact on companies deemed to b e cyb er-risky. Such
-analysis using this event was p erformed in Florackis et al. (2023) where they analyzed cu-
-mulative abnormal returns from their cyb er-based p ortfolios setting the 14 Decemb er 2020,
-the day where the attack was disclosed to the SEC, as the t=0 day of the event.
-[Insert Table 30 here]
-[Insert Figure 22 here]
-We conduct a similar analysis on Table 30. None of the abnormal returns were statis-
-tically signicant. Figure 22 illustrates the cumulative returns of the cyb er-based p ortfolio
-around this event. The results are unconventional. Returns were higher in the lower-tier
-cyb er-based p ortfolio in the days leading up to the event. Moreover, when the event o c-
-curred, all p ortfolios declined except for P5. However, two imp ortant factors need to b e
-considered. First, each p ortfolio aggregates over 600 rms. The SolarWinds breach might
-still b e to o nancially lo calized to impact such a large numb er of rms, and the eect could
-b e diluted among unaected rms (those not asso ciated with SolarWinds or not p erceived
-by the market as aected). Second, none of the variations are statistically signicant, and
-opp osing b ehaviors likely mitigate the event's overall impact. For instance, during the sho ck,
-investors might have shifted their investments to other sto cks considered safe but still related
-to cyb ersecurity, or the event might have increased interest in cyb ersecurity and b o osted in-
-vestment in P5 rms.
-31
-Finally, we display in Tables 31 and 32 the cumulative abnormal returns of P20 and P5
-but constructed with dierent cyb er scores. There is not enough statistical signicance to
-infer anything. Note that the cumulative returns still reach higher returns in the P20 case
-(gure 23) than in the P5 case (Figure 24), and the p ortfolios based on the various cyb er
-scores seem to b ehave similarly which supp ort the hyp othesis that the market p erceives a
-single aggregated risk related to cyb ersecurity.
-These results contrast those of Florackis et al. (2023), who nd a statistically signicant
-drop in their top cyb er-based p ortfolio returns around the event.
-[Insert Table 31 here]
-[Insert Figure 23 here]
-[Insert Table 32 here]
-[Insert Figure 24 here]
-5. Conclusion
-In this study, we use a do c2vec mo del to transform paragraphs of the MITRE ATT&CK
-database's descriptions of cyb er attacks into vectors. Comparing those vectors based on
-their cosine similarity, we apply clustering metho ds such as K-means, Louvain, and sp ectral
-clustering to infer groups of cyb er attacks b elonging to four dened typ es (sup er-tactics):
-command and data manipulation, credential movement, p ersistence and evasion and prepa-
-ration and reconnaissance. Those clusters were recurrent through dierent trials using the
-three metho ds and dierent hyp er-parameters . They were also chosen to preserve the under-
-lying written structures of MITRE ATT&CK by using a two-score system that ensures the
-equal distribution of paragraphs across sup er-tactics and their exclusivity to these sup er-
-tactics. Then, we use the do c2vec mo del to transform paragraphs of annual statements,
-more precisely 10-Ks, into vectors. Building the cosine similarity b etween 10-K vectors and
-vectors b elonging to sp ecic sup er tactics allows me to infer the semantic similarity of the
-10-Ks to the four typ es of cyb er attacks. We dene those cosine similarities as the cyb er
-score of a 10-K for a given sup er tactic. We also build an additional cyb er sentiment score.
-32
-This score considers only paragraphs' cyb er scores when they contain words related to a
-\risk" or \uncertainty" vo cabulary.
-We nd that the dierent cyb er scores cannot b e unexplained by the linear combination
-of standard nancial variables and non-semantic variables of the rms they b elong to (the
-highest
-R
-2
-within among all tested cyb er scores is 0.43). The indep endence of those newly
-found variables supp orts their innovative nature. All aggregate cyb er scores have increased
-over the years and are higher in industry sectors (from the 12 Fama-French industries clas-
-sication) involving assisting and workow-related technology like Telephone and Television
-Transmission or Business Equipment.
-We conduct asset pricing and statistical tests involving p ortfolios sorted on rms' cyb er
-scores to assess if the cyb er scores reect cyb er risks. Since all results for each cyb er score
-are similar to the overall cyb er score and the previous study Celeny and Marechal (2023)
-only used this aggregated cyb er score, we rep ort here only the results related to this score.
-This do es not apply to the cyb er sentiment score, for which it app eared clear that no risk
-premium was involved.
-Organizing rms into p ortfolios based on their cyb er scores allows for the observation
-of increasing average excess returns as the p ortfolio's cyb er score increases. The p ortfolio
-with the lowest quintile of cyb er score, P1, has an average excess return of 0
-:
-82%. The
-p ortfolio with the highest quintile of cyb er score, P5, has an average excess return of 1
-:
-44%
-(b oth statistically s ignicant at the 1% level). Thus, a long-short p ortfolio P5-P1 destroys
-p erformance. Then, controlling for common pricing factors, we nd that P5 has an alpha
-of 0
-:
-29% at the 1% level. Conversely, other p ortfolios, P1 to P4, have increasing alphas but
-are statistically insignicant. This threshold in signicance b etween P4 and P5 highlights
-the fact that we cannot tell from a rm's cyb er score, at which p oint it truly highlights
-cyb er security in its 10-Ks. Therefore, lower p ortfolios contain a variety of rms that may
-b e classied according to noise without meaning. We recommend that future studies using a
-similar work frame fo cus solely on P5 instead of P5-P1, as has b een done until now. Sorting
-the rms into a rst unrelated category and then according to their cyb er score also reveals
-a similar structure of returns, as previous ly mentioned, with the top cyb er-based p ortfolios
-p erforming b etter. Thus, the structure is robust, controlling for other rm characteristics.
-Fama and MacBeth (1973) regressions show a risk premium asso ciated with the cyb er
-score and all disentangled cyb er scores. In contrast, the cyb er sentiment score do es not drive
-33
-any risk premium. The GRS test of Gibb ons et al. (1989) shows that the long-s hort p ortfolio
-P5-P1 helps to price various assets when used with the other well-known pricing factors of
-the ve-factor mo del Fama and French (2015). Furthermore, the BGRS tests from Barillas
-and Shanken (2018) also highlight that P5-P1 is an imp ortant cyb er-based pricing factor.
-According to the test, this imp ortance is ris ing with time. Interestingly, these observations
-are valid for all cyb er scores, including the cyb er sentiment score.
-Last, we cannot reject the hyp othesis that the return of P5-P1, built with dierent cyb er
-scores, is statistically dierent. Then, we conduct an event study using the cyb er-breach
-of SolarWind in Decemb er 2020. The analysis provided no conclusive results, except that
-p ortfolios based on dierent cyb er scores b ehave similarly. These last two observations
-could prove that the market do es not dierentiate b etween the various typ es of cyb er risk
-and p erceives them as a single aggregate cyb er risk. This conclusion is reasonable when we
-observe the denition of the four typ es of cyb er attacks. In a sense, they are not mutually
-exclusive since, in a cyb er attack, command and data manipulation is the natural next step
-of credential movement, which is the next step of p ersistence, and evasion, which is the next
-step of preparation and reconnaissance.
-34
-References
-Adosoglou, G., Lombardo, G., Pardalos, P. M., 2021. Neural network emb eddings on corp o-
-rate annual lings for p ortfolio selection. Exp ert Systems with Applications 164, 114053.
-Antweiler, W., Frank, M. Z., 2004. Is all that talk just noise? The information content of
-internet sto ck message b oards. Journal of Finance 59, 1259{1294.
-Arslan-Ayaydin, O., Boudt, K., Thewissen, J., 2016. Managers set the tone: Equity incen-
-tives and the tone of earnings press releases. Journal of Banking and Finance 72, 132{147.
-Barillas, F., Shanken, J., 2018. Comparing asset pricing mo dels. Journal of Finance 73,
-715{754.
-Blondel, V. D., Guillaume, J.-L., Lambiotte, R., Lefebvre, E., 2008. Fast unfolding of com-
-munities in large networks. Journal of Statistical Mechanics: Theory and Exp eriment
-P10008.
-Bo dnaruk, A., Loughran, T., McDonald, B., 2015. Using 10-K text to gauge nancial con-
-straints. Journal of Financial and Quantitative Analysis 50, 623{646.
-Calomiris, C. W., Mamaysky, H., 2019. How news and its context drive risk and returns
-around the world. Journal of Financial Economics 133, 299{336.
-Carhart, M., 1997. On p ersistence in mutual fund p erformance. Journal of Finance 52, 57{82.
-Celeny, D., Marechal, L., 2023. Cyb er risk and the cross section of sto ck returns. Available
-at
-http://dx.doi.org/10.2139/ssrn.4587993
-Co chrane, J. H., 2005. The risk and return of venture capital. Journal of Financial Economics
-75, 3{52.
-Curiskis, S. A., Drake, B., Osb orn, T. R., Kennedy, P. J., 2020. An evaluation of do cu-
-ment clustering and topic mo delling in two online so cial networks: Twitter and Reddit.
-Information Pro cessing and Management 57 (2), 102034.
-Fama, E. F., French, K. R., 1992. The cross-section of exp ected sto ck returns. Journal of
-Finance 47, 427{465.
-35
-Fama, E. F., French, K. R., 2015. A ve-factor ass et pricing mo del. Journal of Financial
-Economics 116, 1{22.
-Fama, E. F., MacBeth, J. D., 1973. Risk, return, and equilibrium: Empirical tests. Journal
-of Political Economy 81, 607{636.
-Feldman, R., Govindara j, S., Livnat, J., Segal, B., 2010. Management's tone change, p ost
-earnings announcement drift and accruals. Review of Accounting Studies 15, 915{953.
-Florackis, C., Louca, C., Michaely, R., Web er, M., 2023. Cyb ersecurity risk. Review of
-Financial Studies 36, 351{407.
-Garcia, D., 2013. Sentiment during recessions. Journal of Finance 68, 1267{1300.
-Gibb ons, M. R., Ross, S. A., Shanken, J., 1989. A test of the eciency of a given p ortfolio.
-Econometrica 57, 1121{1152.
-Gomes, O., Mihet, R., Risbabh, K., 2023. Data risk, rm growth and innovation. Available
-at:
-http://dx.doi.org/10.2139/ssrn.4559921
-Hassan, T. A., Hollander, S.,
-v an
-Lent, L., Tahoun, A., 2019. Firm-level p olitical risk:
-Measurement and eects. Quarterly Journal of Economics 134, 2135{2202.
-Jamilov, R., Rey, H., Tahoun, A., 2023. The anatomy of cyb er risk. Available at:
-https:
-//ssrn.com/abstract=3866338
-Jegadeesh, N., Wu, D., 2013. Word p ower: A new approach for content analysis. Journal of
-Financial Economics 110, 712{729.
-Jiang, H., Khanna, N., Yang, Q., Zhou, J., 2023. The cyb er risk premium. Management
-Science Forthcoming.
-Lau, J. H., Baldwin, T., 2016. An empirical evaluation of do c2vec with practical insights into
-do cument emb edding generation. In:
-Proceedings of the 1st Workshop on Representation
-Learning for NLP
-, Asso ciation for Computational Linguistics, Berlin, Germany, 78{86.
-36
-Le, Q., Mikolov, T., 2014. Distributed representations of sentences and do cuments. In: Xing,
-E. P., Jebara, T. (eds.),
-Proceedings of the 31st International Conference on Machine
-Learning
-, PMLR, Bejing, China, 1188{1196.
-Liu, J., Marsh, I. W., Xiao, Y., 2022. Cyb ercrime and the cross-section of equity returns.
-Avaiable at:
-http://dx.doi.org/10.2139/ssrn.4299599
-Mikolov, T., Chen, K., Corrado, G., Dean, J., 2013. Ecient estimation of word representa-
-tions in vector space.
-Sautner, Z.,
-v an
-Lent, L., Vilkov, G., Zhang, R., 2023. Firm-level climate change exp osure.
-Journal of Finance 78, 1449{1498.
-37
-Tables and Figures
-Variable Mean Std Min Max P1 P25 P50 P75 P99
-rm size 20.17 2.49 13.11 26.33 13.68 18.54 20.33 21.87 25.66
-rm age 2.42 1.15 -2.48 4.13 -1.39 1.83 2.67 3.24 4.05
-ROA -0.15 0.54 -4.30 0.49 -3.04 -0.13 0.02 0.06 0.37
-b o ok to market 0.73 1.19 0.00 99.55 0.02 0.26 0.50 0.86 4.56
-TobinQ 2.11 2.14 0.35 24.15 0.56 1.03 1.39 2.24 11.80
-MktBeta 1.15 0.87 -3.00 5.91 -1.15 0.65 1.08 1.55 3.99
-intangibles to assets 0.15 0.21 0.00 8.10 0.00 0.00 0.05 0.24 0.78
-debt to assets 0.57 0.30 0.03 1.81 0.05 0.34 0.55 0.78 1.48
-ROE -0.08 0.61 -5.88 1.60 -2.96 -0.07 0.07 0.15 0.87
-price to earnings -0.87 132.55 -2001.73 455.35 -568.94 -3.93 12.05 22.64 295.69
-prot margin -0.42 6.46 -111.45 1.00 -27.21 0.22 0.39 0.62 0.96
-asset turnover 0.82 0.74 0.00 4.09 0.01 0.25 0.66 1.16 3.42
-cash ratio 2.07 3.89 0.01 36.13 0.01 0.23 0.68 1.98 20.28
-sales to invested cap 1.39 1.50 0.00 10.42 0.01 0.44 0.94 1.77 8.13
-capital ratio 0.31 0.32 -0.10 1.97 0.00 0.03 0.24 0.47 1.51
-RD to sales 0.75 5.08 0.00 89.34 0.00 0.00 0.00 0.06 22.67
-ROCE -0.00 0.44 -3.21 1.30 -1.98 -0.01 0.09 0.17 0.93
-readability 16.08 1.07 7.14 19.89 13.19 15.51 16.31 16.81 18.08
-secret (dummy) 0.28 0.45 0.00 1.00 0.00 0.00 0.00 1.00 1.00
-risk length table 5.03 1.46 0.00 7.69 0.00 4.84 5.35 5.81 6.84
-volume p er cap 0.28 6.52 -1.91 3485.03 -0.01 0.06 0.13 0.23 1.97
-humans p er capital
-
-10
-6
-8.40 157.41 0.00 16689.97 0.00 0.50 1.50 4.19 71.49
-humans p er assets
-
-10
-6
-4.29 14.04 0.00 879.49 0.00 0.38 1.75 4.08 42.02
-Table 1:
-Descriptive statistics of the rm characteristics
-This table provides des criptive statistics for various rm characteristics from 2009 to 2023. Mean, s tandard
-deviation (Std), minimum (Min), and maximum (Max) values are rep orted. Percentiles (P1, P25, P50, P75,
-P99) are also included. Firm-level charac teristics are winsorized at the 1st and 99th p ercentile (by year).
-The characteristics are dened in Table A1
-38
-Fig. 1:
-Industry distribution
-Distribution of rms in the 12 Fam a-French industries. Standard Industrial C lassication (SIC) c o des are
-obtained from CRSP. The conversion table, from SIC to 12 FamaFrench industries, is available on the
-Kenneth French data rep ository.
-Fig. 2:
-Numb er of 10-Ks p er year
-Numb er of companies in the study sample that have led a 10-K statement through the years.
-39
-Fig. 3:
-Structure of MITRE ATT&CK
-Description
-Tactic
-Credential Access
-Adversaries may forge web co okies
-that can b e used to gain access to web
-applications or Internet services . Web
-applications and services (hosted in
-cloud SaaS environments or
-on-premise servers) often use session
-co okies to authenticate and authorize
-user access.
-Technique
-Forge Web Credentials
-Sub-technique
-Web Co okies
-Tactic
-Reconnaissance
-Adversaries may gather employee
-names that can b e used during
-targeting. Employee names can b e
-used to derive email addresses as well
-as to help guide other reconnaissance
-eorts and/or craft more b elievable
-lures.
-Technique
-Gather Victim Identity Information
-Sub-technique
-Employee Names
-Table 2:
-Examples of sub-techniques from MITRE ATT&CK
-40
-Fig. 4:
-Illustration of do c2vec training
-Illustration of the training of the neural network of the two versions of do c2vec, distributed memory mo del
-(DM) and dis tributed bag-of-words mo del (DBOW). The gure is taken from Le and Mikolov (2014).
-41
-Fig. 5:
-Clustering results part.1
-This gure presents the results of each clustering metho d indicated on the left. The gure in red and blue represents
-P
-(
-sub
-j
-)
-i
-, the
-prop ortion of paragraphs of sub-cluster (tactic) j b e longing to cluster (sup er tactic) i. The 14 sub-cluster lab els are on the x- axis of
-each gure, and the cluster lab els corresp ond to the columns (class 0 to 3, he re). If the prop ortion is in red, it means it is the highest
-in the cluster (in other cluste rs /columns, the same sub-cluster will b e in blue ). I also rep ort the entropy sum and the balance d score
-on the gure for each metho d. Finally, the individual Shannon entropy of each sub-cluster is rep orted in green in the last column. In
-the name of the metho d, I also indic ate the hyp erparam eters of the metho d. Here,
-n
-corresp onds to the numb er of clusters imp osed
-by the k-means metho d. \hg. tresh." and \lw. tresh." corres p onds to a change applied to the similarity matrix. If the value in the
-similarity matrix is lower than 0.25, it is changed to 0 (lower threshold), and if the similarity is higher than 0.85, it is changed to 0.5
-(higher threshold). In part.2 and part.3 \egn" corresp onds to the
-K
-eigenvec tors in the sp ectral clustering. I also made the output
-clusters of each metho d match. Hence, the comparison is simpler (otherwise, what the Louvain metho d called cluster 2 is not
-necessarily cluster 2 for the k-means metho d). The following list shows the c orre sp onding numb er of each tactic : 1: Persistence, 2:
-Command and Control, 3: Impact, 4: Initial Access, 5: Resource Development, 6: Collection, 7: Exltration, 8: C re de ntial Access,
-9: Privilege Escalation, 10: Execution, 11: Defense Evasion, 12: Reconnaissance, 13: Lateral Movement, 14: Discovery.
-42
-Fig. 6:
-Clustering results part.2
-Fig. 7:
-Clustering results part.3
-Fig. 8:
-Comparison of clustering scores: Entropy sum and Balanced score
-Each clustering metho d of Figure 5, 6, and 7 is presented here using the ir resp ective entropy sum and
-balanced score. Recall that the aim was to reduce b oth scores to distinguish the b est clustering metho d.
-Also, note that there is no guideline regarding what additional amount is optimal to forfeit to the entropy
-sum to lower the balanced score and inversely.
-45
-Mean Std Min Max P1 P25 P50 P75 P99
-Persistence 0.49 0.03 0.27 0.64 0.44 0.47 0.49 0.51 0.58
-Command and Control 0.47 0.03 0.28 0.62 0.42 0.45 0.47 0.49 0.55
-Impact 0.47 0.03 0.25 0.59 0.41 0.45 0.47 0.50 0.55
-Initial Access 0.46 0.03 0.23 0.59 0.40 0.44 0.46 0.48 0.55
-Resource Development 0.47 0.03 0.23 0.62 0.41 0.44 0.47 0.49 0.56
-Collection 0.49 0.03 0.29 0.64 0.43 0.46 0.48 0.51 0.57
-Exltration 0.47 0.03 0.23 0.64 0.41 0.44 0.46 0.49 0.56
-Credential Access 0.50 0.03 0.29 0.64 0.43 0.47 0.49 0.52 0.58
-Privilege Escalation 0.48 0.03 0.27 0.64 0.43 0.46 0.47 0.49 0.56
-Execution 0.46 0.03 0.29 0.61 0.42 0.44 0.46 0.48 0.55
-Defense Evasion 0.51 0.03 0.29 0.65 0.46 0.49 0.50 0.52 0.59
-Reconnaissance 0.48 0.03 0.32 0.61 0.42 0.46 0.48 0.51 0.57
-Lateral Movement 0.47 0.03 0.26 0.64 0.43 0.45 0.47 0.49 0.56
-Discovery 0.48 0.03 0.31 0.63 0.43 0.46 0.47 0.49 0.56
-Preparation and Reconnaissance 0.50 0.03 0.33 0.64 0.44 0.48 0.50 0.53 0.58
-Persistence and Evasion 0.51 0.03 0.29 0.65 0.46 0.49 0.51 0.53 0.59
-Credential Movement 0.50 0.03 0.29 0.65 0.44 0.48 0.50 0.52 0.59
-Command and Data Manipulation 0.50 0.03 0.29 0.64 0.44 0.47 0.49 0.52 0.58
-Overall 0.53 0.03 0.33 0.65 0.47 0.50 0.52 0.54 0.61
-Sentiment 0.51 0.05 0.00 0.72 0.42 0.48 0.51 0.54 0.63
-Table 3:
-Descriptive statistics of cyb er scores
-This table provides descriptive statistics for the 14 MITRE ATT&CK tactics cyb er score, the four aggregated
-sub-cyb er scores of the sup er-tactics, the ove rall cyb er score, and the cyb er sentiment score. The statistics
-are computed from all rms from 2009 to 2023.
-46
-Fig. 9:
-Evolution of the overall cyb er score averaged yearly over all rms
-The gure shows the evolution of the overall cyb er score over all rms yearly. Each year provides a distribu-
-tion of the cyb er score over all rms that can b e s orte d to provide p ercentiles of interest and the averaged
-cyb er score for a given year.
-47
-Fig. 10:
-Evolution of the sub-cyb er scores related to the 14 tactics averaged yearly
-over all rms
-The gure s hows the evolution of the 14 sub-cyb er scores averaged over all rms yearly. The overall cyb er
-score is also included to allow comparison.
-48
-Fig. 11:
-Evolution of the cyb er sentiment score averaged yearly over all rms
-The gure shows the evolution of the cyb er sentiment score over all rms yearly. Each year provides a
-distribution of the cyb er score over all rms that can b e sorted to provide p ercentiles of interest and the
-averaged cyb er score for a given year.
-49
-Fig. 12:
-Evolution of the sub-cyb er scores related to the four sup er-tactics aver-
-aged yearly over all rms
-The gure shows the evolution of the four sub-cyb er scores averaged over all rms yearly. The overall cyb er
-score is also included to allow comparison.
-50
-Fig. 13:
-Correlations of all cyb er scores
-Firm-wise correlations of the sub-cyb er scores of the 14 MITRE ATT&CK tactics, the 4 aggregated sub-cyb er
-scores of the sup er-tactics, as well as the overall cyb er score and the cyb er sentiment score are pres ented
-here.
-51
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-50.514
-
-53.229
-
-[46.66] [65.46]
-Firm Size (ln)
-0.008 0.039
-[0.16] [1.37]
-Firm Age (ln)
--0.346
-
--0.492
-
-[-2.93] [-8.80]
-ROA
-0.027 0.014
-[0.25] [0.08]
-Bo ok to Market
--0.028
-
--0.138
-
-[-2.66] [-5.04]
-Market Beta
--0.057
-
--0.115
-
-[-1.95] [-2.83]
-Intangibles/Assets
--0.335
-
-1.133
-
-[-1.75] [5.51]
-Debt/Assets
--0.486
-
-1.088
-
-[-2.13] [2.59]
-ROE
--0.009 0.011
-[-0.19] [0.12]
-Price/Earnings
-0.0003
-
-0.00001
-[2.10] [0.04]
-Prot Margin
-0.001 0.023
-
-[0.17] [3.08]
-Asset Turnover
--0.056 -0.438
-
-[-0.66] [-3.52]
-Cash Ratio
--0.0003 0.005
-[-0.04] [0.31]
-Sales/Inves ted Capital
-0.013 0.134
-
-[0.39] [2.30]
-Capital Ratio
-0.048 -2.200
-
-[0.25] [-6.95]
-R&D/Sales
--0.005 -0.004
-[-0.89] [-0.42]
-ROCE
-0.040 0.306
-
-[0.43] [1.92]
-Readability
-0.090
-
--0.164
-
-[2.81] [-2.93]
-Secret
-0.205
-
-0.711
-
-[1.80] [6.98]
-Risk Length Table
-0.139
-
-0.254
-
-[4.67] [7.36]
-Volume p er Cap.
-0.001 0.007
-
-[0.27] [3.79]
-Humans p er Cap.
--0.0004
-
--0.000
-[-11.02] [-1.18]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.3193 0.2672
-Table 4:
-Determinants of rm-level overall cyb er score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-43.921
-
-36.239
-
-[18.44] [26.16]
-Firm Size (ln)
-0.1046 0.2436
-
-[1.12] [5.99]
-Firm Age (ln)
--0.6886
-
--0.4258
-
-[-2.91] [-5.15]
-ROA
--0.3729
-
--0.4243
-*
-[-2.07] [-1.89]
-Bo ok to Market
--0.0068 -0.0861
-**
-[-0.22] [-2.07]
-Market Beta
--0.0759 0.0189
-[-1.22] [0.32]
-Intangibles/Assets
-0.4 1.5571
-
-[1.02] [5.33]
-Debt/Assets
-0.1785 3.1032
-
-[0.37] [5.77]
-ROE
--0.082 -0.0041
-[-0.78] [-0.03]
-Price/Earnings
--0.0002 -0.0003
-[-0.89] [-0.83]
-Prot Margin
--0.0059 0.0095
-[-0.56] [0.86]
-Asset Turnover
--0.0891 -0.1494
-[-0.51] [-0.8]
-Cash Ratio
-0.0121 0.0217
-[0.72] [1.02]
-Sales/Inves ted Capital
--0.0733 -0.0916
-[-1.14] [-1.08]
-Capital Ratio
--0.12 -3.4501
-
-[-0.31] [-8.31]
-R&D/Sales
--0.0225 -0.021
-[-1.48] [-1.48]
-ROCE
-0.2894 0.4123
-*
-[1.47] [1.74]
-Readability
-0.1335 0.2959
-
-[1.1] [2.85]
-Secret
-0.4
-
-0.5921
-
-[1.88] [4.31]
-Risk Length Table
-0.568
-
-0.7207
-
-[7.21] [10.8]
-Volume p er Cap.
--0.0044 -0.0029
-[-0.9] [-0.99]
-Humans p er Cap.
--0.0014
-
-0.0005
-
-[-8.1] [6.33]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.2221 0.2088
-Table 5:
-Determinants of rm-level cyb er sentiment score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-48.709
-
-49.389
-
-[42.27] [53.32]
-Firm Size (ln)
--0.014 0.0394
-[-0.27] [1.32]
-Firm Age (ln)
--0.5965
-
--0.4996
-
-[-4.72] [-8.04]
-ROA
-0.0168 0.0293
-[0.14] [0.15]
-Bo ok to Market
--0.0224
-
--0.1448
-
-[-1.97] [-5.48]
-Market Beta
--0.0446 -0.1203
-
-[-1.45] [-2.69]
-Intangibles/Assets
--0.3246 1.3698
-
-[-1.53] [6.14]
-Debt/Assets
--0.626
-
-0.8444
-
-[-2.4] [1.83]
-ROE
--0.0561 -0.0365
-[-1.06] [-0.39]
-Price/Earnings
-0.0 -0.0003
-[0.09] [-0.96]
-Prot Margin
--0.0017 0.0259
-
-[-0.29] [3.23]
-Asset Turnover
-0.047 -0.5544
-
-[0.54] [-4.03]
-Cash Ratio
-0.0028 0.0129
-[0.3] [0.81]
-Sales/Inves ted Capital
--0.0259 0.1951
-
-[-0.7] [3.06]
-Capital Ratio
-0.1883 -2.2148
-
-[0.88] [-6.28]
-R&D/Sales
--0.0063 0.0003
-[-0.79] [0.03]
-ROCE
-0.097 0.3042
-
-[0.93] [1.73]
-Readability
-0.0869
-
--0.1231
-
-[2.47] [-2.02]
-Secret
-0.293
-
-0.8431
-
-[2.47] [7.77]
-Risk Length Table
-0.118
-
-0.2876
-
-[3.6] [6.68]
-Volume p er Cap.
--0.0034 0.006
-
-[-1.05] [2.66]
-Humans p er Cap.
--0.0003
-
--0.0001
-[-9.34] [-1.47]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.3224 0.2677
-Table 6:
-Determinants of rm-level command and data manipulation cyb er score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-49.779
-
-50.925
-
-[41.1] [57.92]
-Firm Size (ln)
--0.0834 -0.005
-[-1.5] [-0.16]
-Firm Age (ln)
--0.6247
-
--0.5823
-
-[-4.97] [-9.58]
-ROA
-0.0446 0.0669
-[0.4] [0.34]
-Bo ok to Market
--0.0085 -0.1247
-
-[-0.63] [-3.88]
-Market Beta
--0.0529 -0.1494
-
-[-1.64] [-3.4]
-Intangibles/Assets
--0.2478 1.0274
-
-[-1.2] [4.62]
-Debt/Assets
--0.588
-
-1.0181
-
-[-2.33] [2.29]
-ROE
-0.008 0.0121
-[0.15] [0.13]
-Price/Earnings
-0.0003
-
--0.0
-[1.92] [-0.04]
-Prot Margin
--0.0015 0.022
-
-[-0.26] [2.97]
-Asset Turnover
--0.164
-
--0.5367
-
-[-1.83] [-3.96]
-Cash Ratio
--0.0005 -0.0024
-[-0.06] [-0.15]
-Sales/Inves ted Capital
-0.0404 0.1481
-
-[1.17] [2.42]
-Capital Ratio
-0.2001 -2.1857
-
-[0.98] [-6.42]
-R&D/Sales
--0.0093 -0.011
-[-1.19] [-1.18]
-ROCE
-0.0148 0.2837
-[0.15] [1.61]
-Readability
-0.1344
-
--0.1081
-
-[3.7] [-1.78]
-Secret
-0.2014
-
-0.7763
-
-[1.65] [7.15]
-Risk Length Table
-0.144
-
-0.2837
-
-[4.1] [7.02]
-Volume p er Cap.
-0.0006 0.008
-
-[0.12] [3.59]
-Humans p er Cap.
--0.0005
-
--0.0
-[-11.29] [-0.64]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.3099 0.2564
-Table 7:
-Determinants of rm-level credential movement cyb er score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-49.357
-
-52.308
-
-[47.79] [65.49]
-Firm Size (ln)
--0.0327 0.0116
-[-0.71] [0.43]
-Firm Age (ln)
--0.1343 -0.4462
-
-[-1.2] [-8.4]
-ROA
-0.0298 0.1
-[0.29] [0.54]
-Bo ok to Market
--0.0117 -0.1262
-
-[-0.96] [-5.07]
-Market Beta
--0.0542
-
--0.127
-
-[-1.96] [-3.29]
-Intangibles/Assets
--0.2192 0.9123
-
-[-1.23] [4.78]
-Debt/Assets
--0.4056
-
-1.0515
-
-[-1.85] [2.6]
-ROE
-0.0071 -0.0028
-[0.16] [-0.03]
-Price/Earnings
-0.0001 -0.0001
-[1.2] [-0.29]
-Prot Margin
-0.0004 0.0225
-
-[0.09] [3.0]
-Asset Turnover
--0.0273 -0.4263
-
-[-0.36] [-3.64]
-Cash Ratio
--0.0018 0.0015
-[-0.2] [0.11]
-Sales/Inves ted Capital
-0.0107 0.1105
-
-[0.34] [2.03]
-Capital Ratio
--0.0628 -2.1721
-
-[-0.36] [-7.0]
-R&D/Sales
--0.004 -0.0051
-[-0.65] [-0.54]
-ROCE
--0.0611 0.1708
-[-0.72] [1.12]
-Readability
-0.1256
-
--0.1214
-
-[3.34] [-2.15]
-Secret
-0.059 0.6653
-
-[0.55] [6.89]
-Risk Length Table
-0.0929
-
-0.1794
-
-[3.29] [5.55]
-Volume p er Cap.
--0.0007 0.0056
-
-[-0.21] [2.29]
-Humans p er Cap.
--0.0002
-
--0.0
-[-7.49] [-0.82]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.2193 0.1566
-Table 8:
-Determinants of rm-level p ersistence and evas ion cyb er score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Dep endent variable: Firm-level indicator of cyb er score
-Mo del 1 Mo del 2
-Constant
-48.897
-
-49.466
-
-[42.14] [56.36]
-Firm Size (ln)
-0.0069 0.0873
-
-[0.13] [2.99]
-Firm Age (ln)
--0.7352
-
--0.523
-
-[-5.92] [-9.11]
-ROA
--0.0807 -0.1396
-[-0.76] [-0.78]
-Bo ok to Market
--0.0347
-
--0.1499
-
-[-2.75] [-5.58]
-Market Beta
--0.0577
-
--0.0962
-
-[-1.92] [-2.34]
-Intangibles/Assets
--0.1576 1.5511
-
-[-0.73] [7.31]
-Debt/Assets
--0.4222
-
-1.6297
-
-[-1.67] [3.81]
-ROE
-0.0376 0.0192
-[0.7] [0.21]
-Price/Earnings
-0.0002 0.0
-[1.6] [0.05]
-Prot Margin
--0.0009 0.0191
-
-[-0.21] [2.63]
-Asset Turnover
--0.033 -0.4303
-
-[-0.36] [-3.38]
-Cash Ratio
-0.0055 0.015
-[0.56] [0.96]
-Sales/Inves ted Capital
-0.0072 0.146
-
-[0.21] [2.46]
-Capital Ratio
-0.0664 -2.5668
-
-[0.33] [-7.98]
-R&D/Sales
--0.0094 -0.0015
-[-1.59] [-0.15]
-ROCE
-0.0523 0.3945
-
-[0.52] [2.55]
-Readability
-0.0651 -0.1943
-
-[1.64] [-3.14]
-Secret
-0.2292
-
-0.6711
-
-[1.95] [6.58]
-Risk Length Table
-0.1945
-
-0.3505
-
-[5.87] [9.16]
-Volume p er Cap.
--0.0021 0.0036
-[-0.53] [1.45]
-Humans p er Cap.
--0.0005
-
-0.0
-[-10.84] [0.44]
-Year xed eect Yes Yes
-Industry xed eect No Yes
-Firm xed eect Yes No
-Observations 25531 25531
-R
-2
-within 0.4331 0.3920
-Table 9:
-Determinants of rm-level preparation and reconnais sance cyb er score
-This table rep orts the results of c yb er score regressions on rm characteristics. Year-, industry-, and rm-
-xed eects are controlled. T-statistics are rep orted in brackets. The variables are standardized, and the
-standard errors are cluste re d at the rm level.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5% and 1%
-levels, resp ectively. All characteristics are dened in Table A1.
-Fig. 14:
-Correlations of all cyb er scores with nancial characteristics
-Firm-wise corre lations of the sub-cyb e r scores of the 14 MITRE ATT&CK tactics, the four aggregated sub-
-cyb er scores of the sup er-tactics, as well as the overall cyb er score and the cyb er sentiment score with the
-nancial characte ris tic s of the rms .
-Fig. 15:
-Average cyb er score across industries
-The resp ective average cyb er scores of e ach rm (from 2009-Q1 to 2023-Q4) are computed and averaged
-across the industry the rms b elong to, thus obtaining the dierent averaged cyb er scores aggregate for each
-industry. Firms are classied into industries using the Fama-French 12 industry classication.
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.82*** 0.93*** 1.04*** 1.22*** 1.44*** 0.62**
-[3.27] [3.46] [3.65] [4.65] [4.54] [2.05]
-CAPM alpha -0.18 -0.12 -0.08 0.14 0.36** 0.54
-[-0.85] [-0.93] [-0.84] [1.47] [2.14] [1.49]
-FFC alpha -0.09 -0.05 0.0 0.15* 0.27*** 0.36**
-[-0.88] [-0.57] [0.04] [1.71] [3.04] [2.2]
-FF5 alpha -0.14 -0.1 0.0 0.13 0.29*** 0.44***
-[-1.57] [-1.18] [0.01] [1.47] [3.16] [2.88]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.49 0.51 0.52 0.53 0.57 -
-Sharp Ratio 0.61 0.69 0.72 0.88 1.02 0.68
-Table 10:
-Average monthly excess returns and alphas (in p ercent) using the overall
-cyb er score
-FFC refers to the four-factor mo del of Carhart (1997), and FF5 refers to the ve-factor mo de l of Fama and
-French (2015). Panel B s hows the average numb er of rms in each p ortfolio and the average cyb er risk of
-the p ortfolios. T-s tatis tics are rep orted in brackets.
-
-,
-
-, and
-  
-indicate signicance at the 10%, 5%,
-and 1% levels, resp ectively. The time ranges from January 2009 to Decemb er 2023.
-60
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.99*** 1.08*** 1.24*** 1.15*** 1.14*** 0.14
-[3.92] [4.61] [4.78] [3.94] [3.88] [1.21]
-CAPM alpha -0.03 0.04 0.19* 0.02 0.05 0.08
-[-0.27] [0.31] [1.91] [0.31] [0.59] [0.58]
-FFC alpha 0.0 0.05 0.17* 0.04 0.05 0.05
-[0.02] [0.48] [1.78] [0.59] [0.66] [0.45]
-FF5 alpha -0.03 -0.02 0.12 0.07 0.1 0.12
-[-0.41] [-0.18] [1.31] [1.15] [1.17] [1.15]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.46 0.49 0.51 0.53 0.57 -
-Sharp Ratio 0.75 0.8 0.92 0.81 0.82 0.3
-Table 11:
-Average monthly excess returns and alphas (in p ercent) using the cyb er
-sentiment score
-61
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.81*** 0.91*** 1.12*** 1.17*** 1.46*** 0.65*
-[3.18] [3.35] [4.31] [4.55] [4.33] [1.94]
-CAPM alpha -0.22 -0.13 0.06 0.05 0.39** 0.6
-[-0.94] [-1.07] [0.75] [0.61] [2.01] [1.49]
-FFC alpha -0.11 -0.07 0.1** 0.04 0.3*** 0.42**
-[-1.0] [-0.77] [2.18] [0.5] [2.69] [2.12]
-FF5 alpha -0.16 -0.12 0.11** 0.03 0.33*** 0.49***
-[-1.66] [-1.35] [2.01] [0.37] [2.76] [2.61]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.46 0.48 0.49 0.5 0.54 -
-Sharp Ratio 0.59 0.68 0.82 0.82 1.04 0.71
-Table 12:
-Average monthly excess returns and alphas (in p ercent) using the com-
-mand and data manipulation cyb er score
-62
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.88*** 0.9*** 1.04*** 1.13*** 1.49*** 0.61**
-[3.63] [3.51] [3.5] [4.34] [4.66] [2.06]
-CAPM alpha -0.12 -0.14 -0.1 0.07 0.4** 0.52
-[-0.6] [-1.01] [-1.16] [1.11] [2.31] [1.48]
-FFC alpha -0.04 -0.07 -0.02 0.09 0.3*** 0.34**
-[-0.41] [-0.76] [-0.29] [1.4] [3.09] [2.07]
-FF5 alpha -0.1 -0.11 -0.02 0.08 0.33*** 0.43***
-[-1.15] [-1.25] [-0.32] [1.23] [3.19] [2.74]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.46 0.48 0.49 0.51 0.54 -
-Sharp Ratio 0.66 0.67 0.72 0.83 1.04 0.69
-Table 13:
-Average monthly excess returns and alphas (in p ercent) using the cre-
-dential movement cyb er score
-63
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.84*** 0.95*** 1.04*** 1.11*** 1.49*** 0.64**
-[3.35] [3.61] [3.75] [4.44] [4.54] [2.01]
-CAPM alpha -0.18 -0.08 -0.03 0.05 0.39** 0.58
-[-0.86] [-0.54] [-0.39] [0.66] [2.16] [1.53]
-FFC alpha -0.1 0.01 0.03 0.08 0.29*** 0.39**
-[-0.89] [0.13] [0.38] [1.47] [2.9] [2.23]
-FF5 alpha -0.15 -0.05 0.03 0.05 0.33*** 0.48***
-[-1.66] [-0.78] [0.5] [0.78] [3.09] [2.97]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.48 0.49 0.5 0.52 0.55 -
-Sharp Ratio 0.61 0.71 0.76 0.82 1.03 0.67
-Table 14:
-Average monthly excess returns and alphas (in p ercent) us ing the p er-
-sistence and evasion cyb er score
-64
-P1 P2 P3 P4 P5 P5-P1
-A. Portfolios sorted by cyb er score
-avg. excess ret. 0.86*** 0.85*** 1.15*** 1.11*** 1.43*** 0.57**
-[3.54] [3.13] [4.22] [3.94] [4.69] [1.97]
-CAPM alpha -0.09 -0.23 0.02 0.02 0.37** 0.46
-[-0.44] [-1.97] [0.2] [0.29] [2.39] [1.34]
-FFC alpha -0.02 -0.16 0.07 0.04 0.28*** 0.3*
-[-0.14] [-2.45] [1.23] [0.56] [3.07] [1.75]
-FF5 alpha -0.09 -0.19 0.11* 0.01 0.3*** 0.38**
-[-0.95] [-3.08] [1.76] [0.19] [3.17] [2.42]
-B. Characteristics
-Nb. rms 628.48 629.1 629.01 629.1 629.67 -
-Avg. cyb er score 0.47 0.48 0.5 0.51 0.54 -
-Sharp Ratio 0.67 0.61 0.8 0.8 1.03 0.69
-Table 15:
-Average monthly excess returns and alphas (in p ercent) using the prepa-
-ration and reconnaissance cyb er score
-65
-Q1 Q2 Q3 Q4 Q5
-Q1 Q2 Q3 Q4 Q5
-Q1 Q2 Q3 Q4 Q5
-Double sorted p ortfolios with overall cyb er score
-Beta Q1 1.01 1.01 1.13 1.37 1.42
-BM Q1* 1.09 0.98 1.14 1.18 1.24
-Size Q1 0.86 0.96 1.06 1.22 1.32
-Beta Q2 0.89 1.00 1.07 1.25 1.33
-BM Q2 0.86 0.92 1.01 1.25 1.37
-Size Q2 0.87 0.96 1.05 1.25 1.32
-Beta Q3 0.89 1.02 1.01 1.22 1.28
-BM Q3 0.85 1.01 1.04 1.23 1.33
-Size Q3 0.87 0.95 1.05 1.25 1.32
-Beta Q4 0.84 0.90 1.04 1.23 1.25
-BM Q4 0.83 0.99 1.03 1.22 1.35
-Size Q4 0.86 0.95 1.08 1.26 1.33
-Beta Q5 0.83 0.92 1.02 1.21 1.30
-BM Q5 0.87 0.95 1.07 1.22 1.33
-Size Q5 1.09 1.15 1.20 1.19 1.39
-Double sorted p ortfolios with cyb er sentiment score
-Beta Q1 1.16 1.23 1.27 1.25 1.09
-BM Q1* 1.13 1.15 1.04 1.12 1.12
-Size Q1* 0.97 1.20 1.10 1.15 1.07
-Beta Q2* 0.95 1.00 1.36 1.18 1.07
-BM Q2* 0.93 1.01 1.30 1.13 1.09
-Size Q2* 0.96 1.12 1.21 1.13 1.07
-Beta Q3* 1.06 1.00 1.07 1.11 1.10
-BM Q3* 0.96 1.13 1.22 1.15 1.08
-Size Q3* 0.96 1.11 1.19 1.13 1.07
-Beta Q4* 0.95 1.08 1.10 1.09 1.03
-BM Q4* 0.95 1.09 1.21 1.14 1.08
-Size Q4* 0.95 1.03 1.24 1.11 1.08
-Beta Q5* 0.96 1.00 1.20 1.13 1.04
-BM Q5* 0.95 1.09 1.20 1.15 1.05
-Size Q5* 1.23 1.16 1.20 1.17 1.29
-Double sorted p ortfolios with command and data manipulation cyb er score
-Beta Q1 1.04 1.06 1.18 1.27 1.41
-BM Q1* 1.07 0.94 1.22 1.15 1.24
-Size Q1 0.90 0.89 1.16 1.13 1.33
-Beta Q2 0.89 0.93 1.14 1.19 1.36
-BM Q2 0.83 0.89 1.11 1.16 1.39
-Size Q2* 0.89 0.91 1.16 1.12 1.33
-Beta Q3* 0.91 0.90 1.16 1.09 1.34
-BM Q3 0.89 0.90 1.17 1.16 1.34
-Size Q3 0.87 0.91 1.16 1.14 1.34
-Beta Q4 0.85 0.85 1.17 1.14 1.25
-BM Q4 0.85 0.93 1.15 1.20 1.32
-Size Q4 0.85 0.96 1.11 1.21 1.34
-Beta Q5 0.87 0.85 1.11 1.12 1.30
-BM Q5 0.86 0.96 1.13 1.20 1.31
-Size Q5 1.11 1.19 1.16 1.16 1.41
-Double sorted p ortfolios with credential movement cyb er score
-Beta Q1* 1.05 0.96 1.16 1.22 1.49
-BM Q1* 1.03 1.03 1.18 1.09 1.25
-Size Q1 0.90 0.93 1.06 1.10 1.39
-Beta Q2* 0.93 0.94 1.08 1.03 1.42
-BM Q2 0.86 0.90 1.07 1.16 1.41
-Size Q2 0.90 0.92 1.09 1.09 1.38
-Beta Q3 0.90 0.99 1.03 1.08 1.37
-BM Q3 0.93 0.92 1.05 1.09 1.41
-Size Q3 0.90 0.92 1.08 1.08 1.40
-Beta Q4 0.85 0.88 1.09 1.09 1.31
-BM Q4 0.90 0.90 1.07 1.09 1.41
-Size Q4 0.89 0.93 1.03 1.10 1.42
-Beta Q5 0.90 0.87 1.04 1.11 1.35
-BM Q5 0.88 0.95 1.06 1.06 1.41
-Size Q5 1.13 1.13 1.17 1.22 1.39
-Double sorted p ortfolios with p ersistence and evasion cyb er score
-Beta Q1* 1.02 1.07 1.12 1.25 1.46
-BM Q1* 1.06 1.01 1.18 1.19 1.19
-Size Q1 0.88 0.99 1.08 1.12 1.36
-Beta Q2* 0.88 1.06 1.05 1.13 1.40
-BM Q2* 0.85 1.03 0.98 1.19 1.41
-Size Q2 0.89 1.00 1.08 1.15 1.34
-Beta Q3 0.90 1.05 1.06 1.09 1.33
-BM Q3 0.90 1.00 1.03 1.15 1.38
-Size Q3 0.88 0.99 1.05 1.14 1.38
-Beta Q4 0.86 0.97 1.05 1.11 1.29
-BM Q4 0.87 1.00 1.03 1.17 1.38
-Size Q4 0.86 1.02 1.05 1.14 1.39
-Beta Q5 0.87 0.91 0.99 1.18 1.32
-BM Q5 0.86 1.00 1.05 1.16 1.38
-Size Q5 1.17 1.10 1.20 1.16 1.39
-Double sorted p ortfolios with preparation and reconnaissance cyb er score
-Beta Q1* 1.10 0.91 1.28 1.21 1.41
-BM Q1* 1.08 0.99 1.12 1.13 1.24
-Size Q1* 0.91 0.84 1.13 1.15 1.34
-Beta Q2* 0.93 0.87 1.20 1.13 1.35
-BM Q2* 0.85 0.78 1.18 1.19 1.37
-Size Q2* 0.92 0.83 1.14 1.20 1.31
-Beta Q3 0.92 0.90 1.13 1.11 1.29
-BM Q3* 0.90 0.93 1.15 1.09 1.34
-Size Q3* 0.90 0.87 1.17 1.13 1.32
-Beta Q4* 0.90 0.77 1.20 1.07 1.27
-BM Q4 0.86 0.89 1.15 1.12 1.34
-Size Q4* 0.86 0.86 1.20 1.12 1.34
-Beta Q5* 0.89 0.78 1.13 1.12 1.29
-BM Q5 0.85 0.90 1.13 1.14 1.34
-Size Q5 1.13 1.15 1.19 1.19 1.38
-Table 16:
-Average returns of the double sorted p ortfolios
-Q1
-to
-Q5
-represent quintiles. The sorting of rms is done according to market b eta (B eta),
-b o ok-to-market ratios (B M), or rm size (Size) and then on the relevant cyb er sc ore. The average returns
-are given in p ercent.
-
-indicates that the returns are not increasing monotonically with the quintile of the
-cyb er score (with an incertitude of -0.03%).
-66
-M.1 M.2 M.3 M.4 M.5
-Market
-0.011
-***
-0.009
-**
-0.013
-***
-0.009**
-[2.886] [2.526] [3.507] [2.429]
-Cyb er
-0.054
-*
-0.051
-*
-0.051
-**
-0.04
-[1.925] [1.807] [2.097] [1.547]
-HML
-0.003 0.003
-[1.176] [0.964]
-SMB
--0.001 0.001
-[-0.223] [0.636]
-UMD
-0.002
-[0.766]
-CMA
--0.001
-[-0.627]
-RMW
-0.002
-[0.776]
-Constant
-0.001 -0.017 -0.024 -0.029
-**
--0.019
-[0.148] [-1.083] [-1.586] [-2.223] [-1.357]
-R
-2
-adj
-0.067 0.158 0.22 0.296 0.309
-MAPE 0.013 0.012 0.012 0.01 0.009
-Table 17:
-Fama-MacBeth for overall cyb er score
-This table rep orts the results of Fama-MacB eth regressions of 20 value-weighted p ortfolios sorted on their
-cyb er score. These p ortfolios are regres sed each month on p ortfolio value-weighted b etas with the market,
-HML, SMB, MOM, RMW, and CMA. \Cyb er" is the value-weighted cyb e r score of each p ortfolio. HML
-and SMB refer to the b o ok-to-market and size factors from Fama and French (1992). UMD refers to the
-momentum factor from Carhart (1997). CMA and RMW refer to the investment and op erating
-protability factors from Fama and French (2015).
-R
-2
-adj
-is the average adjuste d R-squared, and MAPE is
-the mean average pricing error (mean average of the absolute value of the residuals). T-statistics are
-rep orted in brackets. *, **, and *** indicate signicance at the 10%, 5% and 1% levels, resp ectively. The
-p erio d is from January 2009 to Decemb er 2023.
-67
-M.1 M.2 M.3 M.4 M.5
-Market
-0.005 0.004 0.005 0.005
-[1.335] [0.951] [1.308] [1.27]
-Cyb er
-0.003 0.0 0.003 -0.008
-[0.277] [0.003] [0.228] [-0.501]
-HML
-0.001 -0.001
-[0.381] [-0.235]
-SMB
-0.001 0.001
-[0.304] [0.383]
-UMD
-0.005
-[1.508]
-CMA
--0.001
-[-0.488]
-RMW
-0.001
-[0.486]
-Constant
-0.006 0.01 0.008 0.005 0.011
-[1.643] [1.607] [1.209] [0.754] [1.439]
-R
-2
-adj
-0.077 0.042 0.108 0.202 0.237
-MAPE 0.013 0.013 0.012 0.011 0.01
-Table 18:
-Fama-McBeth for cyb e r s entiment score
-68
-M.1 M.2 M.3 M.4 M.5
-Market
-0.009
-**
-0.007
-*
-0.009
-**
-0.01**
-[2.328] [1.716] [2.493] [2.574]
-Cyb er
-0.044
-*
-0.051
-*
-0.056
-**
-0.038
-[1.673] [1.914] [2.335] [1.401]
-HML
-0.003 0.003
-[1.122] [0.942]
-SMB
-0.002 0.002
-[0.884] [0.692]
-UMD
-0.0
-[0.005]
-CMA
--0.001
-[-0.35]
-RMW
-0.001
-[0.561]
-Constant
-0.003 -0.01 -0.02 -0.026
-**
--0.016
-[0.661] [-0.733] [-1.439] [-2.032] [-1.141]
-R
-2
-adj
-0.053 0.154 0.206 0.315 0.322
-MAPE 0.014 0.013 0.012 0.01 0.01
-Table 19:
-Fama-McBeth for command and data manipulation cyb er score
-69
-M.1 M.2 M.3 M.4 M.5
-Market
-0.007
-**
-0.004 0.009
-**
-0.007*
-[2.106] [1.036] [2.454] [1.894]
-Cyb er
-0.051
-*
-0.056
-**
-0.065
-**
-0.056**
-[1.906] [2.101] [2.419] [2.062]
-HML
-0.005
-*
-0.003
-[1.67] [1.162]
-SMB
--0.001 0.001
-[-0.379] [0.46]
-UMD
--0.001
-[-0.243]
-CMA
--0.002
-[-1.145]
-RMW
-0.001
-[0.458]
-Constant
-0.004 -0.014 -0.02 -0.03
-**
--0.023
-[1.04] [-0.982] [-1.487] [-2.228] [-1.649]
-R
-2
-adj
-0.057 0.157 0.219 0.308 0.313
-MAPE 0.013 0.013 0.012 0.01 0.009
-Table 20:
-Fama-McBeth for credential movement cyb er score
-70
-M.1 M.2 M.3 M.4 M.5
-Market
-0.004 0.002 0.004 0.003
-[1.201] [0.472] [1.222] [0.801]
-Cyb er
-0.056
-*
-0.061
-**
-0.073
-**
-0.071**
-[1.835] [2.062] [2.451] [2.193]
-HML
-0.003 0.004
-[1.255] [1.357]
-SMB
-0.001 0.001
-[0.442] [0.474]
-UMD
--0.002
-[-0.477]
-CMA
--0.0
-[-0.192]
-RMW
-0.002
-[1.370]
-Constant
-0.007 -0.017 -0.021 -0.03
-*
--0.028
-[1.644] [-1.04] [-1.349] [-1.944] [-1.641]
-R
-2
-adj
-0.058 0.167 0.215 0.3 0.304
-MAPE 0.013 0.012 0.012 0.01 0.009
-Table 21:
-Fama-McBeth for p ers istence and evasion cyb er score
-71
-M.1 M.2 M.3 M.4 M.5
-Market
-0.009
-*
-0.006 0.011
-**
-0.01**
-[1.951] [1.531] [2.541] [2.055]
-Cyb er
-0.047
-*
-0.046
-*
-0.049
-**
-0.052**
-[1.848] [1.888] [2.262] [2.299]
-HML
-0.003 0.004
-[1.053] [1.52]
-SMB
-0.001 0.001
-[0.233] [0.418]
-UMD
-0.001
-[0.168]
-CMA
--0.001
-[-0.466]
-RMW
-0.002
-[0.862]
-Constant
-0.003 -0.012 -0.018 -0.024
-**
--0.025**
-[0.674] [-0.908] [-1.345] [-2.047] [-2.008]
-R
-2
-adj
-0.072 0.137 0.201 0.274 0.288
-MAPE 0.014 0.013 0.012 0.01 0.01
-Table 22:
-Fama-McBeth for preparation and reconaissance cyb er s core
-72
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.451 0.107 0.868 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.088 0.367 0.888 0.833 0.671 0.877
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.495 0.090 0.806 1.021 0.441 0.895
-Table 23:
-GRS test for overall c yb er score
-This table rep orts the results of time series regressions of 20 value-weighted p ortfolios (sorted on the cyb er
-score, the size of rms , the market b e ta or the b o ok-to-market ratio) on the ve-factor mo del ofFama and
-French (2015) (FF5) and the \Cyb erFactor",
-i.e.
-the factor built as the long-short of extreme quintile
-p ortfolios sorted on the relevant cyb er score (P5- P1). The p-value is the probability that the alphas of the
-20 regressions are jointly zero. A probability lower than 10% means tha t the hyp othesis that alphas are
-jointly ze ro can b e rejected at the 10% level. The study p erio d is from January 2009 to Decemb er 2023.
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.254 0.218 0.854 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.198 0.263 0.864 0.748 0.771 0.877
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.488 0.093 0.796 1.188 0.271 0.892
-Table 24:
-GRS test for cyb er sentiment score
-73
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.558 0.070 0.855 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.119 0.335 0.877 0.844 0.657 0.877
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.472 0.099 0.807 1.026 0.436 0.895
-Table 25:
-GRS test for command and data manipulation cyb er score
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.539 0.076 0.864 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.192 0.268 0.884 0.770 0.746 0.877
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.441 0.111 0.804 0.997 0.469 0.895
-Table 26:
-GRS test for credential movement
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.465 0.101 0.868 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.128 0.326 0.890 0.884 0.608 0.878
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.500 0.088 0.806 1.021 0.441 0.896
-Table 27:
-GRS test for p ersistence and evasion cyb er score
-74
-GRS p-value
-R
-2 GRS p-value
-R
-2
-Sorted on cyb er score Sorted on size
-FF5 1.516 0.083 0.861 0.737 0.783 0.876
-FF5 + Cyb erFactor 1.216 0.248 0.879 0.807 0.703 0.877
-Sorted on market b eta Sorted on b o ok-to-market
-FF5 1.541 0.075 0.793 1.240 0.229 0.891
-FF5 + Cyb erFactor 1.546 0.076 0.807 0.990 0.477 0.896
-Table 28:
-GRS test for preparation and reconaissance cyb er score
-75
-Fig. 16:
-Factor mo del p osterior probabilities using overall cyb er score
-The rst gure depicts the probabilities of b eing a b etter set of pricing factors for the shown subset
-compared to all p ossible subsets of factors. I present only the top ve mo dels, ranked by the probability at
-the end of the sample, meaning that all othe r subsets have lowe r pricing abilities than the ones presented
-here. HML and SMB refer to the b o ok-to-market and size factors of Fama and French (1992). CMA and
-RMW refer to the investment and op erating protability factors of Fama and French (2015). \cyb e r" refers
-to the long-short p ortfolio built on the cyb er score of interest (P5-P1). The prior multiple is 1.25, and the
-study p erio d is from January 201 0 to De cemb er 2022. The second gure shows the cumulative probabilities,
-i.e.
-the sum of probabilities of all the pricing subsets containing the factor on a s imilar time range.
-Fig. 17:
-Factor mo del p osterior probabilities using cyb er sentiment score
-76
-Fig. 18:
-Factor mo del p osterior probabilities using command and data m anipulation
-cyb er score
-Fig. 19:
-Factor mo del p osterior probabilities using credential movement cyb er score
-Fig. 20:
-Factor mo del p osterior probabili ties using p ersistence and evasion cyb er score
-77
-Fig. 21:
-Factor m o del p osterior probabilities using preparation and reconnaissance
-cyb er score
-78
-Cyb er score
-P5 (top 20%) P20 (top 5%)
-t-stat. p-value
-t-stat. p-value
-p ersistence -0.0372 0.9703
--0.0768 0.9388
-command and control 0.0605 0.9518
-0.7315 0.4649
-impact 0.0692 0.9449
-0.0011 0.9992
-initial access -0.0751 0.9402
-0.1292 0.8972
-resource development 0.3001 0.7643
-0.2834 0.7770
-collection -0.0099 0.9921
-0.0890 0.9291
-exltration 0.0041 0.9967
-0.4411 0.6593
-credential access -0.0167 0.9867
-0.3022 0.7626
-privilege escalation -0.0461 0.9632
-0.1641 0.8697
-execution 0.2384 0.8117
-0.1040 0.9172
-defense evasion 0.0474 0.9622
--0.1037 0.9174
-reconnaissance 0.1565 0.8757
-0.2418 0.8091
-lateral movement -0.0665 0.9470
--0.2061 0.8368
-discovery 0.0419 0.9666
-0.1053 0.9162
-preparation and reconnaissance 0.1050 0.9165
-0.2395 0.8108
-p ersistence and evasion -0.1185 0.9058
--0.0888 0.9293
-credential movement 0.0242 0.9807
--0.0176 0.9860
-command and data manipulation 0.0894 0.9288
-0.0601 0.9521
-sentiment 0.6125 0.5405
-1.1653 0.2446
-Table 29:
-Cyb er based p ortfolio returns dierences
-The table displays the outc omes of Welch's t-test, the statistical metho d used to evaluate the signicance
-of mean dierences with the p os sibility of dierent variances, applied to each cyb er score time series in
-comparison to the overall cyb er score time series. These time series are the monthly returns of cyb er-based
-p ortfolios: P5 (constructed with 5 quantiles , taking the top 20%) and P20 (constructed with 20 quantiles,
-taking the top 5%).
-79
-P1 P2 P3 P4 P5 P5-P1
-CAR[-1,1] -0.146 0.001 -0.021 -0.103 0.206 0.352
-t-statistic -0.311 0.002 -0.058 -0.342 0.616 0.450
-CAR[-1,3] -0.197 -0.040 -0.178 -0.051 0.194 0.390
-t-statistic -0.540 -0.115 -0.626 -0.220 0.748 0.644
-Table 30:
-Cumulative abnormal returns of cyb er-based p ortfolios
-To estimate the cumulative abnorm al returns (CAR), I use the market mo del around Dec emb er 14, 2020,
-as t=0. Note that it was a Monday. Therefore,
-t
-=
-
-1 corresp onds to Friday, Decemb er 11. The b eta of
-the market mo del is set up thanks to the returns of the prior year. The abnormal returns are given in
-p ercent. The p ortfolios are based on the overall cyb er score.
-Fig. 22:
-Cumulative returns of cyb er-based p ortfolio around SolarWinds breach
-Evolution of the p ortfolio bas ed on the overall cyb er score if 1 dollar was inves ted the Decemb er 7, 2020.
-Note that the closed trading days do not app ear.
-80
-CAR[-1,1] CAR[-1,3]
-overall 0.078 0.055
-[0.151] [0.138]
-preparation and reconnaissance 0.036 0.146
-[0.082] [0.429]
-p ersistence and evasion 0.163 0.228
-[0.301] [0.543]
-credential movement 0.141 0.312
-[0.255] [0.724]
-command and data manipulation 0.207 0.227
-[0.427] [0.603]
-Table 31:
-Cumulative abnormal returns of cyb er-based P20
-To estimate the cumulative abnorm al returns (CAR), I use the market mo del around Dec emb er 14, 2020,
-as
-t
-= 0. The b eta of the marke t mo del is set up thanks to the returns of the prior year. The abnormal
-returns are given in p ercent. The t-statistics asso ciated with the abnormal returns are given in the
-parenthesis.
-81
-Fig. 23:
-Cumulative returns of cyb er-based p ortfolio (P20) around SolarWinds breach
-82
-CAR[-1,1] CAR[-1,3]
-overall 0.206 0.194
-[0.616] [0.748]
-preparation and reconnaissance 0.182 0.181
-[0.639] [0.818]
-p ersistence and evasion 0.192 0.189
-[0.533] [0.675]
-credential movement 0.198 0.200
-[0.565] [0.735]
-command and data manipulation 0.009 0.081
-[0.029] [0.336]
-Table 32:
-Cumulative abnormal returns of cyb er-based P5
-To estimate the cumulative abnorm al returns (CAR), I use the market mo del around Dec emb er 14, 2020,
-as
-t
-= 0. The b eta of the marke t mo del is set up thanks to the returns of the prior year. The abnormal
-returns are given in p ercent. The t-statistics asso ciated with the abnormal returns are given in the
-parenthesis.
-83
-Fig. 24:
-Cumulative returns of cyb er-based p ortfoli o (P5) around Sol arWinds breach
-84
-App endix
-Variable Description Source
-Firm size (ln) ln(total assets [at]) Compustat
-Firm Age (ln) ln(years) since the rm rst app eared in Compustat Compustat
-Bo ok to market ratio Common equity [ceq] / market equity [prc*shrout] Compustat and CRSP
-Tobin's Q (Total assets - common equity + market equity) / total assets Compustat and CRSP
-ROA Net income [ni] / total assets Compustat
-Market Beta 5-year rolling market b eta [b eta] Compustat
-Intangible/Assets Intangible assets [intan] / total assets Compustat
-Debt/assets Total Debt / Total Assets [debt
-assets] WRDS Financial Ratios
-ROE Net Income / Bo ok Equity [ro e] WRDS Financial Ratios
-Price/Earnings Sto ck Price / Earnings [p e
-exi] WRDS Financial Ratios
-Prot Margin Gross Prot / Sales [gpm] WRDS Financial Ratios
-Asset Turnover Sales / Total Assets [at
-turn] WRDS Financial Ratios
-Cash Ratio (Cash + Short-term Investments) / Current Liabilities [cash
-ratio] WRDS Financial Ratios
-Sales/Inves ted Capital Sales p er dollar of Invested Capital [sale
-invcap] WRDS Financial Ratios
-Capitalization Ratio Long-term Debt / (Long-term Debt + Equity) [capital
-ratio] WRDS Financial Ratios
-R&D/Sales R&D exp enses / Sales [RD
-SALE] WRDS Financial Ratios
-ROCE Earnings Before Interest and Taxes / average Capital Employed [ro ce] WRDS Financial Ratios
-Readability (ln) Numb er of characters in the 10-K EDGAR - SEC
-Risk section length (ln) Numb er of sentences in Item 1A of the 10-K EDGAR - SEC
-Secrets As dened in Florackis et al. (2023) EDGAR - SEC
-Volume p er capital Monthly trading volume / Market capitalization CRSP
-Humans p er capital Monthly numb er of employees / Market capitalization Compustat and CRSP
-Table A1:
-Variable denitions
-This table rep orts the variable names used throughout the pap er, their description, and their source. Square
-brackets indicate variable name denitions in CRSP and Compustat.
-85
-Risk/Uncertainty dictionary :
-risk, jeopardize, riskiness, risks, unsettled, treacherous,
-uncertainty, unpredictability, oscillating, variable, dilemma, p erilous, chance, skepticism, tenta-
-tiveness, p ossibility, hesitancy, unre liability, p ending, riskier, wariness, unc ertainties, unresolved,
-vagueness , uncertain, unsure, do dgy, doubt, irregular, equivo cation, prosp ect, jeopardy, indecisive,
-b et, s us picion, chancy, variability, risking, menace, exp osed, p eril, qualm, likeliho o d, hesitating,
-vacillating, threat, risked, gnarly, probability, unreliable, disquiet, unknown, unsafe, ambivalence,
-varying, hazy, imp eril, unclear, apprehension, vacillation, unpre dic table, unforeseeable, incalcu-
-lable, sp eculative, halting, untrustworthy, fear, wage r, equivo cating, reservation, torn, dident,
-hesitant, precarious, ckleness, gamble, undetermined, misgiving, risky, insecurity, changeability,
-instability, debatable, undep endable, doubtful, undecided, incertitude , hazard, dicey, tful, tricky,
-indecision, parlous, sticky, wavering, uncondent, dangerous, iy, defenseless, tentative, faltering,
-unsureness, hazardous, e ndanger, uctuant, queries, quandary, niggle, danger, insecure, didence,
-uctuating, changeable, precariousness, unstable, riskiest, doubtfulness, vague, hairy, erratic, am-
-bivalent, query, dubious
-(Hassan et al., 2019)
-skip
-skip
-86
-Cyb er score
-Covariance
-
-10
-3
-Correlation
-p ersistence
-0.2777
-0.1038
-command and control
-0.3146
-0.1281
-impact
-0.2960
-0.1079
-initial access
-0.2237
-0.0766
-resource development
-0.1841
-0.0629
-collection
-0.2035
-0.0723
-exltration
-0.1473
-0.0499
-credential access
-0.2515
-0.0916
-privilege escalation
-0.3088
-0.1286
-execution
-0.2704
-0.1121
-defense evasion
-0.1809
-0.0761
-reconnaissance
-0.2145
-0.0768
-lateral movement
-0.1272
-0.0488
-discovery
-0.1640
-0.0681
-preparation and reconnaissance
-0.1958
-0.0710
-p ersistence and evasion
-0.1914
-0.0795
-credential movement
-0.2350
-0.0867
-command and data manipulation
-0.2114
-0.0756
-overall
-0.1799
-0.0699
-sentiment
--0.0408
--0.0095
-Table A2:
-Cyb er scores correlation and covariance with idiosyncratic volatility
-Correlation and covariance of the dierent cyb e r scores with the idiosyncratic volatility of the rms they
-are asso ciated with. The idiosyncratic volatility at a given time is computed as the ro ot squared of
-v ar
-(
-
-i
-) =
-v ar
-(
-r
-i
-)
-
-cov
-(
-r
-i
-; r
-m
-)
-2
-=v ar
-(
-r
-m
-) taken over the last ve years, whe re
-r
-i
-and
-r
-m
-are the excess
-return of the rm and the market. The covariance is multiplied by 10
-3
-to improve readability.
-87
