@@ -87,8 +87,8 @@ def plot_qq_for_zipf_law(all_frequencies, s, row, col):
     plt.show()
 
 
-human_texts_path = 'human'
-AI_texts_path = 'AI'
+human_texts_path = '../human'
+AI_texts_path = '../AI'
 
 human_frequencies = read_and_collect_frequencies_from_directory(human_texts_path)
 AI_frequencies = read_and_collect_frequencies_from_directory(AI_texts_path)
