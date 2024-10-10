@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-pdf_folder = 'novel'
+pdf_folder = '../Resources/novel'
 
 # Section for normal human-written texts
 for filename in os.listdir(pdf_folder):
